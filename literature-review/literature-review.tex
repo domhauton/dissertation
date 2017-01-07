@@ -1,5 +1,9 @@
-\documentclass[a4paper,10pt]{article}
+\documentclass[a4paper,11pt]{article}
 \usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\bibliographystyle{agsm}
+
+\setcitestyle{square}
 
 %opening
 \title{Distributed File Backup Across Untrustworthy Intelligent Storage Agents - Literature Review}
@@ -24,12 +28,12 @@ The challenges of such a system include a way of only copying parts of a file du
 
 \section{History of Problem}
 
-A simple file backup can be imagined as simply copying a file to another location. In order to keep the duplicated file in sync they must be compared. The program diff solves this through finding the longest common sub-sequence between files. In order to improve performance hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \cite{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
-In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution. Instead of copying the entire file multiple times, the changed file chunks can be copied instead. \cite{tridgell1996rsync}. Rsync splits the file into chunks and calculates a weak rolling checksum and strong MD4 checksum for each block. Unless there is a match, the weak checksum moves across the file to find a possible offset for matching data and confirms the offset with the strong checksum. The gap can then be requested to be copied. This results in a lot less data being copied than there would be with a diff file. \cite{tridgell1996rsync} This combination of weak and strong checksums has been used across multiple distributed systems including low-bandwidth file systems \cite{muthitacharoen2001low} and high performance transactional object stores. \cite{stephen2000platypus}.
+A simple file backup can be imagined as simply copying a file to another location. In order to keep the duplicated file in sync they must be compared. The program diff solves this through finding the longest common sub-sequence between files. In order to improve performance hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
+In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution. Instead of copying the entire file multiple times, the changed file chunks can be copied instead. \citep{tridgell1996rsync}. Rsync splits the file into chunks and calculates a weak rolling checksum and strong MD4 checksum for each block. Unless there is a match, the weak checksum moves across the file to find a possible offset for matching data and confirms the offset with the strong checksum. The gap can then be requested to be copied. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong checksums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
 
-Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Blocks of smaller and smaller sized are used to find holes in the old file in each round and the file until the minimum block size is reached and a copy occurs. \cite{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
+Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Blocks of smaller and smaller sized are used to find holes in the old file in each round and the file until the minimum block size is reached and a copy occurs. \citep{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
 
-Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques used in delta compression and Lempel-Ziv compression to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \cite{rasch2003place}
+Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques used in delta compression and Lempel-Ziv compression to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \citep{rasch2003place}
 
 Git is an improvement on Rsync as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast. This is also an important distinction from other version control systems, because it means the systems can operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it.
 
@@ -84,9 +88,7 @@ As Resilio Sync uses DHT to transfer data, there is no central authority to mana
 %
 
 \section{Conclusion}
-%
 
-\bibliographystyle{bath}
 \bibliography{literature-review.bib}
 
 \end{document}

@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,11pt, twocolumn]{report}
 \usepackage[utf8]{inputenc}
 \usepackage{natbib}
 \bibliographystyle{agsm}
@@ -6,7 +6,7 @@
 \setcitestyle{square}
 
 %opening
-\title{Distributed File Backup Across Untrustworthy Intelligent Storage Agents - Literature Review}
+\title{Membrane - Distributed File Backup - Literature Review}
 \author{Dominic Hauton}
 
 \begin{document}
@@ -14,56 +14,104 @@
 \maketitle
 
 \begin{abstract}
-An application in which users can join a large public network of storage nodes to trade their available file space. This will allow the user to store files safely on hostile computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
+An application in which users can join a large public network of untrustworthy intelligent storage agents to trade their available file space. This will allow the user to store files safely on hostile computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
 \end{abstract}
 
 \section{Introduction}
-The literature review explores existing literature in the area of distributed storage across untrustworthy nodes. Distributed storage is an age old idea [source], however, with the advent of cheap high-speed internet users are now able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and have dubious terms of service concerning the security of the data users store on them. [source]
+Distributed storage is a well studied and explored domain with clear advantages over bare metal. In order to implement a peer-to-peer distributed agent based storage system we must first decompose the problem into several parts and explore the advances made in those fields.
 
-The price of storage has also decreased at a high rate. [source] It is now common for computers to come with large amounts of hard drive space which is often not filled to capacity. The project proposed promises to swap this free hard drive space to back up other users’ data in exchange for their surplus space to backup your data.
+With the advent of cheap high-speed internet users are now able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. Especially if their data leaves the users country where data protection laws may be different.
+
+Over time personal storage capacities for users have also increased. It is now common for computers to come with large amounts of hard drive space which is often not filled to capacity. The project proposed promises to swap this free hard drive space to back up other users’ data in exchange for their surplus space to backup your data.
 
 To simplify the process, the system will be able to negotiate contracts of varying complexity for space allocation on another machine, in exchange for space on itself. Unlike most distributed databases and cloud storage solutions frequent down-time will be expected across devices and contracts will have to account for this.
 
 The challenges of such a system include a way of only copying parts of a file during updates to reduce bandwidth usage. An effective way of managing where file chunks are stored. A way to encrypt the files on the remote host and a way to authenticate that the host still holds the file.
 
+Part of the required research also includes exploring the more recent technology of intelligent agents, in which we are most interested in trust metrics. Intelligent agents will allow the software to make storage decisions based on the trust and reputation of other nodes in the network.
+
 \section{History of Problem}
 
 A simple file backup can be imagined as simply copying a file to another location. In order to keep the duplicated file in sync they must be compared. The program diff solves this through finding the longest common sub-sequence between files. In order to improve performance hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
+
+\subsection{Rsync}
 In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution. Instead of copying the entire file multiple times, the changed file chunks can be copied instead. \citep{tridgell1996rsync}. Rsync splits the file into chunks and calculates a weak rolling checksum and strong MD4 checksum for each block. Unless there is a match, the weak checksum moves across the file to find a possible offset for matching data and confirms the offset with the strong checksum. The gap can then be requested to be copied. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong checksums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
 
 Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Blocks of smaller and smaller sized are used to find holes in the old file in each round and the file until the minimum block size is reached and a copy occurs. \citep{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
 
 Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques used in delta compression and Lempel-Ziv compression to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \citep{rasch2003place}
 
+
+\subsection{Git}
 Git is an improvement on Rsync as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast. This is also an important distinction from other version control systems, because it means the systems can operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it.
 
 Git also uses a 3 stage workflow. A working directory, where the current files are stored, a staging area and a .git directory. The staging area prepares your next commit and then it is finally committed. When the staging is complete the change is irreversibly stored. This is a good approach that will be adopted in the final software solution. It will allow incrementally finding changed files, and assessing the need for a new version number to be saved.
 
-The BitTorrent protocol is a mechanism for sharing files between swarms of hosts. As BitTorrent splits files into parts, users start sharing data even before they have received the full file. Each file has a SHA-1 identifier, similar to Git.
 
-If a user wishes to download a file from the swarm, the user downloads a metadata file from the web and locates users sharing the data using a Tracker Server, Distributed Hash Table (DHT) or Peer Exchange (PEX).
+\subsection{Bittorrent}
+The BitTorrent protocol is a mechanism for sharing files between swarms of hosts. As BitTorrent splits files into parts, users start sharing data even before they have received the full file. Each file has a SHA-1 identifier, similar to Git. \citep{qiu2004modeling}
+
+If a user wishes to download a file from the swarm, the user downloads a metadata file from the web and locates users sharing the data using a Tracker Server, Distributed Hash Table (DHT) or Peer Exchange (PEX). \citep{cohen2008bittorrent}
 
 A Tracker server is a centralised store of all current connected users along with how much of the file they hold. This approach is vulnerable to exploitation by authorities as all of the data about a swarm is strored on a single server and as a result cannot be used for the proposed system.
 
 A DHT contacts other known users for information instead of a centralised server. The Mainline DHT as outlined in BEP No.5 is based on the Kademlia protocol that allows for decentralised peer discovery for a particular piece of content.
 
-PEX is a method for two clients to share a subset of their peer lists. Coupled with DHT, PEX removes a vulnerability from the Bittorrent network by allowing fully distributed bootstrapping, tracking and peer discovery
+PEX is a method for two clients to share a subset of their peer lists. Coupled with DHT, PEX removes a vulnerability from the Bittorrent network by allowing fully distributed bootstrapping, tracking and peer discovery.
 
-Resilio Sync is an example of a distributed file storage system that utilises the BitTorrent protocol to automatically synchronize folders between a user’s systems. It is not a cloud backup solution and not intended as a form of off-site storage. There is no distributed file system and as a result, no redundant data block algorithm adding complexity.
+A DHT with a form of PEX a tried and tested way of successfully mapping and finding files on a network and will be used within the proposed project.
 
-As Resilio Sync uses DHT to transfer data, there is no central authority to manage authentication or log data access attempts.
+\subsection{Resilio}
+Resilio Sync is an example of a distributed file storage system that utilises the BitTorrent protocol to automatically synchronise folders between a user’s systems. It is not a cloud backup solution and not intended as a form of off-site storage. There is no distributed file system and as a result, no redundant data block algorithm adding complexity. \citep{farina2014bittorrent}
+
+As Resilio Sync uses DHT to transfer data, there is no central authority to manage authentication or log data access attempts. This makes it difficult to determine whether a file has been accessed by another user. \citep{farina2014bittorrent} As a result in the project the assumption will be made that everyone in the network has access to all encrypted file chunks. To access and reassemble a file, a user will be required to request all of the file chunks individually and then locally reassemble them.
+
+\subsection{Storij}
+Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof of storage it uses Merkle Audits and pre-generated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
+
+The most efficient form for proof of storage is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. Erasure encoding is added to shards to detect any minor changes to the data. This is less I/O intensive than a full heartbeat, but still allows an attacker to complete heartbeats with only a data integrity of 1/n, where n is the number of nodes holding the data.
+
+In order to add extra protection to files, we can use erasure encoding to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as the shards are expected to change on a regular basis because of versioning, this may not be possible.
+
+To prevent Sybil based attacks, Storij encrypts each shard segment with a different salt. This stops workers completing proof of storage on behalf of another node.
+
 
 % Official hosting solutions
-% Storij
+% Storj
 % Privacy/cost concerns.
 
-\section{Finding External Nodes}
+\section{Peer Admission}
 % IP stored in ledger?
 
+The first step in designing the distributed file system is locating other peers within the swarm. This is accomplished through Peer Admission. Once the first peer is found data within the swarm can be located using a DHT which guarantees content can always be found.
+
+\subsection{Bootstrapping}
+
+There are two types of PTP networks which must be examined:
+\begin{itemize}
+ \item \emph{Asynchronous}
+ \item \emph{Synchronous}
+\end{itemize}
+
+Within Synchronous networks the number of nodes on the network is constant and all of the nodes are aware of each others existence. This does not allow storage networks to scale but it does allow data to be kept private. \citep{saxena2003admission} This is the simplest and first approach that will be taken in locating nodes within Membrane.
+
+In most current P2P systems such as Gnutella \citep{klingberg2002gnutella}, Chord and Tapestry as well cryptocurrencies such as in Bitcoin and Litecoin a bootstrapping node is contacted, which provides information about what clients are currently online. Once a bootstrapping node allows the client to find the edge of the swarm, more information can be found using peer exchange.
+
+Within a local network we can also use Universal Plug and Play to find other nodes within the local network. This prevents an external call to a bootstrapping node and as a result is less prone to attack.
+
+Within Membrane, I plan to use a combination of Asynchronous and Synchronous techniques. Users will try to bootstrap from their last known neighbour nodes on the network. Only if this fails, and with the user's permission will they contact a centralised bootstrapping node.
+
+A further extension of this, would be to allow hosts to provide a DNS name along with their IP. Users that have setup Dynamic DNS (DDNS) \citep{bound1997dynamic} would be able to locate each other without the help of a bootstrapping server.
+
+\subsection{Peer Exchange}
+
+When bootstrapping is complete new Peers can increase their knowledge of the network through Peer Exchange. This is used by Bittorrent to help share swarm information with other nodes
+
 \section{Data Allocation on External Nodes}
-% Look at cloud solutions
-% Look how bittorrent works
-% Look how
+
+% -  Look into intelligent agent system negotiation for file space
+% -  Trust and Reputation importance
+% -  Finding other hosts of your own that you would be free to store data on.
 
 \section{Distributed File System}
 % Separate data allocation on external nodes from storage.
@@ -82,12 +130,18 @@ As Resilio Sync uses DHT to transfer data, there is no central authority to mana
 % How to deal with stale chunks on node reconnect?
 
 \section{Authentication}
-%
+% - How to prove your identity
+% - Look into Public and Private keys
+% - Users may want password
 
 \section{Untrustworthy Hosts \& Encryption}
-%
+% - Prove to me you're still holding my file without sending the entire file over
+%      - Request random bits
+%      - Salted hash of file
+% - What type of encryption is considered secure and fast.
 
 \section{Conclusion}
+% - Gloss over all of the key points that will be implemented in my software.
 
 \bibliography{literature-review.bib}
 

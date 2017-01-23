@@ -136,6 +136,8 @@ There are three main areas that are important for negotiation. Negotiation proto
 
 A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
 
+% TODO: Discuss Negotiation Tactic we use.
+
 \subsection{Communication}
 
 As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion. Formalising communication using ACLs is a more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves. Instead of using a strict protocol we shall instead take an agent-based approach to communication using ACLs.
@@ -159,7 +161,12 @@ where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. Th
 
 \subsubsection{Ontology}
 
-An ontology will need to be created for negotiation. Within MAS ontologies allow agents to share a common understanding of the structure of information,  \cite{noy2001ontology} gives us 5 steps for ontology creation.
+An ontology will need to be created for negotiation. Within MAS ontologies allow agents to share a common understanding of the structure of information,
+
+% TODO: Talk a bit more about ontology creation
+
+
+\cite{noy2001ontology} gives us 5 steps for ontology creation.
 
 \begin{enumerate}
  \item Determine the domain and scope of the ontology
@@ -178,11 +185,12 @@ Using this process a basic ontology for contract negotiation can be created. It 
 \subsection{File Transfer Across NAT}
 Network Address Translation (NAT) is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as hosts can now potentially share IPs. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
 
+% TODO: Complete methods
 % Relaying
 % Connection Reversal
 % UDP Hole Punching
 % TCP Hole Punching
-
+% And we are using
 
 \section{Distributed File System}
 % Separate data allocation on external nodes from storage.
@@ -201,9 +209,9 @@ Network Address Translation (NAT) is used extensively to solve the IP exhaustion
 % How to deal with stale chunks on node reconnect?
 
 \section{Authentication}
-% - How to prove your identity
-% - Look into Public and Private keys
-% - Users may want password
+% - You need to prove your identity when retrieving data and communicating to friend.
+% - Look into Public and Private keys.
+% - Users may want password.
 
 \section{Untrustworthy Hosts \& Encryption}
 % - Prove to me you're still holding my file without sending the entire file over

@@ -109,17 +109,80 @@ When bootstrapping is complete new Peers can increase their knowledge of the net
 
 There are two common extension protocols called AZMP and LTEP, which send at most one message a minute when a client leaves or exits the swarm. To reduce congestion at most 50 peers can be added or removed in one PEX message. \citep{vuze2010vuze}
 
-Bittorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht} supports 25 million users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once the metadata is stored on the host, if a host host wants to download a file, it can take the metadata on the known host to find the IP of people with the file.
+\subsubsection{Shard Discovery}
 
-Within Membrane it would be possible to piggyback on the existing Mainline DHT to locate file shards. This has the advantage of utilising an existing swarm of users to provide file discovery.
+Bittorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once the metadata is stored on the host, if a host host wants to download a file, it can take the metadata on the known host to find the IP of hosts with the file.
+
+Hosts in Membrane will store a metadata file with all of the information required for the specific account to run, including friends, encryption keys as well as local mappings for which host owns which shard and which IP belongs to each host. As a result a DHT will only be required if this initial metadata is lost and needs to be recovered. The proposed version of Membrane will make use of this metadata, but recovery can be added in further iterations of the project.
+
+\subsubsection{Dynamic IP Address}
+
+Dynamic IP addresses have proven to be problematic in distributed computing, as ISP typically charge more for users to have a static, unchanging IP. Bittorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a file. This approach is robust, however, it is a complex solution to IP address resolution.
+
+Another widely used approach is using Dynamic DNS (DynDNS) as described by \cite{bound1997dynamic} in RFC 2136. This allows a client to automatically update a nameserver with a new IP or other information, this allows clients to have a persistent addressing method for devices that change their location. This approach requires initial configuration by the user, however, it provides a reliable way to connect with a user when their IP is lost. There are several tools such as MintDNS, cURL and Iandyn that could be used to ease the development of a built in DynDNS. When setting up a relationship with another host, both an A/AAAA Address and CNAME could be provided, where the CNAME is a backup if the A/AAAA address does not work.
+
+To resolve IP Address resolution within Membrane, I would like to take advantage of small-world networks. \citep{porter2012small}, in which the mean shortest-path between two nodes increases slowly compared to the number of notes in a network. Within a group of users in Membrane hosts are likely to share multiple first, second and third degree connections. By storing a list of IP addresses from all of the hosts. It is highly unlikely that all connections within three hops will have changed IP address. We take inspiration from ARP \citep{plummer1982ethernet}, and send broadcasts with a limited hop count in the network to see if anyone is aware of the current address of a host. The downside of this approach is that it relies on a node within your social network to be online. Measures will need to be put in place to reduce broadcast spam.
+
+A broadcast storms runaway broadcast events, common in networks that used broadcasting for communication, particularly when areas of the network overlap. \citep{Tseng:2002:BSP:506900.506905} These can be mitigated by reducing broadcast traffic, however, Membrane will rely on broadcasts to find hosts. The first step to limiting these broadcasts, is implementing a hop count on broadcasts. This is commonly seen in routing protocols such as IPv6 \citep{deering1998internet}. The Spanning Tree Protocol (STP) as seen in IEEE 802.1d \citep*{ieee802ieee, sharma2004viking} provides loop-free routing in LANs by pruning redundant links. Topology changes are dealt with by rebuilding the tree.
+
+Within Membrane rebuilding a Spanning Tree would be an expensive operation. If broadcasts become a problem a 'block request' system can be used, similar to that of ICMP redirects. \citep{postel1981rfc} If a node receives a duplicate broadcast message it sends a request back one hop to not send broadcasts from that source toward it for  some time. The time limit would allow allow for corrections if the network topology changes. This preventative approach and could be improved by using the full Spanning Tree implementation. As a further step it could be improved by using a DHT 'closest jump' approach if required.
 
 \section{Data Allocation on External Nodes}
 
-% - Finding Files
+In order to store data on another node Membrane must first have permission to store files on another node. In order to make a choice we must be able to look at trust information about other nodes on the network, and negotiate and trade space once a suitable candidate has been found. These two areas have been explored in the context of Multiagent Systems (MAS) in the past. \citep{wooldridge2009introduction}
 
-% -  Look into intelligent agent system negotiation for file space
-% -  Trust and Reputation importance
-% -  Finding other hosts of your own that you would be free to store data on.
+\subsection{Negotiation}
+There are three main areas that are important for negotiation. Negotiation protocols, negotiation objects and the node's reasoning models. \citep{beer1999negotiation} The sophistication of the negotiation is determined by each of these and can take different forms such as auctions, argumentation and protocols in the style of a contract net. The simplest negotiation uses fixed size items, which Membrane shall be initially using for this reason. More complex negotiation allows for counter offers and stronger guarantees.
+
+A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
+
+\subsection{Communication}
+
+As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion. Formalising communication using ACLs is a more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves. Instead of using a strict protocol we shall instead take an agent-based approach to communication using ACLs.
+
+\subsubsection{Agent Communication Language (ACL)}
+
+On balance, we shall be using FIPA for communication. This is an ACL based on Speech Act Theory \citep{labrou1999agent}. It splits communication into a communicative act (CA), an ACL message structure and a set of communication protocols such as XML or OWL (Web Ontology Language). In FIPA communication should be rational, in that when sending a message:
+\begin{itemize}
+  \item The sender believes the proposition.
+  \item The recipient does not already believe the proposition.
+  \item The recipient will believe the proposition after the proposition.
+\end{itemize}
+In the case of Membrane this could be put into the context of asking another node to store data, it would only be reasonable to send another node data to be stored, if the two nodes had negotiated storage of that block between them previously.
+
+To keep communication simple for nodes, we shall use two CAs
+\begin{itemize}
+  \item REQUEST
+  \item INFORM
+\end{itemize}
+where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. This will enable easier implementation and can be expanded if required.
+
+\subsubsection{Ontology}
+
+An ontology will need to be created for negotiation. Within MAS ontologies allow agents to share a common understanding of the structure of information,  \cite{noy2001ontology} gives us 5 steps for ontology creation.
+
+\begin{enumerate}
+ \item Determine the domain and scope of the ontology
+ \item Consider reusing existing ontologies
+ \item Enumerate important terms
+ \item Define classes and their hierarchy
+ \item Define class properties (slots)
+ \item Define slot facets
+ \item Create Instance
+\end{enumerate}
+
+Using this process a basic ontology for contract negotiation can be created. It is important to ensure the ontology goes into the right amount of detail for the requirements. An overly detailed ontology can make reasoning difficult, and an ontology that is too simple will limit expressiveness \citep{wooldridge2009introduction}.
+
+\subsection{Trust and Reputation}
+
+\subsection{File Transfer Across NAT}
+Network Address Translation (NAT) is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as hosts can now potentially share IPs. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
+
+% Relaying
+% Connection Reversal
+% UDP Hole Punching
+% TCP Hole Punching
+
 
 \section{Distributed File System}
 % Separate data allocation on external nodes from storage.

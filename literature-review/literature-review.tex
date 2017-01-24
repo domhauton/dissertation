@@ -132,17 +132,99 @@ Within Membrane rebuilding a Spanning Tree would be an expensive operation. If b
 In order to store data on another node Membrane must first have permission to store files on another node. In order to make a choice we must be able to look at trust information about other nodes on the network, and negotiate and trade space once a suitable candidate has been found. These two areas have been explored in the context of Multiagent Systems (MAS) in the past. \citep{wooldridge2009introduction}
 
 \subsection{Negotiation}
+
+Negotiation aims to reach a level of resource allocation that is acceptable for all involved parties. \citep{rahwan2005interest} It allows two or more parties that value each others service, to participate in a mutually beneficial exchange of services, however, as there are multiple beneficial outcomes it can be defined as "distributed search through a potential space of agreements" \citep{jennings2001automated} Within Membrane, this service is storage space, that is physically separated from the current user. We now take a look at negotiation and how we can build a negotiation framework that our agents can use to exchange storage.
+
 There are three main areas that are important for negotiation. Negotiation protocols, negotiation objects and the node's reasoning models. \citep{beer1999negotiation} The sophistication of the negotiation is determined by each of these and can take different forms such as auctions, argumentation and protocols in the style of a contract net. The simplest negotiation uses fixed size items, which Membrane shall be initially using for this reason. More complex negotiation allows for counter offers and stronger guarantees.
 
-A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
+A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \citep{rahwan2005interest} \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
 
-% TODO: Discuss Negotiation Tactic we use.
+\subsubsection{Negotiation Logic}
 
-\subsection{Communication}
+The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and multiagent systems. In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world. Within a MAS a non-monotonic logic can be more difficult to implement as theorems need to be constantly asserted, and as a result they often result to first-order (or monotonic) logic. Within Membrane we need to implement a monotonic logic to assert trust in our contracts and negotiations. In the context of a negotiated contract, throughout it's duration, we cannot effort to re-evaluate our trust of the agent.
+
+\subsubsection{Negotiation tactics}
+
+In order to exchange storage space we must find the most suitable node in the network. There are multiple negotiation tactics between agents for collaboration and coming to an agreement. \citep{beer1999negotiation} We shall explore the advantages and disadvantages of game-theoretic approaches \citep*{rosenschein1994rules, kraus2001strategic, sandholm2002algorithm}, heuristic-based approaches \citep*{faratin2000automated, fatima2002multi} and argumentation-based approaches \citep*{kraus1998reaching, jennings1998argumentation} as well as exploring practical implementations negotiation. Ideally a negotiation mechanism is computationally cheap, produces good outcomes, distributed, fair to all participants, compatible with fixed strategies and is able to function without complete information. \citep{rahwan2005interest}
+
+Using a \emph{game theory} approach we assume all agents are self-interested and allows agents to analyse optimal behaviour. \citep{osborne1994course} We can apply this in agent reasoning by giving each combination of collaborations a utility. Doing this an optimal set of interactions can be calculated. This can even be used to help agents interact in a certain way. \citep{varian1995economic}. The main downsides include the assumption of unbounded computational resources, complete knowledge of the outcome space. \citep{rahwan2005interest} This makes a game theory approach unusable in Membrane as the network is not fully understood by each agent.
+
+A \emph{heuristic} approach produces 'good enough' negotiations. Instead of exploring the full extent of possibilities they focus on the subset most likely to lead to positive interactions. In the context of Membrane, this may be hosts that you have had successful interactions with before. The downsides of this approach is that it becomes difficult to predict the negotiation actions of other agents and as the full search space is not explored the result may not be optimal. \citep{jennings2001automated}
+
+A \emph{argumentation} approach is beneficial when a flexible negotiation is required and the agents have limited knowledge of the world. It's commonly used in the human world by advertisers to convince humans to try products. \citep{slade2002reasons}. Instead of simply rejecting an offer a agent can say why or offer a counter-proposal, which can result in more successful negotiations. Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane.
+
+\subsubsection{Practical Negotiation}
+
+We now look at practical real-world negotiation. Real world approaches take into consideration the practical implications of reasoning systems and prove that concepts work. Within cloud computing an agent is often required to request a service. The use of these resources is based on service-level agreements (SLAs) which are designed to provide users with a service when requested. \citep{paletta2009mas} One critical issue in SLAs determining the  Quality of Service (QoS) constraints of the offered service.
+
+\cite{yan2007autonomous} explores creating a SLA negotiation system, splitting SLA negotiation into three parts. Defining \emph{Negotiation Protocol} that allows participants to send offers to each other, \emph{Negotiation Coordination} which ensures the final result of the negotiation fulfils the QoS requirements of the agent and a \emph{Decision Making Model} which allows the parties to decide if they are satisfied with the deal.
+
+Within Membrane, hosts are unable to know if they will be compatible with another agent. It might be the case that they both have 50\% uptime, however they are never online at the same time. As a result a system will have to be created to allow agents to find if they are compatible with each other and storage decisions will have to be based on this.
+
+\cite{paletta2009mas} presents an negotiation mechanism which makes use of mean algorithm and protocol, using key awareness concepts first proposed by \cite{herrero2007agents}. It uses an quantitative metric in the range [0, 1] to decide how much the agent should be collaborating with another agent. The agents can then communicate using the messages:
+
+\begin{enumerate}
+ \item REQUEST - Can you perform A?
+ \item CONFIRM - Yes I will do A.
+ \item DISCONFIRM - No I will not do A.
+\end{enumerate}
+
+Collaboration decisions decided using an Artificial Neural Network (ANN). Three metrics are used, physical resource availability, if the node is available for collaboration and the number of previous collaborations of the same type. The ANN used was a Multi-Layer Perceptrons (MLPs) using one hidden layer and two units.
+
+When evaluated the mechanism was able to deal with 93\% of situations and negotiation with the first node was successful 68\% of times. \citep{herrero2007agents}
+
+With Membrane we take this model and make it more practical by introducing reputation to allow third party ratings to be shared.
+
+\subsubsection{Service Level Agreements}
+
+In order to create a negotiation system we need to explore what makes up an successful software SLA. \cite{keller2002defining} defines the WSLA framework which sets out to create a SLA based negotiation frame work.
+They describes 3 key areas that must be present in an SLA.
+\begin{enumerate}
+ \item Parties Involved
+ \item Service Description
+ \item Obligation
+\end{enumerate}
+Within Membrane the parties involved will always be the two nodes exchanging information. The service description will be a promise to store a block of data on another host. The obligation will include various parts such as proof of storage and the ability to update and retrieve the data a set number of times. These will be explored when the SLAs for membrane is designed.
+
+Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA lifecycle.
+\begin{enumerate}
+ \item SLA Negotiation and Establishment
+ \item SLA Deployment
+ \item Measurement and Reporting
+ \item Corrective Management Actions (in case of violation)
+ \item SLA Termination (in case of violation)
+\end{enumerate}
+These are the backbone of every real SLA and will be explored in more detail while designing the negotiation system for Membrane.
+
+\subsection{Trust and Reputation}
+
+Agents in a distributed system need to be able to protect themselves from 'bad' agents. \cite{pinyol2013computational} describes three main approaches to control the acts of agents. The \emph{Security Approach} which guarantees the authenticity and integrity of interactions. The \emph{Institutional approach} which relies on a central authority to enforce good behaviour and finally the \emph{Social approach} which allows agents themselves to punish other agent for 'bad' behaviour. This final approach is where trust and reputation is used.
+
+Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009introduction} A classification presented by \cite{balke2009using} defines 5 stages that exist in reputation and trust models. Co-operative behaviour is first stored and then rated using a utility function. Within Membrane it is easy to see the utility being rated as shared transaction time. This cooperative behaviour is then stored in an image of the other agent at a predetermined level of detail. This image can now be recalled to infer trust. Finally the agent can use this trust to learn and adapt it's strategy.
+
+The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we shall use it to see what a good trust system includes. It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider simulating a situation in which complete data loss was experienced.
+
+\subsubsection{Trust and Reputation Attacks}
+
+Attempts to misrepresent reliability and manipulate reputation are common in traditional communities and have been exploited by con artists for centuries. In a distributed system agents must be able to protect themselves against common trust attacks. \cite{josang2009challenges} describes 9 potential attacks on reputation systems.
+\begin{itemize}
+ \item Playbooks - Gain high reputation and burn it quickly with low quality actions
+ \item Unfair ratings - Give incorrect reputation or image
+ \item Discrimination - Give high quality service to one set of users and low quality to another set
+ \item Collusion - A coordinated reputation attack.
+ \item Proliferation - Offer a service through multiple channels
+ \item Reputation Lag Exploitation - Provide a large number of low-quality services quickly
+ \item Reentry - Change identity to recover reputation
+ \item Value Imbalance Exploitation - Gain reputation with easy actions
+ \item Sybil Attack - Inflate reputation with fake accounts.
+\end{itemize}
+When implementing a trust system in Membrane these attacks should be considered and special attention should be paid to prevent a new user being exploited for their storage space when joining the swarm.
+
+\section{Communication}
 
 As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion. Formalising communication using ACLs is a more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves. Instead of using a strict protocol we shall instead take an agent-based approach to communication using ACLs.
 
-\subsubsection{Agent Communication Language (ACL)}
+\subsection{Agent Communication Language}
 
 On balance, we shall be using FIPA for communication. This is an ACL based on Speech Act Theory \citep{labrou1999agent}. It splits communication into a communicative act (CA), an ACL message structure and a set of communication protocols such as XML or OWL (Web Ontology Language). In FIPA communication should be rational, in that when sending a message:
 \begin{itemize}
@@ -159,7 +241,7 @@ To keep communication simple for nodes, we shall use two CAs
 \end{itemize}
 where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. This will enable easier implementation and can be expanded if required.
 
-\subsubsection{Ontology}
+\subsection{Ontology}
 
 An ontology will need to be created for negotiation. Within MAS ontologies allow agents to share a common understanding of the structure of information,
 
@@ -180,9 +262,12 @@ An ontology will need to be created for negotiation. Within MAS ontologies allow
 
 Using this process a basic ontology for contract negotiation can be created. It is important to ensure the ontology goes into the right amount of detail for the requirements. An overly detailed ontology can make reasoning difficult, and an ontology that is too simple will limit expressiveness \citep{wooldridge2009introduction}.
 
-\subsection{Trust and Reputation}
+\section{Technical Challenges}
+
+% TODO: Primer
 
 \subsection{File Transfer Across NAT}
+
 Network Address Translation (NAT) is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as hosts can now potentially share IPs. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
 
 % TODO: Complete methods

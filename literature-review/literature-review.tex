@@ -243,12 +243,15 @@ where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. Th
 
 \subsection{Ontology}
 
-An ontology will need to be created for negotiation. Within MAS ontologies allow agents to share a common understanding of the structure of information,
-
-% TODO: Talk a bit more about ontology creation
-
-
-\cite{noy2001ontology} gives us 5 steps for ontology creation.
+An ontology is a way of defining basic terms and relations comprising the vocabulary of a topic area. \cite{sugumaran2002ontologies} tells us the the three most commonly used relationships in an ontology are \emph{is-a}, \emph{synonym} and \emph{related-to} (which is a generic association between entities). So why should we create an ontology for membrane? \cite{noy2001ontology} lists the benefits of ontology within distributed systems:
+\begin{itemize}
+ \item Enable common understanding of the structure of information
+ \item Enable reuse of domain knowledge
+ \item Make domain assumptions explicit
+ \item Separate domain and operational knowledge
+ \item Analyse domain knowledge
+\end{itemize}
+Within Membrane we could benefit from an ontology during negotiation for storage space. Obligations could be predefined between agents and an agent could request a set of obligations, instead of explaining an obligation during negotiation. This allows agents to be more concise and expressive. \cite{noy2001ontology} gives us 7 steps for ontology creation.
 
 \begin{enumerate}
  \item Determine the domain and scope of the ontology
@@ -260,11 +263,13 @@ An ontology will need to be created for negotiation. Within MAS ontologies allow
  \item Create Instance
 \end{enumerate}
 
-Using this process a basic ontology for contract negotiation can be created. It is important to ensure the ontology goes into the right amount of detail for the requirements. An overly detailed ontology can make reasoning difficult, and an ontology that is too simple will limit expressiveness \citep{wooldridge2009introduction}.
+It is important to ensure the ontology goes into the right amount of detail for the requirements. An overly detailed ontology can make reasoning difficult, and an ontology that is too simple will limit expressiveness and reasoning. \citep*{wooldridge2009introduction, sugumaran2002ontologies}.
+
+When considering ontologies for re-use \cite{noy2001ontology} points us towards the DAML ontology library (http://www.daml.org/ontologies/). Using this and Google I was able to locate 2 ontologies, the datastore schema provided by \cite{w32001datastore} and an OWL based ontology for SLA services provided by \cite{pande2012slaont}. Both of these will be examined further during the ontology creation process.
 
 \section{Technical Challenges}
 
-% TODO: Primer
+During the creation of Membrane I expect to face several challenges during implementation. The following sections attempt to solve these challenges before implementation.
 
 \subsection{File Transfer Across NAT}
 

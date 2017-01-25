@@ -75,11 +75,6 @@ In order to add extra protection to files, we can use erasure encoding to allow 
 
 To prevent Sybil based attacks, Storij encrypts each shard segment with a different salt. This stops workers completing proof of storage on behalf of another node.
 
-
-% Official hosting solutions
-% Storj
-% Privacy/cost concerns.
-
 \section{Peer Admission}
 The first step in designing the distributed file system is locating other peers within the swarm. This is accomplished through Peer Admission. Once the first peer is found data within the swarm can be located using a DHT which guarantees content can always be found.
 
@@ -267,43 +262,60 @@ It is important to ensure the ontology goes into the right amount of detail for 
 
 When considering ontologies for re-use \cite{noy2001ontology} points us towards the DAML ontology library (http://www.daml.org/ontologies/). Using this and Google I was able to locate 2 ontologies, the datastore schema provided by \cite{w32001datastore} and an OWL based ontology for SLA services provided by \cite{pande2012slaont}. Both of these will be examined further during the ontology creation process.
 
-\section{Technical Challenges}
+\section{Peer-to-Peer Connection}
 
-During the creation of Membrane I expect to face several challenges during implementation. The following sections attempt to solve these challenges before implementation.
+Network Address Translation (NAT), defined in RFC 2663 by \cite{srisuresh1999ip} is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as the IP address a hosts has set, may be a private and only useful for peers on the same network. Multiple Membrane hosts may be using the same IP address and the TCP listening port used by a node will change between connections. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
 
-\subsection{File Transfer Across NAT}
+\emph{Relaying} is a method of communicating through a well known server, that has a static IP address and port. This has the advantage of being simple, however, it has the disadvantage of using the server's processing power, network bandwidth and increases latency between peers. It is a good fallback strategy but also requires both clients to initiate the connection, which makes listening for incoming connections difficult. The TURN protocol \citep{rosenberg2005traversal} describes a fairly secure method for relaying.
 
-Network Address Translation (NAT) is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as hosts can now potentially share IPs. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
+\emph{Connection Reversal} is the use of an external server to request a 'call back' to a host. The connecting host contacts an external server with a target host and leaves it's public IP and port. The relaying host can then choose to send a request to host behind NAT and the host behind NAT can choose to forward the request. It has similar limitations to relaying, however, it is easy to imagine an implementation that uses connection reversal for bootstrapping a P2P connection.
 
-% TODO: Complete methods
-% Relaying
-% Connection Reversal
-% UDP Hole Punching
-% TCP Hole Punching
-% And we are using
+\emph{UDP Hole Punching} is a technique defined in RFC 3027 5.1 \citep{holdrege2001rfc} that allows two clients behind NAT to connect with the use of a rendezvous (RV) server. Hosts contact the RV and leave their UDP port and address. You should be weary of poor NAT implementations translating IP addresses within data when packets are coming in and out. \citep{ford2005peer} When clients are both behind the same NAT, packets between them do not need to go through NAT. If Hairpin NAT is correctly configured they will be bounced back within the internal network, however, it could result in overheads otherwise. If this problem is detected during the implementation of Membrane private IP address could also be sent to the RV server. It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host. The initial outbound packet from a host to a the RV server is key in 'punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
+
+\emph{TCP Hole Punching} is more complex than with UDP as clients need to establish sessions across the NAT. For hole punching to work the same port needs to be used for listening and establishing a connection. This can be done using \emph{SO\_REUSEPORT} option, which allows an application to claim multiple sockets from the same endpoint. Within the application an new port needs to used for handling the connection.
+
+There are two practical solutions that I shall explore for implementation within Membrane. TURN \citep{wing2010traversal} provides a set of methods for NAT hole punching. UPnP \citep{boucadair2013universal} is a method through which a host can request a NAT gateways to open a port for the application. There have been security concerns with UPnP which has resulted in UPnP being disabled on many routers. This will need to be explored during implementation of Membrane.
 
 \section{Distributed File System}
-% Separate data allocation on external nodes from storage.
-% This file system is designed with an expectation that storage nodes will be down at various points in time and this must be accounted for.
-% This file system is only used for backup and is therefore asymmetric, unlike most other files systems out there. Primarily a write-only file system.
-% Have to take into account the connections to clients are asymmetric on residential connections.
-% Have to take into account that it is mostly used to backup small documents that the user finds important. Documents or family photos, not several gb databases.
-% Recommended technique is to chunk files, give them a unique ID.
-% Use a journal for reads and writes. Consider journal replication!
-% Can use snapshotting to ensure a user has a previous version of a file.
-% Use garbage collection to allow delete recovery.
-% Single master keeps structure simple.
-% Should we look at writing through hosts to minimise bandwidth costs on our side?
-% Look at CDN.
-% Delta copying in journal.
-% How to deal with stale chunks on node reconnect?
+
+Membrane shards files and stores copies on multiple nodes for redundancy. This is a technique that is commonly found in distributed file systems (DFS) such as Hadoop File System (HDFS) \citep{hdfsAnalysis}, Google File System (GFS) \citep{TheGFS} and Parallel Virtual File System (PVFS) \citep{ross2000pvfs}. This section aims to explore the reasoning and decisions taken with these file systems.
+
+HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. It stores file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. This is a similar approach to GFS \citep{mckusick2010gfs}. Membrane takes this approach by storing file metadata on the client. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph} This allows for larger, more distributed system, this could be used within Membrane if meta-data proves too large to store on the client.
+
+Files and directories are represented my inodes, these record attributes such as permissions and location. Within Membrane this will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisims described previously.
+
+The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commmit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
+
+In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifiying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storij.
+
+In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
 
 \section{Authentication}
-% - You need to prove your identity when retrieving data and communicating to friend.
-% - Look into Public and Private keys.
-% - Users may want password.
 
-\section{Untrustworthy Hosts \& Encryption}
+In order to maintain a relationship a host needs to be able to verify it's identity when it connects to a host a second time. When visiting a website there is often a need to map a virtual identity to a real identity of a service user \citep{hericourt2001method} a bank for example, this is typically done using a certificate authority. Membrane requires authentication in two situations:
+\begin{itemize}
+ \item Is this the same node I was talking to before?
+ \item Have I found the correct node when adding a friend?
+\end{itemize}
+Session authentication is a common occurrence while using the web and it typically happens with every https site visit. A session cookie is stored on both clients to allow for authorisation and authentication without the use of a password in further interaction. \citep{mayo2008security}
+
+SSL/TLS, defined in RFC 5246 \citep{dierks2008transport} is often used for this authentication. It uses asymmetric public-key cryptography for initial connection, which uses a separate key is used for encryption and decryption. A client generates a public SSL certificate that it sends for any users that want to communicate with it. They encrypt their communication with it, and the server can decrypt it. This is called a SSL Handshake.
+\begin{enumerate}
+ \item Server sends the client it's asymmetric public keys
+ \item Client creates a symmetric session key and encrypts it using the public key.
+ \item Server decrypts the encrypted session keys
+ \item Client and Server can now communicate using the symmetric key.
+\end{enumerate}
+The client can ensure it is talking to the same server by ensuring the public key is the same. RSA is the commonly used algorithm for this.
+
+Pre-shared key encryption uses algorithms like Twofish, AES or Blowfish to create keys. These come in two flavours; stream ciphers and block ciphers. Stream ciphers encrypt binary digit by binary digit in a stream, and block ciphers encrypt a block of data at a time. We shall be using pre-shared key encryption to encrypt data blocks using a password saved on the host, that never under any circumstances leaves the Membrane host.
+
+Studies have shown that Twofish (and Blowfish which it is derived from) has the best performance and has no know security flaws. AES showed poorest performance. \citep*{thakur2011aes, rizvi2011performance, mushtaque2014evaluation} An interview with the creator of Blowfish suggested ``I'm amazed it's still being used. If people ask, I recommend Twofish instead.'' \cite{fish2007bruce}.   One thing to note is that encrypted data is expanded, testing has shown a 240KB file encrypted with Blowfish expands to 955KB which is almost a 4 times increase. \citep{mushtaque2014evaluation}
+
+\section{Proof of Ownership}
+
+A Membrane client needs a method to ensure the storage host still holds the data it says it has.
+
 % - Prove to me you're still holding my file without sending the entire file over
 %      - Request random bits
 %      - Salted hash of file

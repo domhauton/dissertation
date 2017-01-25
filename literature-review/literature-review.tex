@@ -14,7 +14,7 @@
 \maketitle
 
 \begin{abstract}
-An application in which users can join a large public network of untrustworthy intelligent storage agents to trade their available file space. This will allow the user to store files safely on hostile computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
+An application in which users can join a large public network of intelligent storage agents to trade their available file space. This will allow the user to backup and version files safely on potentially untrustworthy computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
 \end{abstract}
 
 \section{Introduction}
@@ -66,14 +66,14 @@ Resilio Sync is an example of a distributed file storage system that utilises th
 
 As Resilio Sync uses DHT to transfer data, there is no central authority to manage authentication or log data access attempts. This makes it difficult to determine whether a file has been accessed by another user. \citep{farina2014bittorrent} As a result in the project the assumption will be made that everyone in the network has access to all encrypted file chunks. To access and reassemble a file, a user will be required to request all of the file chunks individually and then locally reassemble them.
 
-\subsection{Storij}
+\subsection{Storj}
 Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof of storage it uses Merkle Audits and pre-generated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
 
 The most efficient form for proof of storage is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. Erasure encoding is added to shards to detect any minor changes to the data. This is less I/O intensive than a full heartbeat, but still allows an attacker to complete heartbeats with only a data integrity of 1/n, where n is the number of nodes holding the data.
 
 In order to add extra protection to files, we can use erasure encoding to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as the shards are expected to change on a regular basis because of versioning, this may not be possible.
 
-To prevent Sybil based attacks, Storij encrypts each shard segment with a different salt. This stops workers completing proof of storage on behalf of another node.
+To prevent Sybil based attacks, Storj encrypts each shard segment with a different salt. This stops workers completing proof of storage on behalf of another node.
 
 \section{Peer Admission}
 The first step in designing the distributed file system is locating other peers within the swarm. This is accomplished through Peer Admission. Once the first peer is found data within the swarm can be located using a DHT which guarantees content can always be found.
@@ -286,7 +286,7 @@ Files and directories are represented my inodes, these record attributes such as
 
 The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commmit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
 
-In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifiying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storij.
+In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifiying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj.
 
 In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
 
@@ -314,15 +314,27 @@ Studies have shown that Twofish (and Blowfish which it is derived from) has the 
 
 \section{Proof of Ownership}
 
-A Membrane client needs a method to ensure the storage host still holds the data it says it has.
+A Membrane client needs a method to ensure the storage host still holds the data it says it has. To prevent Sybil attacks where agents collude to store a shard between each other, a shard will be salted before encryption and transfer. This has proven effective in Storj \citep{Wilkinson14storja}.
 
-% - Prove to me you're still holding my file without sending the entire file over
-%      - Request random bits
-%      - Salted hash of file
-% - What type of encryption is considered secure and fast.
+In order to determine consistency of what the storage agent has stored a mix of different hash verification is used.
+\begin{itemize}
+ \item Full Heartbeat - Expensive and complete
+ \item Cyclic Check - This checks a sections of the file in sequence, wrapping to the start when the end is reached. Cheap but could be exposed to attacks if the storage agent wants to remove part of the file over time.
+ \item Deterministic - Audits shards in a deterministic order known only to the client. This stops the storage agent being able to predict the next shard.
+\end{itemize}
+
+To stop the client pregenerating hashes the shard or shard chunk is seeded before hashing.
+
+\cite{filecoin2014filecoin} is another cryptocurrency operated file storage network. Transactions are stored in a ledger to assist with trust. At any point a client can issues a challenge to the server to clients who must the calculate the corresponding proof. These challenges are then confirmed by another node on the network who takes the file and recomputes the challenge itself.
+
+Within Membrane we can build challenge issues into the SLA agreed upon by both users. If a client has no trust of another user, then they value their data less. The initial cost of building a relationship with a user stops a storage node defecting by deleting their stored shard early. It is important to also run file retrieval spot checks, to simulate a situation in which a host loses all of their files.
 
 \section{Conclusion}
-% - Gloss over all of the key points that will be implemented in my software.
+In this literature review we discussed the key important areas of creating a distributed storage system. We first explored the history of the problem starting a basic manual copying of files to another host, looking a improvements of that such as Rsync, and a comprehensive solution like Git that requires paid hosting and manual setup. We saw how to exchange file and swarm information in distributed systems like bitcoin and studied file storage systems like Resilio and Storj that achieved distributed file storage.
+
+Then we explored different challenges in creating the system, namely Peer Admission, Data Allocation, Communication, the challenges of connecting to other peers, lessons learnt from distributed files systems and the challenges of Authentication and Proving ownership of a file.
+
+Using the lessons from exploring other systems we can implement our own distributed file storage system and improve on techniques that previous systems have used.
 
 \bibliography{literature-review.bib}
 

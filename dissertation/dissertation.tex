@@ -1,23 +1,70 @@
-\documentclass[a4paper,11pt, twocolumn]{report}
+\documentclass[a4paper, 11pt, twocolumn, twoside]{report}
 \usepackage[utf8]{inputenc}
+\usepackage[a4paper,width=150mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
 \usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\newcommand{\chapfnt}{\fontsize{16}{19}}
+\newcommand{\secfnt}{\fontsize{14}{17}}
+\newcommand{\ssecfnt}{\fontsize{12}{14}}
+
+\titleformat{\chapter}[display]
+{\normalfont\chapfnt\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\chapfnt}
+
+\titleformat{\section}
+{\normalfont\secfnt\bfseries}{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\normalfont\ssecfnt\bfseries}{\thesubsection}{1em}{}
+
+\titlespacing*{\chapter} {0pt}{50pt}{40pt}
+\titlespacing*{\section} {0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+\titlespacing*{\subsection} {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\pagestyle{fancy}
+
+\fancyhead{}
+\fancyhead[RO,LE]{Membrane - Distributed File Backup}
+\fancyfoot{}
+\fancyfoot[LE,RO]{\thepage}
+\fancyfoot[LO,CE]{Chapter \thechapter}
+\fancyfoot[CO,RE]{Dominic Hauton}
+
+\graphicspath{ {img/} }
+
 \bibliographystyle{agsm}
 
 \setcitestyle{square}
 
 %opening
-\title{Membrane - Distributed File Backup - Literature Review}
+\title{Membrane - Distributed File Backup}
 \author{Dominic Hauton}
 
 \begin{document}
 
 \maketitle
 
+% Copyright and declaration
+
 \begin{abstract}
 An application in which users can join a large public network of intelligent storage agents to trade their available file space. This will allow the user to backup and version files safely on potentially untrustworthy computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
 \end{abstract}
 
-\section{Introduction}
+\renewcommand{\abstractname}{Declaration}
+\begin{abstract}
+\hfil I declare that... \hfil
+\end{abstract}
+
+\renewcommand{\abstractname}{Acknowledgements}
+\begin{abstract}
+\hfil With thanks to my supervisor, Russell Bradford \hfil
+\end{abstract}
+
+\tableofcontents
+
+\chapter{Introduction}
 Distributed storage is a well studied and explored domain with clear advantages over bare metal. In order to implement a peer-to-peer distributed agent based storage system we must first decompose the problem into several parts and explore the advances made in those fields.
 
 With the advent of cheap high-speed internet users are now able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. Especially if their data leaves the users country where data protection laws may be different.
@@ -29,6 +76,12 @@ To simplify the process, the system will be able to negotiate contracts of varyi
 The challenges of such a system include a way of only copying parts of a file during updates to reduce bandwidth usage. An effective way of managing where file chunks are stored. A way to encrypt the files on the remote host and a way to authenticate that the host still holds the file.
 
 Part of the required research also includes exploring the more recent technology of intelligent agents, in which we are most interested in trust metrics. Intelligent agents will allow the software to make storage decisions based on the trust and reputation of other nodes in the network.
+
+\section{Need for Distributed Backup}
+
+\section{Challenges}
+
+\chapter{Literature Review}
 
 \section{History of Problem}
 
@@ -104,13 +157,13 @@ When bootstrapping is complete new Peers can increase their knowledge of the net
 
 There are two common extension protocols called AZMP and LTEP, which send at most one message a minute when a client leaves or exits the swarm. To reduce congestion at most 50 peers can be added or removed in one PEX message. \citep{vuze2010vuze}
 
-\subsubsection{Shard Discovery}
+\subsection{Shard Discovery}
 
 Bittorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once the metadata is stored on the host, if a host host wants to download a file, it can take the metadata on the known host to find the IP of hosts with the file.
 
 Hosts in Membrane will store a metadata file with all of the information required for the specific account to run, including friends, encryption keys as well as local mappings for which host owns which shard and which IP belongs to each host. As a result a DHT will only be required if this initial metadata is lost and needs to be recovered. The proposed version of Membrane will make use of this metadata, but recovery can be added in further iterations of the project.
 
-\subsubsection{Dynamic IP Address}
+\subsection{Dynamic IP Address}
 
 Dynamic IP addresses have proven to be problematic in distributed computing, as ISP typically charge more for users to have a static, unchanging IP. Bittorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a file. This approach is robust, however, it is a complex solution to IP address resolution.
 
@@ -134,11 +187,11 @@ There are three main areas that are important for negotiation. Negotiation proto
 
 A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \citep{rahwan2005interest} \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
 
-\subsubsection{Negotiation Logic}
+\subsection{Negotiation Logic}
 
 The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and multiagent systems. In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world. Within a MAS a non-monotonic logic can be more difficult to implement as theorems need to be constantly asserted, and as a result they often result to first-order (or monotonic) logic. Within Membrane we need to implement a monotonic logic to assert trust in our contracts and negotiations. In the context of a negotiated contract, throughout it's duration, we cannot effort to re-evaluate our trust of the agent.
 
-\subsubsection{Negotiation tactics}
+\subsection{Negotiation Tactics}
 
 In order to exchange storage space we must find the most suitable node in the network. There are multiple negotiation tactics between agents for collaboration and coming to an agreement. \citep{beer1999negotiation} We shall explore the advantages and disadvantages of game-theoretic approaches \citep*{rosenschein1994rules, kraus2001strategic, sandholm2002algorithm}, heuristic-based approaches \citep*{faratin2000automated, fatima2002multi} and argumentation-based approaches \citep*{kraus1998reaching, jennings1998argumentation} as well as exploring practical implementations negotiation. Ideally a negotiation mechanism is computationally cheap, produces good outcomes, distributed, fair to all participants, compatible with fixed strategies and is able to function without complete information. \citep{rahwan2005interest}
 
@@ -148,7 +201,7 @@ A \emph{heuristic} approach produces 'good enough' negotiations. Instead of expl
 
 A \emph{argumentation} approach is beneficial when a flexible negotiation is required and the agents have limited knowledge of the world. It's commonly used in the human world by advertisers to convince humans to try products. \citep{slade2002reasons}. Instead of simply rejecting an offer a agent can say why or offer a counter-proposal, which can result in more successful negotiations. Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane.
 
-\subsubsection{Practical Negotiation}
+\subsection{Practical Negotiation}
 
 We now look at practical real-world negotiation. Real world approaches take into consideration the practical implications of reasoning systems and prove that concepts work. Within cloud computing an agent is often required to request a service. The use of these resources is based on service-level agreements (SLAs) which are designed to provide users with a service when requested. \citep{paletta2009mas} One critical issue in SLAs determining the  Quality of Service (QoS) constraints of the offered service.
 
@@ -170,7 +223,7 @@ When evaluated the mechanism was able to deal with 93\% of situations and negoti
 
 With Membrane we take this model and make it more practical by introducing reputation to allow third party ratings to be shared.
 
-\subsubsection{Service Level Agreements}
+\subsection{Service Level Agreements}
 
 In order to create a negotiation system we need to explore what makes up an successful software SLA. \cite{keller2002defining} defines the WSLA framework which sets out to create a SLA based negotiation frame work.
 They describes 3 key areas that must be present in an SLA.
@@ -191,7 +244,7 @@ Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA l
 \end{enumerate}
 These are the backbone of every real SLA and will be explored in more detail while designing the negotiation system for Membrane.
 
-\subsection{Trust and Reputation}
+\section{Trust and Reputation}
 
 Agents in a distributed system need to be able to protect themselves from 'bad' agents. \cite{pinyol2013computational} describes three main approaches to control the acts of agents. The \emph{Security Approach} which guarantees the authenticity and integrity of interactions. The \emph{Institutional approach} which relies on a central authority to enforce good behaviour and finally the \emph{Social approach} which allows agents themselves to punish other agent for 'bad' behaviour. This final approach is where trust and reputation is used.
 
@@ -199,7 +252,7 @@ Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009int
 
 The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we shall use it to see what a good trust system includes. It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider simulating a situation in which complete data loss was experienced.
 
-\subsubsection{Trust and Reputation Attacks}
+\subsection{Trust and Reputation Attacks}
 
 Attempts to misrepresent reliability and manipulate reputation are common in traditional communities and have been exploited by con artists for centuries. In a distributed system agents must be able to protect themselves against common trust attacks. \cite{josang2009challenges} describes 9 potential attacks on reputation systems.
 \begin{itemize}
@@ -336,6 +389,66 @@ Then we explored different challenges in creating the system, namely Peer Admiss
 
 Using the lessons from exploring other systems we can implement our own distributed file storage system and improve on techniques that previous systems have used.
 
-\bibliography{literature-review.bib}
+\chapter{Analysis}
+
+\section{Requirements}
+
+\subsection{Functional Requirements}
+
+\subsection{Non-Functional Requirements}
+
+\section{Technologies}
+
+\subsection{Libraries}
+
+\subsection{Frameworks}
+
+\subsection{Tooling}
+
+\section{Architecture}
+
+\chapter{System Components}
+
+\section{File System Monitoring}
+
+\section{Local Storage System}
+
+\section{Swarm Design}
+
+\section{Peer Appraisal}
+
+\chapter{User Interfaces}
+
+\section{GUI}
+
+\section{CLI}
+
+\chapter{Results \& Evaluation}
+
+\section{Unit Testing}
+
+\section{Empirical Testing}
+
+\section{Summary}
+
+\chapter{Conclusion}
+
+\section{Limitations}
+
+\subsection{Limitations of the Study}
+
+\subsection{Limitations of the System}
+
+\section{Further Work}
+
+\subsection{Expansion 1}
+
+\subsection{Expansion 2}
+
+\subsection{Expansion 3}
+
+\section{Summary}
+
+\bibliography{dissertation.bib}
 
 \end{document}

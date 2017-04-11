@@ -370,11 +370,11 @@ Membrane shards files and stores copies on multiple nodes for redundancy. This i
 
 HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. It stores file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. This is a similar approach to GFS \citep{mckusick2010gfs}. Membrane takes this approach by storing file metadata on the client. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph} This allows for larger, more distributed system, this could be used within Membrane if meta-data proves too large to store on the client.
 
-Files and directories are represented my inodes, these record attributes such as permissions and location. Within Membrane this will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisims described previously.
+Files and directories are represented my inodes, these record attributes such as permissions and location. Within Membrane this will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisms described previously.
 
-The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commmit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
+The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
 
-In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifiying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj.
+In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj.
 
 In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
 
@@ -420,7 +420,7 @@ Within Membrane we can build challenge issues into the SLA agreed upon by both u
 \section{Conclusion}
 In this literature review we discussed the key important areas of creating a distributed storage system.
 
-We first explored the history of the problem by looking at solutions like Git. We saw how to exchange file and swarm information in distributed systems including bittorrent and studied file storage systems such as Resilio and Storj that achieved distributed file storage.
+We first explored the history of the problem by looking at solutions like Git. We saw how to exchange file and swarm information in distributed systems including BitTorrent and studied file storage systems such as Resilio and Storj that achieved distributed file storage.
 
 Then we moved onto different challenges in creating the system, namely Peer Admission, Data Allocation, Communication and the challenges of connecting to other peers. We looked at the lessons learnt from distributed files systems and the challenges of authentication and proving ownership of a file.
 
@@ -428,7 +428,28 @@ Drawing on techniques explored in the literature review we will proceed to desig
 
 \chapter{Analysis}
 
+As Membrane is primarily an application built for home users the first step of analysis is querying potential users about what features they would like to see in an application like Membrane. We followed this up by looking at what features existing solutions provide to create a Minimum Feature Set which we formally describe as software requirements. From this feature set we are able to create a development plan and explore helpful technologies that we will be able to reuse during product development. Finally we describe a target architecture for Membrane.
+
 \section{User Survey}
+
+To be able to target potential users of Membrane it is important to decide what the target demographic for Membrane is. We focus on early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane.
+
+We used an online survey as these are typically answered by more technical users, have a short response time and have minimal financial resource allocation \citep{ilieva2002online}. Twelve participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
+
+We gathered all of the requested features and placed the most popular into five categories that we will look to implement in the first version of Membrane:
+
+\begin{itemize}
+ \item Data must be secure.
+ \item File Versioning
+ \item Maintenance Free
+ \item Fast Recovery
+ \item Must be Lightweight
+\end{itemize}
+
+Survey participants were particularly concerned about the security of storing their files on other user's computer, so special care will need to be taken while showcasing Membrane to address this.
+
+
+\section{Common Features}
 
 \section{Requirements}
 

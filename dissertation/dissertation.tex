@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\usepackage{todonotes}
 
 \newcommand{\chapfnt}{\fontsize{16}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -428,26 +429,35 @@ Drawing on techniques explored in the literature review we will proceed to desig
 
 \chapter{Analysis}
 
-As Membrane is primarily an application built for home users the first step of analysis is querying potential users about what features they would like to see in an application like Membrane. We followed this up by looking at what features existing solutions provide to create a Minimum Feature Set which we formally describe as software requirements. From this feature set we are able to create a development plan and explore helpful technologies that we will be able to reuse during product development. Finally we describe a target architecture for Membrane.
+As Membrane is primarily an application built for home users the first step of analysis is querying potential users about what features they would like to see. This is proceeded by looking at what features existing solutions provide to create a Minimum Feature Set which, with the user requests taken into consideration, we will formally describe as software requirements. From this feature set we are able to create a development plan and explore helpful technologies that we will be able to reuse during product development. Finally we describe a target architecture for Membrane.
 
 \section{User Survey}
 
-To be able to target potential users of Membrane it is important to decide what the target demographic for Membrane is. We focus on early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane.
+In order to gather relevant user opinions we first decide at who the target user for Membrane is. Although the final product is for as wide a range of users as possible, initial versions may be a bit more difficult to use, as bugs are ironed out and features are added. We focus on those early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane.
 
-We used an online survey as these are typically answered by more technical users, have a short response time and have minimal financial resource allocation \citep{ilieva2002online}. Twelve participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
+To narrow the search, we will target Linux users, who will be more accustomed to manually installing software and debugging potential issues. To gather feedback we used an online survey. These are typically answered by more technical users, have a short response time and require minimal financial resource allocation \citep{ilieva2002online}. Eight participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
 
 We gathered all of the requested features and placed the most popular into five categories that we will look to implement in the first version of Membrane:
 
 \begin{itemize}
- \item Data must be secure.
+ \item Data Security
  \item File Versioning
  \item Maintenance Free
  \item Fast Recovery
- \item Must be Lightweight
+ \item Lightweight
 \end{itemize}
 
-Survey participants were particularly concerned about the security of storing their files on other user's computer, so special care will need to be taken while showcasing Membrane to address this.
+The most important request by survey participants is \emph{data security}. The concerns focused on how Membrane will ensure files stored on another user's computer are guaranteed to be inaccessible to the host user. Special care will need to be taken while showcasing Membrane to address this.
 
+\emph{File versioning} is seen as a key feature. Users want to be able to recover files that have been deleted or changed accidentally. This is expected many of the survey participants are accustomed to file versioning software such as Git. This poses a storage space challenge, as files that change frequently will take up valuable space.
+
+Users also requested that after the first set-up Membrane would act transparently, with \emph{no need for re-configuration} unless a change in functionality is required. During design we will aim to provide flexible configuration options, that will be able to gracefully recover from failure.
+
+An unexpected feature requested is \emph{fast recovery}. Users expressed concern about the amount of time that will be required to access files stored on the swarm. This is an interesting challenge as it is difficult to guarantee that users storing data will be online at any given point in time.
+
+The final key request by potential users is that Membrane should not interfere with normal computer usage by the user, particularly processor time, memory and network utilisation. The request is particularly common among gamers who do not want to experience any slow-down to their games during backup.
+
+We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix \todo{Insert Appendix entry}. Given enough time we will explore more of these once the minimum viable product is created.
 
 \section{Common Features}
 

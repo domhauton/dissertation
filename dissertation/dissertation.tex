@@ -6,6 +6,7 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{todonotes}
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
 
 \newcommand{\chapfnt}{\fontsize{16}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -460,6 +461,35 @@ The final key request by potential users is that Membrane should not interfere w
 We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix \todo{Insert Appendix entry}. Given enough time we will explore more of these once the minimum viable product is created.
 
 \section{Common Features}
+
+Following the user survey we will look at popular features of existing solutions. In order to discover what features users are looking for we will explore features used to differentiate backup software in comparisons. The \cite{arch2017syncandbackup} wiki has a comprehensive list of available backup options and uses a feature table to allow readers to quickly determine which solution is best suited to them.
+
+We will try to explore all of these features, and incorporate feasible features into the Minimum Viable Product for Membrane.
+
+\emph{Compressed Storage} for files. The type and style of compression used. Within software this is not a difficult feature to add as there are many compression libraries. Implementing compression will reduce the amount of bandwidth Membrane uses during operation.
+
+\emph{Storage Encryption} is extremely important in Membrane as discovered during the user survey. We will need to look into potential encryption options in-depth while designing Membrane and ensure that there is no chance of a data leak.
+
+\emph{Delta Transfer} only transfers the modified part of the file if there is a change. This is important for users as it limits bandwidth and storage requirements. Within Membrane we will need to implement this as multiple copies of any stored data need to be transfered to peers.
+
+\emph{Encrypted Transfer} checks if the data is transferred over a secure connection. This is less important for Membrane as files are encrypted for storage, however, an encrypted transfer would prevent a third party being able to see the interaction between two Membrane peers.
+
+\emph{File system meta-data} can be stored with the data so it is restored along with the file. This could be implemented in Membrane, however, as this wasn't requested by users and does not help demonstrate the advantages of peer-to-peer storage it will not be added to the Minimum Viable Product.
+
+\emph{Easy access} to files is an important feature in backup systems, however, as the MVP of Membrane seeks to show peer-to-peer backup instead of a perfect backup system, we will add this feature to future work.
+
+\emph{Resumable Backup} is very important in Membrane. If a connection to a peer is lost Membrane needs to be able to resume the backup with other peers.
+
+Another vital feature in Membrane is the ability to \emph{handles renames}. If a file is moved or renamed, the software needs to be able to detect this to reduce data duplication.
+
+Users searching for backup solutions were also very interested in the software's \emph{interface}. This needs to work well and be suited to the user. Within Membrane we will be looking to implement a fully featured \emph{command line interface} (CLI) for configuration, as well as a \emph{graphical user interface}  (GUI) for backup monitoring. This is common in most of the featured backup solutions, so to remain competitive these need to be implemented.
+
+The comparisons also covered platforms supported by the backup solutions. An interesting observation is that although multi-platform support has clear benefits, many of the backup solutions covered only supported one or two of the available platforms. This will be taken into consideration while creating the formal specification for Membrane.
+
+Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is.
+
+
+We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them.
 
 \section{Requirements}
 

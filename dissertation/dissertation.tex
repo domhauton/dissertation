@@ -488,14 +488,35 @@ The comparisons also covered platforms supported by the backup solutions. An int
 
 Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is.
 
-
 We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them.
 
 \section{Requirements}
 
+In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane. We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present. \todo{cite} followed by Non-Functional Requirements which help support functional requirements{cite}.
+
+There is some debate about the usefulness of software requirements \todo{cite}, so the requirements below will be kept brief, however, they will be able to help guide the software development goals and produce targets for development stages.
+
 \subsection{Functional Requirements}
 
+Functional requirements describe components found within software and their function; inputs, the behaviour, and outputs. These requirements consist of name and number, a brief summary, and a rationale. It's important to ensure the requirements are clear to prevent misinterpretation.
+
+\subsubsection{1. File System Monitoring}
+The system must be able to be given the name of one or more folders, and monitor all the files for changes in those folders. Another module must be able to subscribe to a stream of these changes for further processing of the modified files. The system should make use of preexisting file system features for monitoring if available.
+
+This needs to be done to allow the user to select a folder for backup \todo{fixme}
+
+\subsubsection{2. Sharding Module}
+The module must be able to receive the path of a file and determine whether the file has changed since the last read. If a change, addition or deletion is confirmed this update must be sent to any subscribers for further processing. Individual file chunks for the modified file (if any exist) must be sent to any subscribers to be persisted. Updates for preexisting or suppressed files must be suppressed. On launch the system must be able to receive a list of files already stored by the system for suppression.
+
+We do this because the second person said so. \todo{fixme}
+
 \subsection{Non-Functional Requirements}
+
+Non-functional requirements, also aptly named quality requirements help support the functional requirements described above. These can be grouped into two broad categories:
+\begin{itemize}
+ \item Execution Qualities - Those observable at run time inclding security and usability.
+ \item Evolution Qualities - Those found in the structure of the system including extensibility, scalability, maintainability and testing.
+\end{itemize}
 
 \section{Technologies}
 

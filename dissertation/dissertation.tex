@@ -8,7 +8,6 @@
 \usepackage{todonotes}
 \PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
 \usepackage{enumitem}
-\setlist{nolistsep}
 
 \newcommand{\chapfnt}{\fontsize{16}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -637,6 +636,7 @@ The project should be built with extensive tests asserting the behaviour. Tests 
 This will help to gain the trust of potential users.
 
 \section{Use Cases}
+\setlist{nolistsep}
 
 A use case defines a set of goal-oriented interactions between a user and the system. Actors are any external parties that interact with the system \citep{malan2001functional}. \cite{cockburn1997structuring} tells us use cases can have multiple forms and purposes.
 
@@ -757,20 +757,279 @@ Store a copy of the modified file in shard storage
 
 \subsection{Remove Watch Folder}
 
+The expected behaviour of Membrane during a normal backup operation when watch folder is removed. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Stop watching the provided folder
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User removes folder for backup with files.
+ \item Removal is persisted to the configuration file.
+ \item Any queued modified files are removed.
+ \item Stop scanning for changes in folder.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Submitted folder is not watched:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item Cannot persist watch folder due to IO error
+	\begin{enumerate}
+	  \item Inform the user
+	  \item Do not continue
+	\end{enumerate}
+  \item Files from folder persisted
+	\begin{enumerate}
+	  \item Do not remove file history.
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Folder is file:
+	\begin{enumerate}
+	  \item treat as folder
+	\end{enumerate}
+\end{enumerate}
+
 \subsection{Recover File}
+
+The expected behaviour of Membrane when user tries to recover a file. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Recover a file into a new location
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User asks to recover a file to a given location.
+ \item File log checks for most recent version of file.
+ \item File shards read and reassembled.
+ \item File written to target destination.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item File never saved to Membrane:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item File deletion most recently recorded in Membrane:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item Shards cannot be retrieved or not present
+	\begin{enumerate}
+	  \item Inform the user
+	\end{enumerate}
+  \item Target destination already has file in it
+	\begin{enumerate}
+	  \item Do not overwrite
+	  \item Report error to user
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Given file is a folder:
+	\begin{enumerate}
+	  \item Report error. Only accept files.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Recover Old File Version}
+
+The expected behaviour of Membrane when user tries to recover a previous version of a file. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Recover a previous version of a file into a new location
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User requests for all available versions of file.
+ \item Show users all known 
+ \item User asks to recover the version of the file at a specific point in time to a given location.
+ \item File log checks for most recent version of file.
+ \item File shards read and reassembled.
+ \item File written to target destination.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item File never saved to Membrane:
+	\begin{enumerate}
+	  \item Inform user no versions exist.
+	\end{enumerate}
+  \item File deleted in period of time user requested:
+	\begin{enumerate}
+	  \item Inform the user.
+	\end{enumerate}
+  \item Shards cannot be retrieved or not present
+	\begin{enumerate}
+	  \item Inform the user
+	\end{enumerate}
+  \item Target destination already has file in it
+	\begin{enumerate}
+	  \item Do not overwrite
+	  \item Report error to user
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Given file is a folder:
+	\begin{enumerate}
+	  \item Report error. Only accept files.
+	\end{enumerate}
+\end{enumerate}
 
 \subsection{Peer Connects}
 
+The expected behaviour of Membrane when a peer connects and wants to exchange storage. The peer should be given one free block to allow them to start storing data.
+
+\subsubsection{Goal}
+
+Establish a new storage contract with peer if required.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Peer connects.
+ \item Peer identity is verified.
+ \item If contracts are required.
+ \item Peer certificate is persisted
+ \item Peer is given to the contract manager.
+ \item Contract Manager gives the peer one new shard of storage.
+ \item Contract Manager sends a Contract Update to the Peer.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer already contracted:
+	\begin{enumerate}
+	  \item Proceed whether or not contract is required.
+	\end{enumerate}
+  \item Peer identity verification fails:
+	\begin{enumerate}
+	  \item Drop connection.
+	\end{enumerate}
+  \item No contracts required
+	\begin{enumerate}
+	  \item Keep connected
+	  \item Do not contract
+	  \item Do not persist certificate
+	\end{enumerate}
+  \item Disconnects before contract update can be sent
+	\begin{enumerate}
+	  \item Keep contracted
+	  \item If peer does not provide you with one contract inequality before shutdown remove them.
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Peer is a tracker:
+	\begin{enumerate}
+	  \item Do not contract them.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Peer Sends Contract Update}
+
+The expected behaviour of Membrane when a peer sends a contract update. The peer should be provided with proof-of-ownership instructions for any owned blocks they have not authenticated this hour.
+
+\subsubsection{Goal}
+
+Provide peer with proof-of-ownership instructions.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Verified Peer sends Contract Update
+ \item Remove any blocks we thought the peer had but they have lost. Note these down in the appraisal.
+ \item Request any unexpected blocks (We may have lost information about them on our side)
+ \item Request deletion of any expired blocks which we cannot assert ownership of.
+ \item Request salted hash for any blocks they have not confirmed yet this hour. Include salt.
+ \item Record that peer has been in contact this hour.
+ \item Send requests back to peer.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer not contracted:
+	\begin{enumerate}
+	  \item All blocks will be unexpected.
+	  \item Request all of the blocks. They might have been lost during a data loss incident.
+	  \item Blocks will be deleted on the next request.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Peer Sends Proof of Ownership}
+
+The expected behaviour of Membrane when a peer sends a proof of ownership response. Any successful responses should be noted down for the peer.
+
+\subsubsection{Goal}
+
+Check ownership details for the peer and record them in appraisal if successful.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Verified Peer sends Proof of Ownership Response
+ \item Process any full blocks returned, adding missing shards.
+ \item Check salted hash was correct.
+ \item Add correctly confirmed or returned blocks to peer appraisal.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer not contracted:
+	\begin{enumerate}
+	  \item Ignore any salted hashes
+	\end{enumerate}
+\end{enumerate}
+
 \subsection{Distribute Shard}
 
+Placeholder
 
+\subsubsection{Goal}
 
+Placeholder
 
+\subsubsection{Steps}
 
+\begin{enumerate}
+ \item Peer connects.
+\end{enumerate}
 
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Placeholder:
+	\begin{enumerate}
+	  \item Placeholder.
+	\end{enumerate}
+\end{enumerate}
 
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Placeholder:
+	\begin{enumerate}
+	  \item Placeholder.
+	\end{enumerate}
+\end{enumerate}
 
-
+\setlist{listsep}
 \section{Technologies}
 
 \subsection{Libraries}

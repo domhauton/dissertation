@@ -7,6 +7,8 @@
 \usepackage{titlesec}
 \usepackage{todonotes}
 \PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+\usepackage{enumitem}
+\setlist{nolistsep}
 
 \newcommand{\chapfnt}{\fontsize{16}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -24,6 +26,7 @@
 \titlespacing*{\chapter} {0pt}{50pt}{40pt}
 \titlespacing*{\section} {0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
 \titlespacing*{\subsection} {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+\titlespacing*{\subsubsection} {0pt}{1.5ex plus 1ex minus .2ex}{1.0ex plus .2ex}
 
 \pagestyle{fancy}
 
@@ -492,7 +495,9 @@ We can see there is an overlap between the features requested by users during th
 
 \section{Requirements}
 
-In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane. We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present. \todo{cite} followed by Non-Functional Requirements which help support functional requirements{cite}.
+In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane.
+
+We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present \todo{cite} followed by Non-Functional Requirements which help support functional requirements{cite}.
 
 There is some debate about the usefulness of software requirements \todo{cite}, so the requirements below will be kept brief, however, they will be able to help guide the software development goals and produce targets for development stages.
 
@@ -510,13 +515,261 @@ The module must be able to receive the path of a file and determine whether the 
 
 We do this because the second person said so. \todo{fixme}
 
+\subsubsection{3. File History}
+Must be able to keep a log of file system modifications. It must be able to remove entries from the log to match storage requirements by analysing the storage requirements for storing the entire history and selectively removing elements of the history to meet requirements. The history must be immediately persisted, so an application crash does not affect the operation.
+
+This needs to be done to match the request in the user survey to store file history. In addition this will allow for delta transfers as files can be compared between versions.
+
+\subsubsection{3. Shard Storage}
+Must be able to persist and fetch requested shards to a given folder. It must perform consistency checks on retrieval and support hard limits on total storage size. Finally it must be able to return a complete listing of all shards inside the storage unit.
+
+This is a key feature of the backup system as it persists shards, which can then be assembled into files.
+
+\subsubsection{4. NAT Traversal}
+Must be able to establish a secure TCP connection when two peers are behind a NAT Gateway. The suggested mechanism is to use UPnP Port Forwarding offered and enabled on most routers. In future iterations consider using TCP Hole Punching. This must be able to temporarily forward and maintain a port on the target router. If a port is taken another open port should be used. The system must also be able to return the external IP address.
+
+This is required to allow two users who wish to use each others external storage, who are both behind a NAT Gateway wish to connect. It is a common feature of distributed storage such as BitTorrent
+
+\subsubsection{5. Authentication}
+Must be able to generate, persist and reload a public private key pair and X509 self-signed certificate used for establishing secure SSL connections. These details must be used throughout the application lifetime and will act as a unique identifier for the user.
+
+This is required to allow users to create accounts on the distributed network.
+
+\subsubsection{6. Peer Connection}
+Must be able to establish a secure connection to a given an IP and port. When this connection is established the user must be authenticated using their provided SSL certificate public key. This must be  converted into a unique user identifier. All messages from the peer must contain this unique identifier or they should be dropped.
+
+This module forms the core of the connectivity in Membrane allowing users to dial each other.
+
+\subsubsection{7. Peer Exchange (PEX)}
+Must be able to send and receive connection information about yourself and other peers. Peer information about yourself needs to be signed with a time stamp for future verification. Incoming verification about specific peers needs to be verified. Needs to support peer discovery, finding peers that have never been contacted before.
+
+This is done to allow peers to find each other if they have changed external IP address or port and to allow new peer discovery.
+
+\subsubsection{8. Connection Management}
+Given a target user count, maximum connection count and whether new users should be found, should dial known contracted peers on a regular basis, request PEX information for connected peers and send up-to-date PEX information to connected peers. Should connect to trackers if peer target has not been reached in time.
+
+This module is responsible for providing live connections to peers that can be contracted and have data blocks sent to them.
+
+\subsubsection{9. Shard Distributing}
+Given a list of local shards and file history, needs to be able to package appropriate shards into blocks and send them to peers, depending on which peer is most suitable for storing the shards. Needs to send contract updates on a regular basis and respond to and issue proof of ownership requests for blocks to and from peers. Needs to be able to remove peers that are not worthwhile.
+
+This is a core module connecting the local backup to the network module and required for distributed backup.
+
+\subsubsection{9.1 Distribution Storage}
+Must be able to store information about generated blocks, which blocks are given to which peers and what blocks have been provided by what peer. This includes any proof-of-ownership verification information that may be required in the future, shard contents and block unique identifier. The module must be able to persist this information and load it from disk.
+
+This is a core module required for (9.0) to verify module information and compute which shards should be given to which connected peer.
+
+\subsubsection{9.2 Block Encryption}
+Any blocks of data sent to peers must be encrypted using TwoFish encryption using the private modulo used for network SSL connection.
+
+This is required for data security requested by potential users during the Analysis survey.
+
+\subsubsection{9.3 Peer Appraisal}
+
+Peer interactions must be logged at a resolution of one hour for rating peers. Given the number of expected shards, all of the shards that have been proven to be held by the peer and any lost shards this must produce a single number between 0.0 and 1.0 rating the peer to allow for comparison.
+
+This is required for selecting which peer is most appropriate for upload.
+
+\subsubsection{10. Proof of Ownership}
+
+A system that can determine whether a peer is holding a block is required. The suggested method is a mixture of salted hashing and asking for the entire block to be returned. 
+
+This needs to be done to determine whether the given peer is holding a block without having to request all of the data every time.
+
+\subsubsection{11. Tracker}
+
+Membrane needs to be able to run in tracker mode, in which the backup backup is disabled but peer exchange is active for other hosts to share PEX information through the tracker.
+
+This is required for new peers, or peers that have expired PEX information.
+
+\subsubsection{12. Command Line Interface}
+
+A fully featured CLI needs to be present. It must allow users to monitor network activity and their backups, as well as adding other folders to backup and recovering files.
+
+This feature is required to allow users to interact with Membrane.
+
+\subsubsection{13. Graphical User Interface}
+
+A GUI needs to be present to give users the ability to monitor membrane activity.
+
+This feature was common in existing solutions and is required for Membrane to be competitive.
+
 \subsection{Non-Functional Requirements}
 
 Non-functional requirements, also aptly named quality requirements help support the functional requirements described above. These can be grouped into two broad categories:
 \begin{itemize}
- \item Execution Qualities - Those observable at run time inclding security and usability.
- \item Evolution Qualities - Those found in the structure of the system including extensibility, scalability, maintainability and testing.
+ \item Execution Qualities - Those observable at run time including security and usability.
+ \item Evolution Qualities - Those found in the structure of the system including extensiblility, scalability, maintainability and testing.
 \end{itemize}
+
+\subsubsection{13. Maintenance Free}
+The software must be able to run without external monitoring or reconfiguration. The user cannot be asked to solve any non-configuration related issues. For example, if a peer loses all of our blocks, the software should be able to recover without any user intervention.
+
+This was requested by users during the analysis survey.
+
+\subsubsection{14. Fast Recovery}
+The software must be able to recover files quickly after data loss.
+
+This was requested by users during the analysis survey.
+
+\subsubsection{15. Resource Usage}
+Membrane's resource usage must be as low as possible to minimise impact on other software running on the system.
+
+This was requested by users during the analysis survey.
+
+\subsubsection{16. Open Source}
+
+The implementation must be fully open source. No closed source libraries can be used during development.
+
+This feature will help with adoption as Membrane will be marked as open source in backup utility comparison charts.
+
+\subsubsection{17. Extensiblility/Transparency}
+
+The project should be built to allow for easy contribution from other open source programmers.
+
+This will help with community engagement in the product. More technical users will be able to add their own features, which they will be able to push back into the main code base.
+
+\subsubsection{18. Testability}
+
+The project should be built with extensive tests asserting the behaviour. Tests should be automated to assist with requirement 16. It will allow easy verification of the behaviour of the modification.
+
+This will help to gain the trust of potential users.
+
+\section{Use Cases}
+
+A use case defines a set of goal-oriented interactions between a user and the system. Actors are any external parties that interact with the system \citep{malan2001functional}. \cite{cockburn1997structuring} tells us use cases can have multiple forms and purposes.
+
+We opt to use the scenarios below to help strengthen the requirements, with the purpose of helping developers check if the software is able to perform the use cases.
+
+As with the requirements, we keep the use-case brief, as we expect they may change during development as better approaches to problems are found.
+
+\subsection{Add Watch Folder}
+The expected behaviour of Membrane during a normal backup operation when a new folder is added. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Store redundant copies of files on the system
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User adds folder for backup with files.
+ \item Folder is persisted to the configuration file.
+ \item New files in folder are detected.
+ \item Files are sharded into equal chunks and sent to shard storage.
+ \item The change is logged and saved in the file's history.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Submitted folder does not exist:
+	\begin{enumerate}
+	  \item Accept entry and wait until it does.
+	\end{enumerate}
+  \item Cannot persist watch folder due to IO error
+	\begin{enumerate}
+	  \item Inform the user
+	  \item Do not continue
+	\end{enumerate}
+  \item Shard storage full:
+	\begin{enumerate}
+	  \item Do not log the change in file history.
+	  \item Shorten the history until soft limit is reached.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item Cannot log change in file history:
+	\begin{enumerate}
+	  \item Leave new shards.
+	  \item Retry submission later.
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Folder is file:
+	\begin{enumerate}
+	  \item continue and wait until file becomes a folder
+	\end{enumerate}
+  \item File present in multiple watch folders:
+	\begin{enumerate}
+	  \item De-duplicate file by sharding
+	  \item log changes from both folders if path different
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Watched File Modified}
+The expected behaviour of Membrane when a watched file is modified. The computer users are the primary actor.
+
+\subsubsection{Goal}
+
+Store a copy of the modified file in shard storage
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User modifies files in watch folder.
+ \item During next scan file change is observed.
+ \item Assert if file modification time has changed.
+ \item File is sharded.
+ \item File shards are hashed to check for similarities.
+ \item Assert at least one shard has changed.
+ \item Chunks and sent to shard storage.
+ \item The change is logged and saved in the file's history.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Modification time has not changed:
+	\begin{enumerate}
+	  \item Ignore change
+	\end{enumerate}
+  \item None of the file shards have changed:
+	\begin{enumerate}
+	  \item Ignore change
+	\end{enumerate}
+  \item Shard storage full:
+	\begin{enumerate}
+	  \item Do not log the change in file history.
+	  \item Shorten the history until soft limit is reached.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item Cannot log change in file history:
+	\begin{enumerate}
+	  \item Leave new shards.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item File cannot be read:
+	\begin{enumerate}
+	  \item Retry later.
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item File renamed:
+	\begin{enumerate}
+	  \item De-duplicate file by sharding
+	  \item Log as different files.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Remove Watch Folder}
+
+\subsection{Recover File}
+
+\subsection{Peer Connects}
+
+\subsection{Distribute Shard}
+
+
+
+
+
+
+
+
 
 \section{Technologies}
 

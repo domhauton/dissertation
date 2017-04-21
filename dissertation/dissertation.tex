@@ -8,6 +8,9 @@
 \usepackage{todonotes}
 \PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
 \usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\graphicspath{ {img/} }
 
 \newcommand{\chapfnt}{\fontsize{16}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -999,38 +1002,155 @@ Check ownership details for the peer and record them in appraisal if successful.
 	\end{enumerate}
 \end{enumerate}
 
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Full block returned as response:
+	\begin{enumerate}
+	  \item Decrypt the block
+	  \item Decompress any compress shards in the block
+	  \item Place shards in local shard store
+	  \item Place any file history in the block into the file history store.
+	\end{enumerate}
+\end{enumerate}
+
 \subsection{Distribute Shard}
 
-Placeholder
+The expected behaviour when a shard is stored in local backup. The shard should be packaged with other similar shards into a block, and sent to a peer offering storage space.
 
 \subsubsection{Goal}
 
-Placeholder
+Deploy shard to peers.
 
 \subsubsection{Steps}
 
 \begin{enumerate}
- \item Peer connects.
+ \item Shard is placed into local shard storage.
+ \item Distributor performs periodic local shard storage scan and finds shard.
+ \item Connected peers are ranked from best to worst.
+ \item Any peers with a rating $\textless1.5 \sigma$ are ignored and the contracts are cancelled.
+ \item Shards not yet sent to each peer are collected.
+ \item Shards are compressed and placed into a block until the block reaches a predetermined size.
+ \item The history of any files associated with the shards is placed into the block.
+ \item The block is encrypted.
+ \item The block is sent to the peer.
+ \item The peer sends a contract update on receipt.
 \end{enumerate}
 
 \subsubsection{Extensions}
 \begin{enumerate}
-  \item Placeholder:
+  \item No contracted peers connected:
 	\begin{enumerate}
-	  \item Placeholder.
+	  \item Wait for new contract or contracted peer to connect.
+	  \item Retry.
+	\end{enumerate}
+  \item Shard is missing from local shard storage during read:
+	\begin{enumerate}
+	  \item Log the error and skip the shard during this pass.
+	  \item Retry.
+	\end{enumerate}
+  \item No shards fit into the block:
+	\begin{enumerate}
+	  \item Log the error and move onto the next peer.
+	  \item Continue as normal.
+	\end{enumerate}
+  \item Shard compression is unsuccessful:
+	\begin{enumerate}
+	  \item Place the shard into the block with the compression flag disabled.
+	  \item Continue as normal.
 	\end{enumerate}
 \end{enumerate}
 
 \subsubsection{Variations}
 \begin{enumerate}
-  \item Placeholder:
+  \item Block does not arrive at peer:
 	\begin{enumerate}
-	  \item Placeholder.
+	  \item Mark loss of block on peer appraisal.
+	  \item Mark incomplete hourly report on peer appraisal.
+	  \item Remove block from local contract.
 	\end{enumerate}
 \end{enumerate}
 
 \setlist{listsep}
+\newpage
+
+
+\section{Architecture}
+
+Before deciding on the technology stack used in Membrane we must consider the application architecture.
+
+Although Membrane is a peer-to-peer network application, which is distinctive from a client server application, because peers act as a \emph{Servent}\footnote{A term coined by \cite{schollmeier2001definition} to describe a peer acting as both a Client and Server},  we can still make use of recent developments in client server architectures, in particular the arrival of widespread adoption of Representational State Transfer (REST)ful Web services \citep{rodriguez2008restful}, and the tooling that the popularity has generated.
+
+\subsection{Structure}
+
+The first major decision in the application structure is whether the GUI and CLI will be built directly into the application or if Membrane will expose an API for interaction. To prevent coupling and enable software reuse within the application \citep{gamma1995design} we will use a \ref{fig:model-view-controller} or the more general n-tier architecture components of the application.
+
+There are clear advantages to both a built in user interface and the server client architecture seen in figure \ref{fig:client-server} which we shall explore before selecting technologies to use.
+
+\begin{figure}[b!]
+ \includegraphics[width=0.5\textwidth]{model-view-controller}
+ \caption{Model View Controller}
+ \label{fig:model-view-controller}
+\end{figure}
+
+\subsubsection{Native Interface vs. Client Interface}
+
+A native application interface is popular among server software and frequently used for desktop applications such as Microsoft Word and Microsoft PowerPoint, however, there has recently been a shift back to using a client, running back-end services in the cloud, exposing an API which can then be interacted with client side applications.
+
+A separate client interface has multiple advantages and with modern networking speeds a user is typically unable to distinguish between running the interface on the server or a thin remote client \citep{schmidt1999interactive}.
+
+The user is given the flexibility of using their preferred client to interface with the application, switching client without needing to worry about losing data, and developers are given the option to design a new interface without affecting the core application.
+
+The user is also given the ability to interact with multiple instances of the application running remotely with no issues, which is particularly useful when running the application on a headless server.
+
+Development of both the client and interface can also happen in parallel leading to better time to market in large development teams.
+
+However, we must not forget the benefits of using a native application. By making the UI interface with the application over the network, a whole host of complexity and security issues arise. The development team needs to ensure that any user interacting with the API is authenticated and secure, as well as ensuring that there are no network issues between the interface and application.
+
+The software itself also becomes more complex with a separate client as functionality needs to be built for handling network in both the UI and core application.
+
+On balance, it makes sense for membrane to operate use a client interface. As Membrane will need to be run constantly, it needs to be able to operate as a software daemon. One of the requirements is to keep Membrane lightweight and maintenance free, running any user interface constantly would distract users.
+
+Developers will also be able to build addition interfaces to Membrane if required, fulfilling the extensiblity requirement, and as both a GUI and CLI are required, this provides a nice way to develop both and gives users the desired flexibility between both.
+
+\begin{figure}[t]
+ \includegraphics[width=0.5\textwidth]{client-server-model}
+ \caption{Client Server Architecture}
+ \label{fig:client-server}
+\end{figure}
+
+\subsubsection{Model View Controller (MVC)}
+
+The Model View Controller (MVC) pattern, first described by \cite{krasner1988cookbook}, decouples the interface from the main logic of the program by establishing a subscribe notify protocol between them. The view must always reflect the state of the model and the model must always update the view when a change occurs.
+
+This approach allows for code-reuse and lets the developer to create new models without rewriting the software, and provides high cohesion, meaning groups of related actions can be grouped together.
+
+This has the disadvantage of making code harder to navigate due to added structural complexity, increasing scattering meaning multiple representations of objects need to be modified at the same time if required and increases the learning curve for developers, as they need to learn how to structure the application in a new way.
+
+Although the MVC model provides a structurally sound way of building the application we need to generalise in into the N-Tier architecture for larger applications.
+
+\subsubsection{N-Tier Architecture}
+
+An N-Tier architecture is simply an extension of the MVC model, it takes the idea of layers in an application further, allowing sections of the software to be developed and tested without interfering with each other.
+
+One of the key advantages to this approach is extra layers can be added and removed, even during run time. In Membrane we will look to take advantage of this when running in Tracker or Local Backup mode. The tracker can disable all of the local backup functionality, while the tracker only needs to run the network layer.
+
+\begin{figure}[b!]
+ \includegraphics[width=0.5\textwidth]{membrane-n-tier}
+ \caption{Membrane N-Tier Architecture}
+ \label{fig:membrane-n-tier}
+\end{figure}
+
+We can see the Membrane N-Tier architecture in fig \ref{fig:membrane-n-tier}. Only modules next to each other are able to communicate directly and modules can be disabled as required.
+
+The local backup performs all the basic tasks of file monitoring and local shard storage. The distributor monitors the local backup for shards to send to peers and packages them up to the Peer Networking layer for transmission. The Peer Networking layer is able to locate new peers and provides them to the Distributor if connected.
+
 \section{Technologies}
+
+The technologies used in a project can define the success of a software project. Incorrectly chosen tools can slow development and in some cases even cause projects to fail. While selecting technologies we will need to be weary of excitement surrounding modern technologies and look for unbiased advantages and disadvantages of each.
+
+We will begin by selecting 
+
+\subsection{Languages}
 
 \subsection{Libraries}
 
@@ -1038,9 +1158,9 @@ Placeholder
 
 \subsection{Tooling}
 
-\section{Architecture}
-
 \chapter{System Components}
+
+\section{Design}
 
 \section{File System Monitoring}
 

@@ -1148,15 +1148,93 @@ The local backup performs all the basic tasks of file monitoring and local shard
 
 The technologies used in a project can define the success of a software project. Incorrectly chosen tools can slow development and in some cases even cause projects to fail. While selecting technologies we will need to be weary of excitement surrounding modern technologies and look for unbiased advantages and disadvantages of each.
 
-We will begin by selecting 
+We will begin by selecting the language to use, followed by key libraries used within the software itself. Some of these libraries were chosen during development when the need for them arose.
 
 \subsection{Languages}
 
-\subsection{Libraries}
+A wide variety of languages are available for software development. We need to consider the best language for development of the Membrane Daemon, the GUI and the CLI. One of the most important features of a language is support from the developer community. An active developer community means any issues we encounter during development will most likely, already be solved by someone else.
+
+We used the 2017 Stack Overflow Developer Survey \citep{stackoverflow2017survey} to find language popularity statistics. This is an annual survey held for users of one of the most popular developer forums, covering everything from languages, to frameworks, to demographics.
+
+\subsubsection{Daemon}
+
+There are a few requirements when selecting a programming language for the daemon. The language must scale efficiently, restricting our choice to object-oriented languages. It must also be compiled, to reduce the chance of runtime exceptions the user would need to debug. Platform Independence is also key so Membrane can be easily ported to other platforms after the proof of concept is developed.
+
+\subsubsection{JavaScript}
+
+The most popular language by far is JavaScript, a high-level, dynamic, untyped language that is interpreted during runtime. \citep{flanagan2011javascript} It is one of the three core technologies used in the world wide web, which has done a lot to push it's popularity. It has been standardised in the ECMAScript language specification, which has recently reached it's 7th edition. \citep{stefanov2010javascript}.
+
+High-level languages uses strong abstraction to hide details of the underlying computer, such as memory management. This makes them easier to use and usually makes them much less bug prone.
+
+Dynamic languages are a class of high level programming languages that execute behaviours usually performed at compile time in static languages during runtime. \citep{trattdyamicallytypedlanguages} This typically means the language is dynamically typed (although not always). In the case of JavaScript, this is true.
+
+An interpreted language is one for which most of the implementations execute instructions directly on the machine without compilation. The interpreter translates each statement into a sequence of subroutines that have already been compiled into machine code. In the case of JavaScript most of the runtime environments include a just-in-time (JIT) compiler, which compiles the program during runtime, allowing for dynamically recompiling frequently used code sections, optimising those sections. \citep{aycock2003brief}
+
+\subsubsection{Java}
+
+We move onto Java, the second most popular (applicable) language. This is a general-purpose language that is object-oriented, class based and concurrent, \citep{gosling2014java} designed to run anywhere, meaning that compiled Java code can run on all platforms that support Java without the need for recompilation. \citep{gosling1995java}
+
+Object Orientation is a programming paradigm based on ``objects'' which contain data and methods that can act on that data. The class based aspect of java means that these objects are in fact instances of classes that determine their type. \citep{kindler2011object} Object are able to offer encapsulation, an desirable feature that means only objects can manipulate data inside them. This facilitates code refactoring and encourages decoupling, which makes it very desirable for large software projects.
+
+\subsubsection{C\#}
+
+The final language we consider is C\#, which is another general purpose programming language that offers strong typing, is imperative, declarative, functional and object-oriented. This makes it very similar to Java \citep{kreft2017afterjava}, and in fact has been criticised as a ``imitation'' of Java, although this has been disputed. C\# is a younger language that Java, so it was playing catch-up to Java's feature set for a long time, however, it has at this point surpassed Java.
+
+On balance Java's popularity, larger community of users and open source nature means it is more suited to Membrane, although C\# has some clear advantages, it is not as well supported on Linux, requiring Mono to be run. It is also important to take into consideration the ability of the programmers coding Membrane, who have coded predominately in Java in the past.
+
+\subsubsection{CLI}
+
+We also consider the language to use in the GUI and CLI. For the CLI a fast, lightweight language is required. The three languages under consideration are Python, C and Go, selected because of their popularity, and the programmers familiarity with them.
+
+\subsubsection{Python}
+
+Python is a general purpose, dynamic, high level programming language. It is know for it's design philosophy, which emphasises readability through forced indentation and a syntax tailored to representing algorithms in as few lines as possible. This is a strong contender for the CLI, however, the most popular implementation of Python, \emph{CPython}, is a runtime interpreter of language making it slightly more difficult to ensure code correctness.
+
+\subsubsection{C}
+
+C is a general-purpose, imperative, statically-typed language developed in 1973 at Bell Labs. \citep{banahan1988c} It has become one of the most widely used programming languages of all time, providing low-level access to the hardware, uses language constructs that map efficiently to machine instructions, and requires minimal run-time support.
+
+One of the key disadvantages of C is that it's power makes it easy to make mistakes. This low level access is not required for the CLI of Membrane and it could potentially lead to subtle errors.
+
+\subsubsection{Go}
+
+The final language, Go is a complied, statically typed language with garbage collection. It is designed to be scalable, not require IDEs, support networking and concurrency, and be productive and readable. \citep{golang2017faq}
+
+This is a great compromised between the ease of programming in Python and the strictness found in C without sacrificing any of the benefits. Critics of Go say the lack of generics limit static
+
+We also refer back to the Stack Overflow developer survey and see that Go is one of the most wanted and loved languages by developers, leading us to select Go for the CLI of the Membrane.
+
+\subsubsection{GUI}
+
+Finally a language for GUI development needs to be selected. This depends strongly on the choice of Electron for the GUI framework discussed in detail below. Although, as we have selected a web technology we need to use JavaScript, there are two newer languages which can transcompiles to JavaScript that enhance JavaScript's feature set. We will compare these.
+
+\subsubsection{CoffeeScript}
+
+CoffeeScript aims to add syntactic sugar inspired by Python, Ruby and Haskell to improve JavaScript's brevity and readability. \citep{maccaw2012little} The compiled output is readable and tends to run as fast or faster as equivalent JavaScript. \citep{coffeescript2017faq}
+
+There have been concerns using CoffeeScript adds bloat to development, every change must be compiled before the effect can be seen, however, this can be solved by automating the process during development, any time a page is reloaded, the server automatically transcompiles any modified CoffeeScript files to JavaScript. \citep{wheeler2017coffeescript}
+
+Another concern is that using a transcompiled language makes debugging difficult as the debugger steps through a file you have not created, however, because the compiled output is intended to be readable, this has not caused issues for developers. \citep{wheeler2017coffeescript}
+
+\subsubsection{TypeScript}
+
+TypeScript is a super set of JavaScript and developed and maintained by Microsoft as open source software. It is designed for development of larger applications and aims to address the challenges of dealing with JavaScript code. It supports static typing and adds features such as classes, modules and arrow function syntax, leading to better, more readable code. \citep{typescript2017site}
+
+There are two major concerns with using TypeScript. To get the most out of TypeScript, developers need to add type annotations everywhere in their code, which makes coding a bit more cumbersome in comparison to JavaScript. In addition, although TypeScript's type system is more flexible than mainstream statically typed languages, it still makes some common JavaScript software patterns difficult for developers to use. \citep{dataart2017site}
+
+This is in addition to all of the considerations of CoffeeScript. On balance, we chose to use TypeScript for the Membrane GUI. The extra type safety provided outweighs the downsides of making it slightly more tricky to write the code. In addition if any quick coding is required, it is fully compatible with JavaScript so any sections of code unsuitable for TypeScript can be written using JavaScript seamlessly.
+
+\subsubsection{Conclusion}
+
+We have decided on three programming languages to use to create Membrane. Java, Go and TypeScript. These are three well-supported, popular languages best suited for both the programming task required and for the developers coding the Membrane proof of concept, to produce a stable and complete product.
+
+Other languages including Bash, HTML, CSS, Python, Markdown and Groovy will be used during development, however, these are simply a requirement of the languages, frameworks and tooling chosen.
 
 \subsection{Frameworks}
 
 \subsection{Tooling}
+
+\subsection{Libraries}
 
 \chapter{System Components}
 

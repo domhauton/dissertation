@@ -1,4 +1,4 @@
-\documentclass[a4paper, 11pt, twocolumn, twoside]{report}
+\documentclass[11pt, a4paper, twocolumn, twoside]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[a4paper,width=150mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
 \usepackage{natbib}
@@ -602,7 +602,7 @@ This feature was common in existing solutions and is required for Membrane to be
 Non-functional requirements, also aptly named quality requirements help support the functional requirements described above. These can be grouped into two broad categories:
 \begin{itemize}
  \item Execution Qualities - Those observable at run time including security and usability.
- \item Evolution Qualities - Those found in the structure of the system including extensiblility, scalability, maintainability and testing.
+ \item Evolution Qualities - Those found in the structure of the system including extensiblity, scalability, maintainability and testing.
 \end{itemize}
 
 \subsubsection{13. Maintenance Free}
@@ -626,7 +626,7 @@ The implementation must be fully open source. No closed source libraries can be 
 
 This feature will help with adoption as Membrane will be marked as open source in backup utility comparison charts.
 
-\subsubsection{17. Extensiblility/Transparency}
+\subsubsection{17. Extensiblity/Transparency}
 
 The project should be built to allow for easy contribution from other open source programmers.
 
@@ -1230,23 +1230,87 @@ We have decided on three programming languages to use to create Membrane. Java, 
 
 Other languages including Bash, HTML, CSS, Python, Markdown and Groovy will be used during development, however, these are simply a requirement of the languages, frameworks and tooling chosen.
 
-\subsection{Frameworks}
+\subsection{Frameworks, Tools and Libraries}
 
-\subsection{Tooling}
+To aid with development multiple frameworks will be used some of these will be chosen at the start of development, whereas other will be selected during development as a need for them arises.
 
-\subsection{Libraries}
+\subsubsection{Java Build System}
+
+There are three major build automation systems available for Java that help with application development, namely Ant, Maven and Gradle. These are responsible for compiling source code, running automated testing, detecting code coverage and packaging.
+
+\emph{Apache Ant} was first released in 2000 and was the first modern build tool available for Java. It is able to accept plugins and is designed to have a low learning curve, enabling anyone to use it without special preparation.
+
+Ant uses XML based configurations, to created build scripts, which is not ideal for writing the procedural scripts required. The use of XML also makes Ant difficult to use with larger projects. The build process is the biggest advantage of Ant.
+
+\emph{Apache Maven} was released in 2004, designed to address problems developers encountered with Ant. Although it uses XML configurations like Ant, it is better designed relying on conventions and provides subroutines that can be invoked. Unfortunately the inherent downside of large build scripts remains.
+
+One of the major advantages of Maven is the ability to download libraries and other dependencies over the network. Since this is the main purpose of Maven, custom build scripts are actually more difficult, however, these are not required by most users. \citep{viktor2014buildtools}
+
+\emph{Gradle}, developed in 2012, is the most modern build tool and attempts to combine the power of both Maven and Ant. It uses Groovy (a JVM based language) for build scripts which results in shorter and clearer build scripts and reduces the boilerplate required for creating basic configurations. \citep{gradle2017comparison} Gradle's flexibility is one of it's major advantages. \citep{casperson2014comparison}
+
+The two contenders for the build system become Gradle and Ant. Ant is preferred for developers new to build tools because of it's low learning curve, however, as the developers creating Membrane have experience using all three build system, we opt to use Gradle, because of it's clearer configurations.
+
+\subsubsection{Java Networking}
+
+The core feature of Membrane is it's ability to communicate with other peers. Using Java core networking libraries for this is an option, however, they provide an unnecessarily  granular a control over network communications.
+
+We look at various networking libraries in Java to see which is most appropriate for Membrane. One of the first requirements is the ability to send HTTP requests. These will be required for creating the API to interface with Membrane. Learning two networking libraries to develop Membrane would take more time with very little benefit.
+
+The networking library of choice must also be able to establish SSL connections, which serve both the purpose of User Authentication and provide data security.
+
+There are three major contenders Netty, Vert.x and Akka.
+
+\emph{Netty} is a low level widely used library that promises quick and easy development without maintainability or performance issues. \citep{netty2017site} It is based around the reactor pattern to handle requests concurrently, and provides a wide variety of protocols for communication. It is more difficult to debug than traditional networking libraries because of the inherent concurrency, but has a wide variety of features and options.
+
+\emph{Vert.x} is a polyglot library supporting seven languages including Java. It is built on top of Netty, focusing on a simple concurrency model, removing the complexity of debugging concurrent programs and has a simple asynchronous programming model to allow handling multiple requests at once. It aims to be a JVM alternative for Node.js, a popular JavaScript framework. \citep{vertx2017site}
+
+\emph{Akka} is a library made for concurrent and distributed JVM applications. It draws on inspiration from Erlang for it's actor-based concurrency model, focusing on immutability and allowing actor interactions across multiple hosts when required. \citep{gupta2012akka}
+
+We opt to use Vert.x in Membrane, it offers all the required features for peer networking with an appropriate concurrency model and without the complexity that comes from using a low-level library.
+
+\subsubsection{Java Cryptography}
+
+Security was a major concern for potential Membrane users and therefore the library we use for encryption needs to be selected carefully. We again consider three libraries for this purpose. Membrane requires TwoFish encryption support and the ability to generate RSA public private key pairs and certificates, as well as signing and authenticating messages using those keys.
+
+\emph{Apache Shiro} is an open source security framework that offers authentication, authorisation, cryptography and session management, and aims to provide robust security while being easy to use. It was first released in 2010 and the latest release was 8 months prior to selection. \citep{apache2017shiro}
+
+\emph{Bouncy Castle} is a collection of cryptography APIs for Java and C\# founded in May 2000. It is maintained by ``Legion of the Bouncy Castle Inc.'', a registered charity in Australia and prides itself on it's extensive test suite and standards compliance. It is by far one of the most popular cryptography libraries available. \citep{bouncy2017castle} The latest release was two months prior to selection.
+
+\emph{Keyczar} is a newcomer created by Google, aiming to make it easier and safer for developers to use cryptography in their applications, providing simple one line cryptography functions to developers instead of being a general-purpose cryptography library. It was first released in 2010 and the latest release was one month prior to selection. \citep{keyczar2017github}
+
+Shiro is a good option, however, it provides a lot of unnecessary features. It's focus is not aligned with the requirements of Membrane. Keyczar is a good library for limited use-cases, however, Bouncy Castle is best suited to Membrane. It is the oldest library by far, and it's popularity during that time makes it much less likely to have bugs.
+
+\subsubsection{Version Control}
+
+Version Control is an important aspect of any software project. We will be mostly focusing on the extensiblity requirement, which requests easy contribution for other open source programmers.
+
+There are two leading platforms \emph{Github} and \emph{Bitbucket}. We opt to use Git for version control because of it's clear advantages, allowing for decentralised version control while working from multiple workstation, over competitors such as SVN and CVS.
+
+\emph{Github} was launched in 2008. Offers code review, issue tracking, documentation, wikis, pull requests and releases. It has 5.8M active users and 19.4M active repositories. \citep{github2016octoverse} offering multiple integrations for continuous integration and code quality analysis. It also offer public repository hosting for free.
+
+\emph{Bitbucket} was launched at the same time as Github in 2008 and started only hosting Mercurial projects but quickly expanded to Git as well. \citep{bitbucket2017site} It's main advantage is it's close integration with JIRA, a popular issue tracker. \citep{upguard2014gitvbit}
+
+On balance, given the popularity and available integrations, we opt to use Github for version control. We use four Github integrations in the project. \emph{TravisCI} offers continuous integration, running testing on all targeted JVMs after every commit and notifying developers if a test fails. \emph{VersionEye} ensures that all external dependencies used are up-to-date and have no security flaws. \emph{CodeCov} automatically checks test coverage for every commit, warning the developer if coverage is decreasing due to the commit. Lastly \emph{rtfd.io} provides documentation for the project, hosting the web page.
+
+\subsubsection{Other Libraries}
+
+We will also use \emph{Google Guava} and \emph{Apache Commons Collections} in Membrane, to enhance the standard Java libraries, offering a wider range of functions and desirable features such as immutable collections.
+
+For marshalling data we opt to use \emph{Jackson}, both for transmission and local storage, serialising objects to both JSON and YAML. Advanced date functionality is added using \emph{Joda} and finally \emph{Junit Jupiter} in conjunction with \emph{Mockito} will be used for unit testing.
 
 \chapter{System Components}
 
-\section{Design}
+The components that make up Membrane are all designed individually and connected using Java Interfaces. In this section we discuss, in detail, the goals and functionality of each explaining decisions in the final architecture of Membrane.
+
+We begin with file ingestion and file system monitoring, following into file storage and what inspired the design of the file history storage. Continuing on through Peer Appraisal, how we determine who to give file blocks to we finish in Networking, covering the details of authentication and security.
 
 \section{File System Monitoring}
 
 \section{Local Storage System}
 
-\section{Swarm Design}
-
 \section{Peer Appraisal}
+
+\section{Networking}
 
 \chapter{User Interfaces}
 

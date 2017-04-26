@@ -32,6 +32,30 @@
 
 \pagestyle{fancy}
 
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
 \fancyhead{}
 \fancyhead[RO,LE]{Membrane - Distributed File Backup}
 \fancyfoot{}
@@ -70,6 +94,8 @@ An application in which users can join a large public network of intelligent sto
 \end{abstract}
 
 \tableofcontents
+
+\listoffigures
 
 \chapter{Introduction}
 Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In order to implement a peer-to-peer distributed agent based storage system we must first decompose the problem into several parts and explore the advances made in those fields as well as looking at advantages of existing technologies.
@@ -1070,7 +1096,7 @@ Deploy shard to peers.
 	\end{enumerate}
 \end{enumerate}
 
-\setlist{listsep}
+\setlist{}
 \newpage
 
 
@@ -1306,7 +1332,125 @@ We begin with file ingestion and file system monitoring, following into file sto
 
 \section{File System Monitoring}
 
+Monitoring the file system for local changes is key to any backup system. All file changes in the watched folders need to be recorded, including deletions. First we explore methods of walking the file tree when asked to back up recursive folders. We then take two approaches to watching folders, followed by augmentations made to the chosen technique. We finish by discussing methods of deduplication for repeated files and future enhancements that could be made to the implemented monitor.
+
+\subsection{File Tree Walking}
+
+We allow users to select folders for backup, either explicitly, with wild-cards or recursively. When allowing users to specify folders recursively we must inspect the contents of each visited folder and record any encountered folders. This can be achieved using the Visitor pattern in Java, which defines operation for each element visited by the class. \citep{sugrue2010visitor}
+
+Once all of the relevant folders are found we can start watching those folders using one of the methods below. If a folder addition or deletion is observed by the watcher, this can be added or removed to the watched folder list respectively.
+
+One of the problems with this method is when wild-card directories are added. These might not necessarily be created in watched folders so these folders must be manually scanned for on a regular basis.
+
+When finding folders it is important to note the difference between a file or folder, hard link and soft link (also known as a symlink or symbolic link). To understand these we must first observe how files are stored in a Unix-style file system, which supports ordinary files, folders and special files.
+
+Index Nodes (commonly refereed to as inodes) are things in the file system stored by a unique number. Directories are a way to structure and name these inodes. These contain files and each file is mapped to exactly one inode, however, each inode can have more than one file mapped to it. \citep{bar2001linux}
+
+A hard link is an inode that has multiple names in the file system. A symlink is any file that contains a reference to another file or directory which will affect path name resolution. The link is an inode that exists independent of the target, and does not affect the target if deleted and continues pointing to a non-existent target when that is deleted. \citep{yue2011unix} These can be used to link different file systems, but they change the file system from a tree into a directed graph, which greatly complicate file tree walking as files can loop and repeat.
+
+Within Membrane we opt to ignore symlinks while walking the file tree. Users are able to specify the target of the symlink if required. To prevent backup duplication due to hard links we use a system that mirrors the inodes described, but treat them as different files for backup.
+
+\subsection{Polling}
+
+The first naive methods for check for folder changes simply uses polling to record the contents for folders, finding the difference between the last scan and the current scan. To check whether a file has changed the modification data provided in the file's metadata is used.
+
+This is a simple method to implement, however it consumes a lot of memory when implemented as it needs to retain a copy of the last modification date and all of the files in the watched folders.
+
+This method is also IO intensive. The file listing for a directory on the file system contains no file metadata, so every single inode in the folder needs to be accessed to gather it's metadata. This mostly affects potential users using storage media with poor IOPS (Input Output Operations per Second), common in older hard disk drives (HDDs). \citep{mansurov2017storage}
+
+This makes polling a poor solution for Membrane, as during user surveys low resource usage was requested. Periodic spikes in IOPS could adversely impact user experience in other software.
+
+\subsection{Native Watching}
+
+A more advanced method of watching files is built into some file systems. This sends out File Change Notifications to subscribed services when an inode changes. There are three common scenarios when this is used. When caching a model of file systems objects, logging file system activity and gatekeeper services that ensure only permitted operations happen on the file system. \citep{kerrisk2014fcn}
+
+The first implementation of file change notification, \emph{dnotify}, appeared in Linux in 2001, it suffered from a cumbersome API and most notably, it kept file descriptors open causing problems when trying to unmount the file system. \citep{kerrisk2014fcn}
+
+The inotify API was released in 2005 and aimed to address all of the issue lessons learned in dnotify. It consists of three dedicated system calls \emph{inotify\_init()} which maintains a list of file system objects that should be watched and a list of events generated for those objects. The commands \emph{inotify\_add\_watch()} and \emph{inotify\_rm\_watch()} are used to alter the list of monitored file system objects. inotify provides more information than dnotify, allows programs to deal with notifications synchronously and includes the file name modified. \citep{kerrisk2014fcn}
+
+Java implements the WatchService API that provides low level access to the underlying inotify API of the file system. \citep{oracle2017dir} We opt to use this when the API is available, but fall back to polling when inotify or similar services are unavailable.
+
+\subsection{Watching Enhancements}
+
+Despite the comprehensive feature set of inotify, we still require some enhancements to prevent accidental or missed file system event notifications. 
+
+In order to detect changes between Membrane runs we need to load all known and expected files into memory and scan the file system once when Membrane loads. This means resorting back to maintaining a list of all monitored files in local memory, an unfortunate but necessary step.
+
+We now match any reported modified or deleted files against the internal state, using the modification date and hash of the file to determine if the file has been changed. In order to lower resource usage we read any modified files in sections, never loading more than 4MBs into local memory. These chunks become shards within the backup system.
+
+\subsection{Deduplication}
+
+There are two viable approaches to file deduplication for Membrane. We can choose to split the file into shards and check if shard hashes match, or use a rolling checksum, similar to Rsync to find the section of the data changed, and only storing that. \citep{tridgell1996rsync}
+
+Simply splitting the file into chunks has the disadvantage of being unable to detect overlapping data, which can lead to huge duplication. When data is inserted into the middle of a file any blocks after and including the change will register as modified and need to be restored.
+
+The approach of simply sharding the data is simple and much less prone to bugs, so we take this approach with the initial implementation of Membrane, although we will maintain support for variable size chunks for future implementations.
+
+We need a methods of generating a unique has for file shards. Git and Subversion opt to use SHA1 \citep{torvalds2010git} to generate unique keys for files, however, we have decided to use MD5.
+
+Both SHA1 \citep{wang2005collision} and MD5 \citep{stevens2006fast} are cryptographically broken, meaning that it is possible to generate a collision\footnote{Two files matching a given hash} without having to try every possible input into the hashing function. It is also possible to launch a first preimage attack on these hashes, something that would make them unusable for security as an attacker would be able to generate an input matching any given hash. As Membrane only uses this hash as an internal shard identifier, we do not have to be concerned about an external attacker.
+
+The only situation in which this may cause issues in the future, is if the user stores two shards with the same hash accidentally, however, the chances of that are minute enough that it is not worth worrying about. This was discussed in detail by \cite{torvalds2006gitcollisions} and other git developers. An inadvertent collision was deemed so unlikely that it was reasonable to use SHA1 for Git.
+
+MD5 only has a 128 bit output vs. the 160 bit output of SHA1, meaning collisions are slightly more likely, however we mostly concerned about hashing speed, seeing as this hash will be run very frequently on any files that have been altered, and studies have shown that MD5 is on average about 1.75 times faster than SHA1. \citep{saphir2007securite}
+
 \section{Local Storage System}
+
+As Membrane is a backup system, it needs to contain a log of file activity, including file meta-data and contents at that point in it's life time. In this section we first discuss the shard storage mechanism, followed by the file history persistence, and finish on the file expiry policy used in Membrane.
+
+\subsection{Shard Storage}
+
+When a file is backed up the file watcher shards the file into 4MB chunks and sends them directly to shard storage. The shard store manages a folder of the file system and provides functions for shard storage and retrieval.
+
+When a shard is inserted into storage the file system first checks if the shard is already stored. If so the shard is ignored altogether and the write is avoided, saving disk IO. Otherwise the hash of the data is confirmed and the shard is written to a file on the disk.
+
+Because of file system limitations we use a hierarchical directory structure for storing shards. A new directory is created every five characters of the shard, overcoming any restrictions on the maximum number of files per directory, of older file systems such as ext2 and ext3 which reportedly have performance issues with anything above 10,000 files. \citep{johnson2014files}
+
+The shard storage runs scrubbing on a regular basis, a concept taken from the ZFS file system. \citep{oracle2012zfs} The shard store periodically checks that every shard stored is consistent with it's hash and accessible. This is a technique commonly used to prevent error before they result in failure. Although the shard store also verifies shard integrity during the read it may falsely report damaged shards as available to the user. This prevents the shard from being patched by versions stored in the peer swarm.
+
+\subsection{File History Storage}
+
+The file history is the central store of the backup system. It contains a log of every file addition, modification and removal providing all of the information required to retrieve it. It is important that the store is immediately persisted to the file system upon backup so nothing is lost upon unexpected shutdowns.
+
+The naive approach to this problem uses a log to record these event, implemented in the form of a linked list, flushing entries immediately to a log file. Although this approach satisfies all of the requirements it is very expensive to search and quickly becomes very large.
+
+Taking inspiration from distributed file systems such as HDFS \citep{hdfsAnalysis} and GFS \citep{mckusick2010gfs} which use NameNodes to store file system modification in a checkpoint and journal. The journal is a write-ahead commit log that takes the place of the aforementioned event log. The checkpoint is a known file system state. In the event of system failure these file systems can replay the log to a checkpoint. 
+
+Within Membrane we take advantage of checkpoints to speed up search through the journal. The start and end of the journal are often queried to check current backup status, so these are given permanent checkpoints, that are always kept up to date. When the user queries for a specific point in time, the journal can be replayed from the start checkpoint to the requested time, quickly generating the required time slice.
+
+This proved to be an effective way of storing file history, providing quick responses to the GUI, CLI and other system components, even when full of data. If this proves insufficient for future demands, indexes for specific queries can be created for quick search.
+
+It is important to address the distinct lack of a transactional database, in a situation where the use of one seems like a natural fit. Traditional databases such as MySQL have very high memory and CPU usage \citep{james2017sql} and although this usage can be tuned, running a full database on a users computer would go against the resource usage requirement.
+
+\subsection{Backup Management}
+
+One of Membrane's proposed features is flexible file history. Instead of providing a backup storage duration, backups are stored until the space allocated to Membrane is completely used.
+
+This is a step towards the maintenance free experience requested by potential users. Many cloud solutions such as \cite{dropbox2017versions} allow users to access version history for a set amount of time, requiring extra subscriptions for additional versioning time.
+
+In order to implement this we take the concepts used in garbage collection within programming languages and apply them to the file history. In addition to the maximum shard storage size, a target size is set. The file system monitor will add shard until the maximum limit, regardless of the requested target size.
+
+A history compacting and garbage collection is then executed on a regular basis. This is a three step process that attempts to reach the target storage size in the least destructive way using:
+
+\begin{enumerate}
+ \item Garbage Collection
+ \item Remove Unwatched Files
+ \item Trim Older Journal using FIFO
+\end{enumerate}
+
+Garbage collection is implemented using an adapted version of \cite{dijkstra1978fly}'s mark and sweep algorithm. This works in three passes. 
+
+\begin{enumerate}
+ \item Certain shards have are protected from garbage collection as they have just been added into shard storage and therefore might not have their reference inserted into the journal yet, generating set $P$.
+ \item The second pass walks the journal and removes shards mentioned in the journal creating set $R$
+ \item The final pass finds $S \cap (P \cup R)^C$ where $S$ is the set of all stored shards, and removes them.
+\end{enumerate}
+
+This step is intended to remove any shards that were inserted into shard storage but never followed up with a file entry. This would be possible in the case of error during shard storage or file history storage. The code for garbage collection can be found in listing \ref{lst:fileGC}.
+
+The next step is intended to remove any entries the user is not interested in any more. These could have been inserted after recovery from peers or may have been files that were temporarily backed up. If any files were deleted garbage collection is re-run to remove the relevant shards.
+
+Finally the Journal is trimmed, removing any history necessary. The algorithm creates a shard count dictionary to see if removing the last file in the log will affect the storage. If it does it is removed, otherwise the algorithm moves along to the next entry. This is repeated until the target storage size is reached. The method used means no file entries are unnecessarily removed. The storage clamping procedure can be found in listing \ref{lst:storageClamping}.
 
 \section{Peer Appraisal}
 
@@ -1343,7 +1487,79 @@ We begin with file ingestion and file system monitoring, following into file sto
 \subsection{Expansion 3}
 
 \section{Summary}
+\onecolumn
 
 \bibliography{dissertation}
+
+\newpage
+
+\chapter*{Appendix}
+
+\begin{lstlisting}[language=Java, caption=Garbage Collection Implementation, label=lst:fileGC]
+  /**
+   * Removes any shards not referenced in the catalogue from the storage.
+   */
+  long collectGarbage() {
+    logger.info("Garbage collection - Start");
+    Set<String> requiredShards = fileCatalogue.getReferencedShards();
+    Set<String> garbageShards = shardStorage.listShardIds();
+    garbageShards.removeAll(requiredShards);
+    garbageShards.removeAll(tempProtectedShards);
+    logger.info("Garbage collection - Found {} de-referenced shards", garbageShards.size());
+    AtomicLong removedSize = new AtomicLong(0L);
+    garbageShards.stream()
+            .peek(x -> logger.info("Garbage collection - Removing shard: [{}]", x))
+            .forEach(x -> {
+              try {
+                long fileSize = shardStorage.removeShard(x);
+                removedSize.addAndGet(fileSize);
+              } catch (ShardStorageException e) {
+                // Ignore - It doesn't exist already
+              }
+            });
+    logger.info("Garbage collection - Complete - Removed {}MB", ((float) removedSize.get()) / (1024 * 1024));
+    return removedSize.get();
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption=Storage Clamping Implementation, label=lst:storageClamping]
+  public synchronized long clampStorageToSize(long bytes, Set<Path> trackedFolders) throws StorageManagerException {
+    long currentStorageSize = getStorageSize();
+    long spaceToRecover = currentStorageSize - bytes;
+    logger.info("Space Recovery - Reducing storage to {}MB. Current size {}MB. Need to remove {}MB", ((float) bytes) / (1024 * 1024), ((float) currentStorageSize) / (1024 * 1024), ((float) Math.max(spaceToRecover, 0)) / (1024 * 1024));
+    if (spaceToRecover > 0) {
+      logger.info("Space Recovery - Collecting unnecessary shards.");
+      spaceToRecover -= collectGarbage();
+    }
+
+    if (spaceToRecover > 0) {
+      logger.info("Space Recovery - Finding un-tracked files.");
+      Set<Path> notTrackedFiles = fileCatalogue.getCurrentFiles().stream()
+              .filter(x -> !trackedFolders.contains(x.getParent()))
+              .collect(Collectors.toSet());
+      if (notTrackedFiles.size() > 0) {
+        logger.info("Space Recovery - Removing {} un-tracked files.", notTrackedFiles.size());
+        notTrackedFiles.forEach(x -> fileCatalogue.forgetFile(x));
+        spaceToRecover -= cleanStorage(fileCatalogue.getOldestJournalEntryTime());
+      } else {
+        logger.info("Space Recovery - No un-tracked files found.", notTrackedFiles.size());
+      }
+    }
+
+    if (spaceToRecover > 0) {
+      logger.info("Space Recovery - Retiring older journal entries.");
+      fileCatalogue.removeOldestJournalEntries((int) spaceToRecover);
+      spaceToRecover -= cleanStorage(fileCatalogue.getOldestJournalEntryTime());
+    }
+
+    if (spaceToRecover > 0) {
+      logger.warn("Space Recovery - Could not meet {}MB requirement. Excess is {}MB.", ((float) bytes) / (1024 * 1024), ((float) spaceToRecover) / (1024 * 1024));
+    } else {
+      logger.info("Space Recovery - Successful file size reduction. Reduced to {}MB.", ((float) (bytes + spaceToRecover)) / (1024 * 1024));
+    }
+    return spaceToRecover;
+  }
+\end{lstlisting}
+
 
 \end{document}

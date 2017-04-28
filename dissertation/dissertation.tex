@@ -1,18 +1,19 @@
 \documentclass[11pt, a4paper, twocolumn, twoside]{report}
 \usepackage[utf8]{inputenc}
-\usepackage[a4paper,width=150mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
+\usepackage[a4paper,headheight=13.6pt,width=150mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
 \usepackage{natbib}
 \usepackage{graphicx}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{todonotes}
-\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{graphicx}
-\usepackage{hyperref}
+\usepackage{ragged2e}
+\usepackage{parskip}
+\usepackage{lipsum}
 \graphicspath{ {img/} }
 
-\newcommand{\chapfnt}{\fontsize{16}{19}}
+\newcommand{\chapfnt}{\fontsize{17.28}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
 \newcommand{\ssecfnt}{\fontsize{12}{14}}
 
@@ -56,6 +57,17 @@
   tabsize=3
 }
 
+\lstdefinelanguage{RsT}
+{
+ directives={example, Example, EXAMPLE},
+ delim=*[directive]{..\ },
+ directivestyle=\color{red}\underbar,
+}[
+ keywords,
+ directives,
+ comments,
+]
+
 \fancyhead{}
 \fancyhead[RO,LE]{Membrane - Distributed File Backup}
 \fancyfoot{}
@@ -67,6 +79,9 @@
 
 \bibliographystyle{agsm}
 
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+\usepackage{hyperref}
+
 \setcitestyle{square}
 
 %opening
@@ -75,25 +90,89 @@
 
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+	\centering
+	\includegraphics[width=0.3\textwidth]{uob-logo}\par\vspace{0.5cm}
+	{\scshape\LARGE University of Bath \par}
+	\vspace{3cm}
+	{\huge\bfseries Membrane - Distributed File Backup\par}
+	\vspace{1cm}
+	{\Large\itshape Dominic Hauton\par}
+	\vspace{1cm}
+	{\scshape\Large BSc (hons) Computer Science\par}
+	\vfill
+	Supervised by\par
+	Dr.~Russell \textsc{Bradford}
 
-% Copyright and declaration
+	\vspace{1cm}
 
+% Bottom of the page
+	{\large \the\year\par}
+\end{titlepage}
+
+\renewcommand{\abstractname}{}
 \begin{abstract}
-An application in which users can join a large public network of intelligent storage agents to trade their available file space. This will allow the user to backup and version files safely on potentially untrustworthy computers, increasing availability and redundancy. The hosts will act as intelligent agents, and trade space when they communicate with one another.
+This dissertation may be made available for consultation within the University
+Library and may be photocopied or lent to other libraries for the purposes of consultation.
+
+\vspace{0.5cm}
+\noindent
+\emph{Dominic Hauton}
 \end{abstract}
 
-\renewcommand{\abstractname}{Declaration}
-\begin{abstract}
-\hfil I declare that... \hfil
-\end{abstract}
+\begin{titlepage}
+	\centering
+	\includegraphics[width=0.5\textwidth]{membrane-logo}\par\vspace{1cm}
+	{\huge\bfseries Membrane - Distributed File Backup\par}
+	\vspace{1cm}
+	Submitted by 
+	{\Large\itshape Dominic Hauton\par}
+	
+	
+	\vfill
+	
+	
+	\justifying
+	\noindent
+	\textbf{COPYRIGHT}
+	
+	\vspace{0.25cm}
+	\noindent
+	Attention is drawn to the fact that copyright of this dissertation rests with its author. The Intellectual Property Rights of the products produced as part of the project belong to the author unless otherwise specified below, in accordance with the University of Bath’s policy on intellectual property (see http://www.bath.ac.uk/ordinances/22.pdf).
+	
+	\vspace{0.5cm}
+	\noindent
+	This copy of the dissertation has been supplied on condition that anyone who consults it is understood to recognise that its copyright rests with its author and that no quotation from the dissertation and no information derived from it may be published without the prior written consent of the author.
+	
+	\vspace{0.5cm}
+	\noindent
+	\textbf{DECLARATION}
+	
+	\vspace{0.25cm}
+	\noindent
+	This dissertation is submitted to the University of Bath in accordance with the requirements of the degree of Bachelor of Science in the Department of Computer Science. No portion of the work in this dissertation has been submitted in support of an application for any other degree or qualification of this or any other university or institution of learning. Except where specifically acknowledged, it is the work of the author.
+	
+	\vspace{0.25cm}
+	\noindent
+	\emph{Dominic Hauton}
+	
+\end{titlepage}
 
-\renewcommand{\abstractname}{Acknowledgements}
+\renewcommand{\abstractname}{Abstract}
 \begin{abstract}
-\hfil With thanks to my supervisor, Russell Bradford \hfil
+Membrane is an amalgamation of distributed storage and backup software, designed to operate on a very large scale: terabytes of data backed up across thousands of users across the world. A Membrane user is able to trade storage space with peers across the network, allowing them to securely store their backups world wide providing the user with data resilience with high availability at no monetary cost to the peer.
+
+The applications vary from users who require a secure backup tool with file versioning for their important documents, to corporations that need to provide data resilience to their employees without investing in infrastructure, instead making use of redundant storage space on employee terminals. Membrane seeks to offer an alternative to existing paid cloud services, guaranteeing data privacy through encryption and offering a comparable feature set by harnessing the storage potential of it's users.
+
+In this report we explore the current distributed storage landscape and follow the design and construction of Membrane, drawing on knowledge from distributed storage software, intelligent agent technology and existing backup tools, finishing by providing a sound analysis of the completed solution, delving into the advantages and compromises of using Membrane.
 \end{abstract}
 
 \tableofcontents
+
+\renewcommand{\abstractname}{Acknowledgements}
+\begin{abstract}
+\hfil With thanks to my supervisor, Dr.~Russell Bradford\hfil
+\end{abstract}
 
 \listoffigures
 
@@ -247,7 +326,7 @@ Within Membrane rebuilding a Spanning Tree would be an expensive operation. If b
 
 In order to store data on another node Membrane must first have permission to store files on another node. In order to make a choice we must be able to look at trust information about other nodes on the network, and negotiate and trade space once a suitable candidate has been found. These two areas have been explored in the context of Multiagent Systems (MAS) in the past. \citep{wooldridge2009introduction}
 
-\subsection{Negotiation}
+\subsection{Negotiation} \label{sec:neg}
 
 Negotiation aims to reach a level of resource allocation that is acceptable for all involved parties. \citep{rahwan2005interest} It allows two or more parties that value each others service, to participate in a mutually beneficial exchange of services, however, as there are multiple beneficial outcomes it can be defined as "distributed search through a potential space of agreements" \citep{jennings2001automated} Within Membrane, this service is storage space, that is physically separated from the current user. We now take a look at negotiation and how we can build a negotiation framework that our agents can use to exchange storage.
 
@@ -289,7 +368,7 @@ Collaboration decisions decided using an Artificial Neural Network (ANN). Three 
 
 When evaluated the mechanism was able to deal with 93\% of situations and negotiation with the first node was successful 68\% of times. \citep{herrero2007agents}
 
-With Membrane we take this model and make it more practical by introducing reputation to allow third party ratings to be shared.
+Within Membrane we will aim to produce a new negotiation mechanism, built into the  contract system. This should be achieved using a feedback loop, where good behaviour results in upgraded contracts, that in turn result in increased good behaviour. This is discussed further in section \ref{sec:contractMech}. This is a fair and cheap method of matching peers as required by \cite{rahwan2005interest}.
 
 \subsection{Service Level Agreements}
 
@@ -302,7 +381,7 @@ They describes 3 key areas that must be present in an SLA.
 \end{enumerate}
 Within Membrane the parties involved will always be the two nodes exchanging information. The service description will be a promise to store a block of data on another host. The obligation will include various parts such as proof of storage and the ability to update and retrieve the data a set number of times. These will be explored when the SLAs for membrane is designed.
 
-Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA lifecycle.
+Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA life-cycle.
 \begin{enumerate}
  \item SLA Negotiation and Establishment
  \item SLA Deployment
@@ -320,7 +399,7 @@ Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009int
 
 The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we shall use it to see what a good trust system includes. It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider simulating a situation in which complete data loss was experienced.
 
-\subsection{Trust and Reputation Attacks}
+\subsection{Trust and Reputation Attacks} \label{sec:tar}
 
 Attempts to misrepresent reliability and manipulate reputation are common in traditional communities and have been exploited by con artists for centuries. In a distributed system agents must be able to protect themselves against common trust attacks. \cite{josang2009challenges} describes 9 potential attacks on reputation systems.
 \begin{itemize}
@@ -383,7 +462,7 @@ It is important to ensure the ontology goes into the right amount of detail for 
 
 When considering ontologies for re-use \cite{noy2001ontology} points us towards the DAML ontology library (http://www.daml.org/ontologies/). Using this and Google I was able to locate 2 ontologies, the datastore schema provided by \cite{w32001datastore} and an OWL based ontology for SLA services provided by \cite{pande2012slaont}. Both of these will be examined further during the ontology creation process.
 
-\section{Peer-to-Peer Connection}
+\section{Peer-to-Peer Connection} \label{sec:p2pconn}
 
 Network Address Translation (NAT), defined in RFC 2663 by \cite{srisuresh1999ip} is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as the IP address a hosts has set, may be a private and only useful for peers on the same network. Multiple Membrane hosts may be using the same IP address and the TCP listening port used by a node will change between connections. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
 
@@ -411,14 +490,14 @@ In HDFS, during startup a DataNode connects to a NameNode, and performs a handsh
 
 In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
 
-\section{Authentication}
+\section{Authentication and Encryption} \label{sec:encryption}
 
 In order to maintain a relationship a host needs to be able to verify it's identity when it connects to a host a second time. When visiting a website there is often a need to map a virtual identity to a real identity of a service user \citep{hericourt2001method} a bank for example, this is typically done using a certificate authority. Membrane requires authentication in two situations:
 \begin{itemize}
  \item Is this the same node I was talking to before?
  \item Have I found the correct node when adding a friend?
 \end{itemize}
-Session authentication is a common occurrence while using the web and it typically happens with every https site visit. A session cookie is stored on both clients to allow for authorisation and authentication without the use of a password in further interaction. \citep{mayo2008security}
+Session authentication is a common occurrence while using the web and it typically happens with every HTTPS site visit. A session cookie is stored on both clients to allow for authorisation and authentication without the use of a password in further interaction. \citep{mayo2008security}
 
 SSL/TLS, defined in RFC 5246 \citep{dierks2008transport} is often used for this authentication. It uses asymmetric public-key cryptography for initial connection, which uses a separate key is used for encryption and decryption. A client generates a public SSL certificate that it sends for any users that want to communicate with it. They encrypt their communication with it, and the server can decrypt it. This is called a SSL Handshake.
 \begin{enumerate}
@@ -431,9 +510,28 @@ The client can ensure it is talking to the same server by ensuring the public ke
 
 Pre-shared key encryption uses algorithms like Twofish, AES or Blowfish to create keys. These come in two flavours; stream ciphers and block ciphers. Stream ciphers encrypt binary digit by binary digit in a stream, and block ciphers encrypt a block of data at a time. We shall be using pre-shared key encryption to encrypt data blocks using a password saved on the host, that never under any circumstances leaves the Membrane host.
 
-Studies have shown that Twofish (and Blowfish which it is derived from) has the best performance and has no know security flaws. AES showed poorest performance. \citep*{thakur2011aes, rizvi2011performance, mushtaque2014evaluation} An interview with the creator of Blowfish suggested ``I'm amazed it's still being used. If people ask, I recommend Twofish instead.'' \cite{fish2007bruce}.   One thing to note is that encrypted data is expanded, testing has shown a 240KB file encrypted with Blowfish expands to 955KB which is almost a 4 times increase. \citep{mushtaque2014evaluation}
+Studies have shown that Twofish (and Blowfish which it is derived from) has the best performance and has no know security flaws. AES showed poorest performance. \citep*{thakur2011aes, rizvi2011performance, mushtaque2014evaluation} An interview with the creator of Blowfish suggested ``I'm amazed it's still being used. If people ask, I recommend Twofish instead.'' \cite{fish2007bruce}.
 
-\section{Proof of Ownership}
+\section{Compression} \label{sec:compression}
+
+Several compression algorithms were considered for Membrane. There are two important considerations for the compression algorithm selected.
+
+\begin{itemize}
+ \item Compression Speed - How fast can data be encrypted
+ \item Compression Ratio - How much can the file size be reduced
+\end{itemize}
+
+Three algorithms were considered: gzip (DEFLATE), LZ4 and Snappy.
+
+\emph{gzip} is a popular file format that uses \emph{DEFLATE} for compression internally. DEFLATE relies a combination of LZ77\footnote{Lossless data compression algorithm published by \cite{ziv1977universal}.} and Huffman coding\footnote{An optimal prefix (string deduplication) code used for lossless data compression developed by \cite{huffman1952method}., }was developed by \cite{deutsch1996deflate}. It is extensively used for compression and packaging in the Linux ecosystem, accessible via the \emph{tar} utility and also notably used in the PNG image format and for HTTP compression.
+
+\emph{LZ4} is an evolution of DEFLATE and belongs in the LZ77 family of compression algorithms. It gives worse compression than gzip, however, benefits from faster compression and significantly faster decompression. \citep{legesse2014performance} As a result it has been adopted in file system such as ZFS for real time data compression. This makes LZ4 far more appropriate for Membrane than gzip, as low resource usage is a key requirement.
+
+\emph{Snappy} is a compression algorithm used by Google for data compression it was developed to improve on the speed of DEFLATE and offers excellent compression and decompression speeds. \citep{google2017snappy}
+
+When benchmarked against LZ4, Snappy is marginally slower \citep{vorontsov2015compression}, however, it provides a native Java implementation. We therefore give users the option between Snappy and LZ4 compression, although we default to LZ4 due to it's superior speed and compression ratio. \citep{lz42017lz4}
+
+\section{Provable Data Possession (PDP)} \label{sec:poo}
 
 A Membrane client needs a method to ensure the storage host still holds the data it says it has. To prevent Sybil attacks where agents collude to store a shard between each other, a shard will be salted before encryption and transfer. This has proven effective in Storj \citep{Wilkinson14storja}.
 
@@ -448,7 +546,33 @@ To stop the client pregenerating hashes the shard or shard chunk is seeded befor
 
 \cite{filecoin2014filecoin} is another cryptocurrency operated file storage network. Transactions are stored in a ledger to assist with trust. At any point a client can issues a challenge to the server to clients who must the calculate the corresponding proof. These challenges are then confirmed by another node on the network who takes the file and recomputes the challenge itself.
 
-Within Membrane we can build challenge issues into the SLA agreed upon by both users. If a client has no trust of another user, then they value their data less. The initial cost of building a relationship with a user stops a storage node defecting by deleting their stored shard early. It is important to also run file retrieval spot checks, to simulate a situation in which a host loses all of their files.
+\subsection{Keyed-Hash Message Authentication Code (HMAC)}
+
+Using HMACs is a valid way of PDP \citep{ateniese2011remote}.
+
+HMACs combine data with a key and generate a unique hash, using of a cryptographic function. \citep{krawczyk1997hmac} The following formula is used for computing this:
+
+$$\mbox{HMAC}(K, m) = H((L \oplus \mbox{o}) \parallel H((L \oplus \mbox{i)} \parallel m))$$
+
+where H is the cryptographic function, $K$ is the secret key, $m$ is the message to be authenticated and $L$ is a secret key padded to the correct length, $o$ is outer padding and $i$ is inner padding.
+
+These are typically used to verify data integrity and authenticate messages. The strength of the cryptographic hash function depends on the underlying hash function used.
+
+A HMAC is used to counter attacks on trivial mechanisms of combining a key with a hash function.
+
+$$MAC(K, m) = H(K \parallel m)$$
+
+suffers for length extension attacks where the attacker can append data to the message and calculate a new hash. 
+
+$$MAC(K, m) = H(m \parallel k)$$
+
+allows an attacker to find a collision in the unkeyed hash function and use it in the MAC. 
+
+$$MAC(K, m) = H(K \parallel m \parallel K)$$ 
+
+offers better protection but there have been several papers claiming this can been exploitable. \citep{bellare1996keying}
+
+Within Membrane we build HMAC challenges when deploying a block to allow for proof-of-ownership
 
 \section{Conclusion}
 In this literature review we discussed the key important areas of creating a distributed storage system.
@@ -489,7 +613,7 @@ An unexpected feature requested is \emph{fast recovery}. Users expressed concern
 
 The final key request by potential users is that Membrane should not interfere with normal computer usage by the user, particularly processor time, memory and network utilisation. The request is particularly common among gamers who do not want to experience any slow-down to their games during backup.
 
-We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix \todo{Insert Appendix entry}. Given enough time we will explore more of these once the minimum viable product is created.
+We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix in listing \ref{lst:mbrnsurvey}. Given enough time we will explore more of these once the minimum viable product is created.
 
 \section{Common Features}
 
@@ -525,9 +649,9 @@ We can see there is an overlap between the features requested by users during th
 
 In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane.
 
-We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present \todo{cite} followed by Non-Functional Requirements which help support functional requirements{cite}.
+We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present \citep{van2009requirements} followed by Non-Functional Requirements which help support functional requirements \cite{chung2012non}.
 
-There is some debate about the usefulness of software requirements \todo{cite}, so the requirements below will be kept brief, however, they will be able to help guide the software development goals and produce targets for development stages.
+There is some debate about the usefulness of software requirements \cite{kneuper1997limits}, so the requirements below will be kept brief, however, they will be able to help guide the software development goals and produce targets for development stages.
 
 \subsection{Functional Requirements}
 
@@ -536,12 +660,12 @@ Functional requirements describe components found within software and their func
 \subsubsection{1. File System Monitoring}
 The system must be able to be given the name of one or more folders, and monitor all the files for changes in those folders. Another module must be able to subscribe to a stream of these changes for further processing of the modified files. The system should make use of preexisting file system features for monitoring if available.
 
-This needs to be done to allow the user to select a folder for backup \todo{fixme}
+This is core to the backup system. It cannot function without this.
 
 \subsubsection{2. Sharding Module}
 The module must be able to receive the path of a file and determine whether the file has changed since the last read. If a change, addition or deletion is confirmed this update must be sent to any subscribers for further processing. Individual file chunks for the modified file (if any exist) must be sent to any subscribers to be persisted. Updates for preexisting or suppressed files must be suppressed. On launch the system must be able to receive a list of files already stored by the system for suppression.
 
-We do this because the second person said so. \todo{fixme}
+This strategy limits resource usage and allows for deduplication of the backups, saving storage space. Sharding also allows for better packing for the distributed modules.
 
 \subsubsection{3. File History}
 Must be able to keep a log of file system modifications. It must be able to remove entries from the log to match storage requirements by analysing the storage requirements for storing the entire history and selectively removing elements of the history to meet requirements. The history must be immediately persisted, so an application crash does not affect the operation.
@@ -663,6 +787,8 @@ This will help with community engagement in the product. More technical users wi
 The project should be built with extensive tests asserting the behaviour. Tests should be automated to assist with requirement 16. It will allow easy verification of the behaviour of the modification.
 
 This will help to gain the trust of potential users.
+
+\clearpage
 
 \section{Use Cases}
 \setlist{nolistsep}
@@ -1053,7 +1179,7 @@ Deploy shard to peers.
  \item Shard is placed into local shard storage.
  \item Distributor performs periodic local shard storage scan and finds shard.
  \item Connected peers are ranked from best to worst.
- \item Any peers with a rating $\textless1.5 \sigma$ are ignored and the contracts are cancelled.
+ \item Any peers with a rating $<1.5 \sigma$ are ignored and the contracts are cancelled.
  \item Shards not yet sent to each peer are collected.
  \item Shards are compressed and placed into a block until the block reaches a predetermined size.
  \item The history of any files associated with the shards is placed into the block.
@@ -1097,8 +1223,8 @@ Deploy shard to peers.
 \end{enumerate}
 
 \setlist{}
-\newpage
 
+\clearpage
 
 \section{Architecture}
 
@@ -1161,7 +1287,8 @@ An N-Tier architecture is simply an extension of the MVC model, it takes the ide
 One of the key advantages to this approach is extra layers can be added and removed, even during run time. In Membrane we will look to take advantage of this when running in Tracker or Local Backup mode. The tracker can disable all of the local backup functionality, while the tracker only needs to run the network layer.
 
 \begin{figure}[b!]
- \includegraphics[width=0.5\textwidth]{membrane-n-tier}
+ \centering
+ \includegraphics[width=0.35\textwidth]{membrane-n-tier}
  \caption{Membrane N-Tier Architecture}
  \label{fig:membrane-n-tier}
 \end{figure}
@@ -1306,7 +1433,7 @@ Security was a major concern for potential Membrane users and therefore the libr
 
 Shiro is a good option, however, it provides a lot of unnecessary features. It's focus is not aligned with the requirements of Membrane. Keyczar is a good library for limited use-cases, however, Bouncy Castle is best suited to Membrane. It is the oldest library by far, and it's popularity during that time makes it much less likely to have bugs.
 
-\subsubsection{Version Control}
+\subsubsection{Version Control} \label{sec:versionControl}
 
 Version Control is an important aspect of any software project. We will be mostly focusing on the extensiblity requirement, which requests easy contribution for other open source programmers.
 
@@ -1443,7 +1570,7 @@ Garbage collection is implemented using an adapted version of \cite{dijkstra1978
 \begin{enumerate}
  \item Certain shards have are protected from garbage collection as they have just been added into shard storage and therefore might not have their reference inserted into the journal yet, generating set $P$.
  \item The second pass walks the journal and removes shards mentioned in the journal creating set $R$
- \item The final pass finds $S \cap (P \cup R)^C$ where $S$ is the set of all stored shards, and removes them.
+ \item The final pass finds $S \setminus (P \cup R)$ where $S$ is the set of all stored shards, and removes them.
 \end{enumerate}
 
 This step is intended to remove any shards that were inserted into shard storage but never followed up with a file entry. This would be possible in the case of error during shard storage or file history storage. The code for garbage collection can be found in listing \ref{lst:fileGC}.
@@ -1452,9 +1579,280 @@ The next step is intended to remove any entries the user is not interested in an
 
 Finally the Journal is trimmed, removing any history necessary. The algorithm creates a shard count dictionary to see if removing the last file in the log will affect the storage. If it does it is removed, otherwise the algorithm moves along to the next entry. This is repeated until the target storage size is reached. The method used means no file entries are unnecessarily removed. The storage clamping procedure can be found in listing \ref{lst:storageClamping}.
 
-\section{Peer Appraisal}
+\subsection{Local Backup}
+
+With both the local storage system in place and file system monitoring, we have developed a full local backup system. Files are detected by the monitor, split into shards, which are stored in shard storage, and the modification event is stored in modification history. Available files, file history and file version recovery can be requested and completed successfully.
+
+The components described hereafter can be completely disabled for a local Membrane installation. We next describe the Application API, which allows the user to interface with the daemon.
+
+\section{Application API}
+
+As extensiblity is a requirement for Membrane, it is paramount that the application API is robust and assists future developers with interactions. We look at \cite{google2017api}'s and \cite{heroku2017api}'s API design guides to form a coherent and sensible set of requests and responses for developers. The design of APIs is very important in Software Engineering and the final result can have significant impacts on usability. \citep{benslimane2008services} 
+
+\subsection{API Type}
+
+There are there main types of APIs considered in API design. \citep{boyd2017api}
+
+\begin{itemize}
+ \item Open - Public expose information and functionality
+ \item Partner - Used for integration between a company and it's partners
+ \item Private - Only used internally to facilitate communication.
+\end{itemize}
+
+The Membrane API is a Private API, only the user them self will be permitted to access the API. We opt to authenticate the user by using an source IP filter. Only interactions from the loopback address\footnote{An IP address that connects from the host itself. \citep{hinden2006ip} It is infeasible to send a request from this address unless it originates from the user.} $127.0.0.1$ will be permitted. This decision makes development easier, but it can always be expanded if the need arises.
+
+As discussed previously, we opt to use a Representation State Transfer (REST) API. In web development, an API is typically a set of Hypertext Transfer Protocol (HTTP) request messages, with defined responses in either Extensible Markup Language (XML) or JavaScript Object Notation (JSON). We opt for JSON within Membrane because XML is more difficult to parse and JSON is shorter, quicker to read and write and can use arrays.
+
+In the past Web APIs were typically Simple Object Access Protocol (SOAP), which focused on providing access to services. \citep{benslimane2008services} More recently REST APIs, more focused on resource access have gained popularity. These aim for fast performance, scalability, simplicity, easy modification, communication visibility, portability  and reliability. \citep{fielding2000architectural}
+
+There are five main guiding constraints to building a RESTful API \citep{fielding2000architectural}: 
+
+\begin{itemize}
+ \item Client-server - By separating the user interface concerns from data storage concerns portability across platforms is improved. The components can also be allowed to evolve independently.
+ \item Stateless - All the information required for a request is contained in one request. This reduces the need for persistence on the server side.
+ \item Cacheable - Any intermediaries can cache a response to improve responsiveness, and responses must be marked as cacheable or not.
+ \item Layered System - A client should be unable to tell if an intermediary is passing it's data. This improves potential scalability.
+ \item Uniform Interface - This decouples the underlying architecture from the interface allowing both to evolve independently.
+\end{itemize}
+
+All of these properties are desirable within Membrane, for limiting resource usage and allowing future expansion. This in addition to the vast amounts of tooling, created to assist with RESTful API development, such as \cite{postman2017api}, a tool for manually making REST calls means that we opted for a RESTful API within Membrane.
+
+\subsection{API Design}
+
+We now need to structure the API. There are five available HTTP methods emph{POST}, \emph{GET}, \emph{PUT}, \emph{PATCH} and \emph{DELETE} which can all be used to invoke actions on the server side.
+
+We opt to split our requests into three categories `\emph{status}', `\emph{configure}' and `\emph{request}' to keep the API simple, intuitive and consistent, as recommended by \cite{google2017api}.
+
+Simple status updates are available under `\emph{/status}'. The status is split into four modules of membrane: `\emph{network}', `\emph{storage}', `\emph{watcher}' and `\emph{contract}' such that a GET request to `\emph{localhost:13200/status/watcher}' would return JSON information regarding the file watcher. In the future we plan to further subdivide the API in case specific information is required to reduce the amount of calculations required on the server side per request.
+
+Calls to Membrane regarding configuration are grouped under `\emph{/configuration}'. Here the client needs to provide request information. We opt to use JSON data structures for this. Within HTTP requests data can be provided using either the URL or accompanied data. Although using URLs is useful, this may cause issues in the future when inputing folders using the same file separator as URLs and in that situation \cite{heroku2017api} suggests requesting JSON data structures. We return HTTP status codes to indicate the result of the request, compliant with RFC7231 \citep{fielding2014hypertext} as per \cite{google2017api}'s recommendation.
+
+Last of all we require users to send requests to Membrane for file history and file recovery. Here we opt for both JSON requests and responses for the aforementioned reasons.
+
+An important part of API design is human-readable documentation, so future developers can understand the API. \citep{heroku2017api} We have created documentation for the Membrane API, made available both in listing \ref{lst:apiDocs} using the reStructuredText markup language and at \url{http://mbrn.rtfd.io} using version controlled documentation generation available via Github, first mentioned in section \ref{sec:versionControl} when selecting Github for version control.
+
+\section{Shard Distribution}
+
+Membrane is a distributed backup platform. In the previous three sections we have created a functional local backup application for users wishing to backup and version file to a local storage medium, such as a removable hard drive. The following two sections focus on taking that data, securing it and passing it to peers for remote storage.
+
+There are two important data stores that need to be distributed, the file history containing metadata required to reconstruct files and shard storage containing the data used for file reconstruction.
+
+In this section we assume we are subscribed to a feed of peers we can send messages to. We first discuss storage blocks, the mechanism for packaging shards and metadata, followed by the contract system employed, concluding with the peer appraisal trust system applied.
+
+\subsection{Shard Packaging}
+
+In order to start trading data with peers a standardised container for shards needs to be created. The only limitation imposed is the size of the container. For Membrane we decide through empirical testing, a container size of 25MB is a good size. This number allows the storage of 6 full data shards, leaving 1MB for any any metadata required. It is also small enough that we can store multiple copies in-memory for data manipulation and in the write buffer while sending.
+
+Each container hereinafter refereed to as a `\emph{block}' requires overhead for transfer and proof-of-existence discussed in the following section (\ref{sec:contractMech}), so it is useful to select as large a size as possible.
+
+\subsubsection{Compression}
+
+When crafting a block for a potential peer, shards that the peer has not yet stored are selected. Membrane then attempts to compress these shards, some shards might not be compressible (as the data has no or difficult to detect patterns) and in that case we flag the shard as uncompressed for future retrieval. We implement both Snappy and LZ4\_FAST compression, as discussed in section \ref{sec:compression}. We include the compression algorithm in the shard data, so new and better compression algorithms can be used in the future, in line with the extensiblity requirement.
+
+It is imperative the compression is performed before encryption as encrypted shards are made up of pseudorandom data. If the encryption algorithm follows \cite{shannon1945mathematical}'s laws of confusion\footnote{Each bit of the ciphertext should depend on several parts of the key} and diffusion\footnote{If a single bit of the plaintext or ciphertext, is modified then half of the bits in the ciphertext or plaintext should change respectively}.
+
+\subsubsection{Knapsack}
+
+To fit data in the block we are faced with the knapsack problem. This is a packing problem commonly encountered in Computer Science. \citep{skiena1999interested} Given a maximum container size $W$ and a set of $n$ items, shard sizes in our case, each with a value $v_i$, size $s_i$ and size we must find the set 
+$$\max \sum_{i=1}^{n} s_{i}x_{i}$$ 
+such that 
+$$\sum_{i=1}^{n} s_{i}x_{i} \leq W, x_i \in {0, 1}$$
+This is an NP-Hard optimisation problem, \citep{skiena1999interested} meaning it cannot be solved in polynomial time. In Membrane we are faced with the additional issue, that we do not know the size of all the shards without accessing the inode of the shard, an expensive operation. There are pseudo-polynomial\footnote{Running time is polynomial in the numeric value of the input (container size in this case)} time algorithms for solving the problem, however, without all of the sizes available we cannot fully benefit from them.
+
+We attempt to solve the solution by simply looking a subset of 100 random shards from the queue and using the dynamic programming solution with $O(nW)$ computational and space complexity. \citep{martello1999dynamic} We divide all weights by 128kB for this calculation to lower W to a reasonable level, a maximum of: 
+$$(25\mbox{MB} / 128\mbox{KB}) * 100  \mbox{ shards} = 2000 \mbox{ ops}$$ 
+This is far superior to the $n! = 100!$ naive solution. The code for this is available in listing \ref{lst:shard2block}. Although we are able to fill the block optimally, it caused starvation for blocks sized between 1MB and 4MB. Blocks of size 4MB filled the 25MB until there was 1MB left, which was filled by shards of size $\leq1$MB. Any shard between 1 and 4 MB was very rarely selected as blocks of size 4MB and $<1$MB were quickly replenished.
+
+We therefore opt for the naive approach of filling the blocks in FIFO, skipping a shard and moving to the next one if it no longer fits, checking up to 100 shards. When tested over a standard set of sharded files taken from the document directory of three users with compression disabled, seen in table \ref{tab:storageUsage}, the packing efficiency was $0.90$ with a standard deviation of $0.026$. The maximum inefficiency we can observe is if the block has $4MB - 1B$ remaining with only 4MB available. At that point reaching an efficiency of approximately $21/25 = 0.84$. This leaves the expected average efficiency at $0.92$, is within the result. Another advantage to this naive solution is we can consider the remaining space after compression. Something that would require compression of all the blocks first in the knapsack algorithm.
+
+In the future we may attempt to find a better solution to this problem, perhaps by favouring shards that have not been uploaded for a longer time. It is important to also remember that if all users have similar packing efficiencies, then the system remains in balance, although it would still be exploitable if another client was created with more efficient packing.
+
+\subsubsection{Adding metadata}
+
+Once the block is fully packed with shard data, we request the file history store for every entry involving the packed shards. This ensures, that if data is lost and the block is returned, Membrane can reconstruct files once all of the shards required have arrived.
+
+We then insert a randomly generated salt into the block. This is small, however, because of the aforementioned law of diffusion \citep{shannon1945mathematical} this should lead to completely different encrypted data. This is done to ensure that the same block is never sent out twice, a requirement for proof of ownership in section \ref{sec:contractMech}.
+
+We finally encrypt the shard using a hash of the private key used by the Membrane networking module. Twofish encryption is used, as decided in section \ref{sec:encryption}. The block is now ready to be sent to the peer by the contract mechanism.
+
+
+\subsection{Peer Contract Manager (PCM)} \label{sec:contractMech}
+
+In the literature review (\ref{sec:neg}) we explored contract negotiation within intelligent agents. Many contract negotiation techniques studied require multiple steps to come to an agreement. We hope to implement a new pragmatic approach to shard allocation that does not require complex negotiation. We now describe an overview of the contract mechanism, followed by an in-depth analysis of why it works.
+
+As in Game Theory, we assume all Membrane peers are entirely self-interested. The main purpose of the peer is to distribute blocks and the only way to achieve that is by becoming attractive to other peers for block storage, which can be done by correctly storing blocks for them. This system does not depend on altruistic behaviour, instead making good behaviour the only way to benefit from the system.
+
+\subsubsection{New Peers}
+
+The PCM in Membrane is given a target number of peers that it should share blocks with. When a new peer is presented to the PCM when peers are required, it contracts the peer giving it an offset\footnote{The number of blocks it can store more than the PCM can allocate to the peer} of one. This qualifies as a Contract modification so a Contract Update (CU) is sent to the peer.
+
+We expect a similar CU, marking the start of the contract. The mechanism can be observed in the initial part of fig \ref{fig:contract-start}.
+
+\subsubsection{Contracts}
+
+Contracts are Service Level Agreements (SLAs) within Membrane. Through offering an offset a peer agrees to:
+
+\begin{itemize}
+ \item Accept and store blocks from the PCM (up to the amount the PCM is holding for it, plus the offset)
+ \item Send CUs at least once every hour while the SLA is active.
+ \item Complete Block Instructions issued by the PCM - Used for proof of existence and block management.
+\end{itemize}
+
+We apply four sections of \cite{keller2002defining}'s SLA life-cycle to these contracts, the CU allowing for three of the life-cycle stages: Establishment, Reporting and Termination. A peer is only able to provide verifiable facts in the contract update, so it is impossible for peers to be deceitful.
+
+The offset can be modified as required throughout the SLA, with 0 terminating the SLA. Upon termination all blocks stored for the peer are removed.
+
+\subsubsection{Contract Update (CU)}
+
+The Contract Update consists of the following fields:
+
+\begin{itemize}
+ \item Allowed Inequality
+ \item List of Block you are holding for the peer.
+\end{itemize}
+
+Updates are sent whenever a peer connects, whenever a new peer block arrives and also every 15 mins. To receive a good appraisal a peer needs to send a contract update at least once every hour, so it is in the peer's interest to send contract updates, if it wishes to remain contracted.
+
+\begin{figure*}[h]
+ \centering
+ \includegraphics[width=0.8\textwidth]{contract-start}
+ \caption{Example Peer Contract Start}
+ \label{fig:contract-start}
+\end{figure*}
+
+\subsubsection{Block Instructions}
+
+Upon receiving a contract update the PCM sends one of the following Block Instructions (BI) to the peer.
+
+\begin{itemize}
+  \item Compute Evidence for the Block
+  \item Remove the Block
+  \item Send the Entire Block back
+\end{itemize}
+
+There are six possible scenarios for each block sent in the contract update.
+
+\emph{Lost Blocks} are blocks the PCM expects the peer to have that they did not report in the CU. The block is removed from the contract and the violation is marked in the peer appraisal.
+
+\emph{Unexpected Blocks} are blocks not in peer contract. These are temporarily\footnote{Not influencing how much space the PCM offers the peer.} inserted into the peer contract. The entire block is requested.
+
+If the peer is truthful, the block will be correctly decrypted and lost shards will be recovered. In the next update the block will register as expired. Otherwise this will be noted as a block the peer lost.
+
+\emph{Required Blocks} contain shards that are not present in local storage. These are requested for recovery.
+
+\emph{Proven Blocks} are blocks that have already been verified this hour and are not required, these blocks are.
+
+\emph{Provable Blocks} need to be verified for a good peer appraisal score this hour. A salt is sent to the peer to allow proof of ownership verification for the block.
+
+\emph{Expired Blocks} have no salts available for proof or contain no active shards. These are removed.
+
+If the peer correctly responds to all of these messages it will have verified all of the blocks it claims to own, increasing it's appraisal score and making it a more likely choice for the PCM to store blocks with.
+
+\subsubsection{Provable Data Possession (PDP)}
+
+To allow the peer to prove the own a file the PCM calculates a set of salts and resultant HMACs for each block deployed as described in section \ref{sec:poo}.
+
+We opt for the Keccak hash function, developed by \cite{bertoni2009keccak}. It used in SHA-3, a cryptographic standard released by NIST in 2015 \citep{paul2015nist}. There are no known exploits for Keccak and we use the 512-bit variant recommended by \cite{bertoni2009keccak} in 2013.
+
+\begin{figure*}[ht]
+ \centering
+ \includegraphics[width=0.8\textwidth]{lost-block}
+ \caption{Lost Block Communication Example}
+ \label{fig:lost-block}
+\end{figure*}
+
+We take advantage of the fact that there is no known way to compute a HMAC without both the data and the key. As the PCM releases the key during the hour the peer is verifying the data, the PCM can be certain the peer held the block at that point in time. \citep{ateniese2011remote}
+
+In order to prevent all the stored blocks being loaded by the client the PCM has a 50\% probability generating an empty key (except for the first and last proof), requiring no calculation by the peer. There is no way to predict this and therefore no way to abuse this feature. This is a pragmatic, very solution specific way of reducing IO required for PDP as the peer pays a huge reputation penalty for losing a block. There are more advanced methods that can be investigated \citep*{ateniese2011remote, shacham2008compact, bowers2009proofs}, however, we opt for this solution in this proof of concept system.
+
+Two weeks worth of HMACs are calculated, the expected lifetime of a block. After that the block is marked as expired and removed.
+
+\subsubsection{Contract Scaling}
+
+To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actual be available. Giving peers too much headroom would be detrimental. 
+
+The maximum amount of blocks transferred to each peer per upload is capped at six. This is due to a buffer limit of 256MB by the networking layer. If we assume all blocks are full and accounting for base64 encoding used for transfers, we find that this gives space for $(256 * \frac{3}{4}) / 25 = 7.68$ blocks. Room is left for potential messages between clients while blocks are transferring.
+
+The contract scaling allows adding friends in future expansions. A user can manually select a peer and increase their inequality, gifting them block space. We do not provide an interface to this in the initial implementation of Membrane.
+
+\subsubsection{Complete Data Loss Scenario}
+
+In the case of data loss the PCM is empty containing no contracts. Previously contracted peers locate the new PCM instance using PEX, unaware of the data loss. CUs are exchanged informing the peer that the PCM no longer holds any of their blocks, and the PCM treats all of the received blocks as lost.
+
+If the PCM's appraisal by the peer was poor, losing all of the peers blocks may trigger contract termination, losing all of those blocks. This is offset by the fact that two other peers also hold copies of the shard. The system correctly punishes peers that constantly lose all peer blocks.
+
+This mechanism can be seen at work in figure \ref{fig:lost-block}.
+
+\subsection{Peer Appraisal} \label{sec:peerAppraisal}
+
+Peer Appraisal is the persistent trust system that allow for peer discrimination, based around 3 core metrics: uptime, PDP checks and chance of data loss. We employ tools from intelligent agents to avoid potential attacks and design a system that uses a social approach \citep{pinyol2013computational} to control the acts of agents.
+
+We first conduct a survey to see the viability using uptime as a metric by polling users regarding their computer uptime. Within social groups uptime is correlated, as seen in fig \ref{fig:uptime-survey}, confirming the potential for using users to share storage for backup.
+
+We incorporate contract updates (CU). By sending a CU a peer confirms they are online. Each peer has an array that stores a number for each hour of the week\footnote{A space of time in which we expect to see repeatable usage patterns based on the results of the survey in fig \ref{fig:uptime-survey}}. When the hour is complete we add $n$ to completed hour of the week.
+
+$$n = \frac{\mbox{PDP Checked Shards}}{\mbox{Expected Shards}}$$
+
+We store a ratio of incomplete\footnote{$n$ is $<1.0$} and fully complete reports, heavily penalising peers for incomplete reports as this indicates deceit. In addition we store a count of blocks the peer lost, also generating a ratio of blocks lost to those that lasted their entire expected lifetime (two weeks).
+
+We calculate peer appraisal with the following formula:
+
+$$\mbox{rat} = H * R * L$$
+
+where $H$ is the percentage of the time the peer was online at the same time the PCM, $R$ is the report completion ratio and $L$ is the block loss ratio. This produces a value that indicates the probability that the user will be online and able to pass PDP checks for all held shards, with a penalty for losing blocks.
+
+If a peer rating is $<1.50\sigma - \mu$ away from the average we drop the peer as a contract, where $\sigma$ and $\mu$ indicates the standard deviation and mean respectively.
+
+This system was simulated in unit testing, asserting that the peer appraisal correctly punishes peers that fail to deliver PDPs, have incompatible uptime or lose blocks.
+
+Using \cite{josang2009challenges}'s nine potential attacks on reputation and trust systems described in section \ref{sec:tar}.
+
+A lot of attacks are countered by relying solely on image, instead of both image and reputation. Peers cannot use playbook, discrimination, collusion and Sybil attacks techniques. 
+
+Peers are harshly punished for low-quality actions so a playbook attack is ineffective. Trust is instantaneous so it would be difficult to exploit reputation lag. 
+
+A peer can re-enter the swarm with different credentials, but it would take a long time to regain reputation.
+
+Lastly there are no easy actions the peer can perform that let them gain reputation.
+
+As bad peers are shunned they will not have access to public PEX entries in high-performing peers, grouping poorly performing peer groups together, which is ideal.
 
 \section{Networking}
+
+The networking module is responsible for finding peers and providing a way to communicate with them. We first discuss authentication and account creation, followed by how we ensure peers can connect behind a NAT gateway, continuing to how peers communicate and how peers are able to locate each other. We end with the peer management strategy. 
+
+\subsection{Authentication}
+
+SSL is used for communication in Membrane. As the system is decentralised we cannot rely on a certificate authority for authentication, relying on a SHA-256 hash of the RSA public key, provided with the certificate on connection. If a peer is able to establish a secure connection with the provided certificate, we are certain the peer also holds the private key. \citep{menezes1996handbook} It is computationally infeasible to find the private key using only the public key, so we are guaranteed it is the same peer.
+
+The probability that two peers will generate the same RSA key is small enough that it can be ignored. On first application launch we generate the RSA public key, public key and X509 certificate, placing it in the Membrane config folder. Future application launches search this folder and load them into the application.
+
+It is important that users store these credentials in a safe place. We prominently display this in the usage instructions, and in the future we plan to implement a utility to encrypt transfer the authentication information to a removable storage medium.
+
+\subsection{Peer Connection}
+
+We can expect Membrane peers to be behind a NAT gateway, which acts as a bijective converter for ip and port combinations, grouping all internal IPs as one external IP. This poses an issue when establishing a connection with peers as NAT will typically block connections to unmapped ports. In section \ref{sec:p2pconn} we discussed four solutions, two of which we attempt. UPnP port forwarding \citep{boucadair2013universal} and TCP Hole Punching \citep{wing2010traversal}.
+
+We use a UPnP communication library in Java for port forwarding. First we broadcast a UPnP request for potential gateways on the network. If a response is received we use UPnP to request a port forward for 5 minutes. If this request fails we try the next port up for a maximum of 20 attempts. In practice this has proven a large enough number to locate an available port. We then ask the gateway what the external IP is. A refresh is performed every 130 seconds to ensure the port forwarding entry never expires. A time of 5 minutes is used to ensure the port forward stops after a reasonable time.
+
+We attempt TCP Hole Punching but find that Vert.x, the chosen network communication library does not provide a way to both listen and send messages out of the same port. If users find that UPnP is insufficient we will investigate using the underlying communication (Netty) to regain the required control.
+
+In testing we discovered that as only one of the peers required port forwarding to generate a connection it is sufficient within the Membrane proof-of-concept.
+
+\subsection{Communication}
+
+In order to communicate using Membrane we
+
+\subsection{Peer Exchange (PEX)}
+
+\begin{figure*}[hb]
+ \centering
+ \includegraphics[width=0.8\textwidth]{pex-new-peer}
+ \caption{PEX New Peer Discovery Example}
+ \label{fig:pex-new-peer}
+\end{figure*}
+
+\subsection{Gatekeeper}
 
 \chapter{User Interfaces}
 
@@ -1494,6 +1892,8 @@ Finally the Journal is trimmed, removing any history necessary. The algorithm cr
 \newpage
 
 \chapter*{Appendix}
+
+\section{Code}
 
 \begin{lstlisting}[language=Java, caption=Garbage Collection Implementation, label=lst:fileGC]
   /**
@@ -1561,5 +1961,224 @@ Finally the Journal is trimmed, removing any history necessary. The algorithm cr
   }
 \end{lstlisting}
 
+\begin{lstlisting}[language=Java, caption=Knapsack Shard to Block Fitter, label=lst:shard2block]
+  public static Set<String> calculateBestShards(String[] shardIds, int[] shardSizes, int blockSize) {
+    boolean[][] retainShard = new boolean[shardSizes.length][blockSize + 1];
+    int[][] tmpTable = new int[shardSizes.length + 1][blockSize + 1];
+
+    for (int shardIdx = 1; shardIdx <= shardSizes.length; shardIdx++) {
+      for (int size = 1; size <= blockSize; size++) {
+        if (shardSizes[shardIdx-1] > size) {
+          tmpTable[shardIdx][size] = tmpTable[shardIdx-1][size];
+        } else {
+          int keepShardSize = shardSizes[shardIdx-1] + tmpTable[shardIdx-1][size-shardSizes[shardIdx-1]];
+          int ignoreShardSize = tmpTable[shardIdx-1][size];
+          if (keepShardSize > ignoreShardSize) {
+            retainShard[shardIdx-1][size] = true;
+            tmpTable[shardIdx][size] = keepShardSize;
+          } else {
+            tmpTable[shardIdx][size] = ignoreShardSize;
+          }
+        }
+      }
+    }
+
+    Set<String> selectedShards = new HashSet<>();
+    for (int i = shardSizes.length-1; i >= 0; i--) {
+      if (retainShard[i][blockSize]) {
+        selectedShards.add(shardIds[i]);
+        blockSize = blockSize - shardSizes[i];
+      }
+    }
+    return selectedShards;
+  }
+\end{lstlisting}
+
+\section{Documents}
+
+\begin{lstlisting}[language=RsT, caption=Membrane API Documentation, label=lst:apiDocs]
+API
+---
+
+The Rest API is available on port ``13200`` by default.
+
+Available Calls include:
+
+Status
+~~~~~~
+
+- **URL** : /
+- **Method** : GET
+- **Response Params** : {hostname: [string], startTime: [dateTime], port: [number], version: [string], status: [string], tagline: [string]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+
+Network
+~~~~~~~
+
+- **URL** : /status/network
+- **Method** : GET
+- **Response Params** : {enabled : [bool], connectedPeers: [number], networkUID: [string], maxConnectionCount: [number], peerListeningPort: [number], upnpAddress: [string]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+
+Storage
+~~~~~~~
+
+- **URL** : /status/storage
+- **Method** : GET
+- **Response Params** : {currentFiles: [string[]], referencedFiles: [string[]], localShardStorageSize: [number], targetLocalShardStorageSize: [number], maxLocalShardStorageSize: [number], peerBlockStorageSize: [number], targetPeerBlockStorageSize: [number], maxPeerBlockStorageSize: [number]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+
+Watcher
+~~~~~~~
+
+- **URL** : /status/watcher
+- **Method** : GET
+- **Response Params** : {trackedFolders: [string[]], trackedFiles: [string[]]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+
+Watch Folders
+~~~~~~~~~~~~~
+
+- **URL** : /status/watch_folder
+- **Method** : GET
+- **Response Params** : {watchFolders: [watchFolder[]]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+- **Other** : watchFolder = {directory: [string], recursive: [bool]}
+
+Contract
+~~~~~~~~
+
+- **URL** : /status/contract
+- **Method** : GET
+- **Response Params** : {contractManagerActive: [boolean], contractTarget: [number], contractedPeers: [string[]], undeployedShards: [string[]], partiallyDistributedShards: [string[]], fullyDistributedShards: [string[]]}
+- **Response Codes** : Success (200 OK), Unauthorized (403), Internal Error (500)
+
+Modify Watch Folder
+~~~~~~~~~~~~~~~~~~~
+
+- **URL** : /configure/watch_folder
+- **Method** : POST
+- **Request Params** : {type: [string (ADD|REMOVE)], watchFolder: [watchFolder]}
+- **Response Codes** : Success (200 OK), Partial Fail (304), Invalid Request (400), Unauthorized (403), Internal Error (500)
+- **Other** : watchFolder = {directory: [string], recursive: [bool]}
+
+
+Request Storage Cleanup
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- **URL** : /request/cleanup
+- **Method** : POST
+- **Response Codes** : Success (200 OK), Invalid Request (400), Unauthorized (403), Internal Error (500)
+
+
+Reconstruct File
+~~~~~~~~~~~~~~~~
+
+- **URL** : /request/reconstruct
+- **Method** : POST
+- **Request Params** : {filepath: [string]}
+- **Response Codes** : Success (200 OK), Partial Fail (304), Invalid Request (400), Unauthorized (403), Internal Error (500)
+
+
+Request File History
+~~~~~~~~~~~~~~~~~~~~
+
+- **URL** : /request/history
+- **Method** : POST
+- **Request Params** : {filepath: [string], targetFilePath: [string], dateTimeMillis: [number]}
+- **Response Params** : {filePath: [string], fileHistoryEntryList: [fileHistoryEntry[]]}
+- **Response Codes** : Success (200 OK), Partial Fail (304), Invalid Request (400), Unauthorized (403), Internal Error (500)
+- **Other** : fileHistoryEntry = {dateTime: [string], hashes: [string[]], size: [number], remove: [boolean]}
+\end{lstlisting}
+
+\section{Tables}
+
+\begin{table}[h!]
+\centering
+\label{tab:storageUsage}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+       & Total File Size (MB) & Total Number of Blocks & Effective Block Size (MB) & Efficiency \\ \hline
+User 1 & 4111                 & 176                    & 4400                      & 0.93       \\ \hline
+User 2 & 8556                 & 387                    & 9375                      & 0.88       \\ \hline
+User 3 & 758                  & 34                     & 850                       & 0.89       \\ \hline
+\end{tabular}
+\caption{Storage Usage vs. Actual File Size}
+\end{table}
+
+\section{Surveys}
+
+\begin{lstlisting}[language=RsT, caption=Membrane Feature Survey, label=lst:mbrnsurvey]
+ Question: What 5 features would you be looking for in a distributed backup system, that uses a network of peers to add resilience to your data?
+   
+ Response 1:
+ - Make sure my data is safe
+ - Should be easy to setup and not require my attention
+ - Should avoid using too much of my network as I have limited data
+ - Should not slow down my games
+ - I would like a web interface like dropbox has 
+  
+ Response 2:
+ - I don't want to have to care about it after setup
+ - Should let me see old copies of my work
+ - People storing my data shouldn't be able to see it
+ - I want to be able to view the backups in a window
+ - I need to be able to get my files back quickly if I delete them accidentally (like a recycle bin)
+ 
+  
+ Response 3:
+ - I don't want to have to rely on the speed of peer's connections to recover files.
+ - I want to be able to move my files from system to system, like onedrive does.
+ - Don't use data when connected to a phone hotspot from my laptop
+ - No-one can be able to see my files.
+ - A way to recover files by just plugging a USB stick in.
+ 
+  
+ Response 4:
+ - Strong encryption - something that, to the best of the knowledge in the community, has not been ``broken'' and would take even super computers and exorbitant amount of time to brute force
+ - I use OneDrive to move files from my desktop to my laptop, this would need to be able to do the same.
+ - I don't wat to ever have to think about the backup service unless I'm recovering files. Should be completely transparent to me.
+ - The option to be able to use my own server for backup. I don't want to only rely on the network for backup.
+ - A good syncing feature like OneDrive so what is in the backup is always up to date, with at least a OneDrive level of versioning or better (deleted files are recoverable but changes are not)
+ 
+  
+ Response 5:
+ - The people storing my files cannot see them
+ - Should be able to see old documents. If I make a change to something and want to go back to the previous version I should be able to.
+ - I use Google Photos for image backups. A system that showed my a nice album of the images I backed up would be cool.
+ - Transfer Files Between System
+ - I want to be able to use this from a USB stick, plug it in and it immediatly starts backing up and recovering files.
+ 
+  
+ Response 6:
+ - This needs to be able to work without my babysitting it, and cannot break!
+ - It needs to use an unbreakable encryption for my files. I don't want any chance of someone seeing the data they are backing up for me. I also want to be sure I'm not backing up anything illegal for anyone else!
+ - I need quick access to any files I backup. Otherwise this is useless.
+ - This can't be a drain on my laptop battery. If I noticed my fans spin up on my laptop because of backup, I would immedialy uninstall it.
+ - I sometimes use Google Drive to access my file from uni for example. It would be nice if I could do the same with this.
+ 
+ 
+  Response 7:
+ - I want to be able to just backup to my friends
+ - No wait for file recovery
+ - Should be able to see old file version, like in dropbox
+ - Can't slow down my computer
+ - I want to be able to add friends who I trust
+  
+  
+ Response 8:
+ - This cannot use too much of my laptop battery.
+ - I use dropbox for file versioning sometimes, this needs to be able to do the same.
+ - This needs to be able to run without me noticing it, just like dropbox.
+ - It needs to be able to show my old versions of files. I also want to be able to share files I've backed up from other people's computers.
+ - It wouldn't be a must by any stretch, but I think it would be nice to have 1 backup tool that handles everything.  As in, it does this cloud sync thing, but you can also plug in an external drive and it uses the same tech to fill it up, etc.
+\end{lstlisting}
+
+\begin{figure}[ht!]
+ \centering
+ \includegraphics[width=\textwidth]{uptime-survey}
+ \caption{Uptime Survey}
+ \label{fig:uptime-survey}
+\end{figure}
 
 \end{document}

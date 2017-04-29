@@ -298,7 +298,7 @@ Within Membrane, I plan to use a combination of Asynchronous and Synchronous tec
 
 A further extension of this, would be to allow hosts to provide a DNS name along with their IP. Users that have setup Dynamic DNS (DDNS) \citep{bound1997dynamic} would be able to locate each other without the help of a bootstrapping server.
 
-\subsection{Peer Exchange}
+\subsection{Peer Exchange} \label{sec:pex}
 
 When bootstrapping is complete new Peers can increase their knowledge of the network through Peer Exchange. This is used by Bittorrent to help share swarm information with other nodes. As soon as a client connects to the swarm, peer information is collected using DHT or PEX.
 
@@ -415,7 +415,7 @@ Attempts to misrepresent reliability and manipulate reputation are common in tra
 \end{itemize}
 When implementing a trust system in Membrane these attacks should be considered and special attention should be paid to prevent a new user being exploited for their storage space when joining the swarm.
 
-\section{Communication}
+\section{Communication} \label{sec:comm}
 
 As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion. Formalising communication using ACLs is a more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves. Instead of using a strict protocol we shall instead take an agent-based approach to communication using ACLs.
 
@@ -436,9 +436,10 @@ To keep communication simple for nodes, we shall use two CAs
 \end{itemize}
 where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. This will enable easier implementation and can be expanded if required.
 
-\subsection{Ontology}
+\subsection{Ontology} \label{sec:ontology}
 
 An ontology is a way of defining basic terms and relations comprising the vocabulary of a topic area. \cite{sugumaran2002ontologies} tells us the the three most commonly used relationships in an ontology are \emph{is-a}, \emph{synonym} and \emph{related-to} (which is a generic association between entities). So why should we create an ontology for membrane? \cite{noy2001ontology} lists the benefits of ontology within distributed systems:
+
 \begin{itemize}
  \item Enable common understanding of the structure of information
  \item Enable reuse of domain knowledge
@@ -446,21 +447,8 @@ An ontology is a way of defining basic terms and relations comprising the vocabu
  \item Separate domain and operational knowledge
  \item Analyse domain knowledge
 \end{itemize}
-Within Membrane we could benefit from an ontology during negotiation for storage space. Obligations could be predefined between agents and an agent could request a set of obligations, instead of explaining an obligation during negotiation. This allows agents to be more concise and expressive. \cite{noy2001ontology} gives us 7 steps for ontology creation.
 
-\begin{enumerate}
- \item Determine the domain and scope of the ontology
- \item Consider reusing existing ontologies
- \item Enumerate important terms
- \item Define classes and their hierarchy
- \item Define class properties (slots)
- \item Define slot facets
- \item Create Instance
-\end{enumerate}
-
-It is important to ensure the ontology goes into the right amount of detail for the requirements. An overly detailed ontology can make reasoning difficult, and an ontology that is too simple will limit expressiveness and reasoning. \citep*{wooldridge2009introduction, sugumaran2002ontologies}.
-
-When considering ontologies for re-use \cite{noy2001ontology} points us towards the DAML ontology library (http://www.daml.org/ontologies/). Using this and Google I was able to locate 2 ontologies, the datastore schema provided by \cite{w32001datastore} and an OWL based ontology for SLA services provided by \cite{pande2012slaont}. Both of these will be examined further during the ontology creation process.
+Within Membrane we may benefit from an ontology during negotiation for storage space. Obligations could be predefined between agents and an agent could request a set of obligations, instead of explaining an obligation during negotiation. This allows agents to be more concise and expressive.
 
 \section{Peer-to-Peer Connection} \label{sec:p2pconn}
 
@@ -1767,6 +1755,8 @@ In order to prevent all the stored blocks being loaded by the client the PCM has
 
 Two weeks worth of HMACs are calculated, the expected lifetime of a block. After that the block is marked as expired and removed.
 
+We do not use Keccak Message Authentication Codes (KMACs), a newer more efficient keyed hash function that makes use of the sponge construction of Keccak to only hash once \citep{kelsey2016sha} as the standard is new and the cryptography library we use does not support it yet.
+
 \subsubsection{Contract Scaling}
 
 To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actual be available. Giving peers too much headroom would be detrimental. 
@@ -1839,22 +1829,142 @@ We attempt TCP Hole Punching but find that Vert.x, the chosen network communicat
 
 In testing we discovered that as only one of the peers required port forwarding to generate a connection it is sufficient within the Membrane proof-of-concept.
 
-\subsection{Communication}
-
-In order to communicate using Membrane we
-
-\subsection{Peer Exchange (PEX)}
-
-\begin{figure*}[hb]
+\begin{figure*}[!ht]
  \centering
  \includegraphics[width=0.8\textwidth]{pex-new-peer}
  \caption{PEX New Peer Discovery Example}
  \label{fig:pex-new-peer}
 \end{figure*}
 
+\subsection{Peer Exchange (PEX)}
+
+In order to allow peers that constantly change IP address and port to find each other require a method of PEX as discussed in the literature review (\ref{sec:pex}). We need to build on the PEX system using in BitTorrent in order to locate previously contracted peers in the swarm.
+
+We introduce the concept of a PEX Advertisement, PEX Request and PEX Response. Using these three messages we allow peers to locate each other within the swarm, without exposing information about peers that do no want their information public.
+
+\subsubsection{PEX Advertisement}
+
+Each peer periodically sends a PEX Advertisement to all connected peers. This contains:
+
+\begin{itemize}
+ \item IP Address
+ \item Port
+ \item Time Stamp
+ \item `Is Public?' Flag
+ \item Signature
+\end{itemize}
+
+On receipt the peer verifies the signature and checks for other entries from the same peer within its PEX Ledger, an evicting store of Peer PEX information. If this PEX advertisement was created after the latest entry it has, the update replaces the previous entry. To ensure this system is not broken by time stamps set in the future, these are automatically dropped. By default the ledger stores 300 PEX entries in the ledger, expiring them in FIFO order if full. The Ledger is persisted to disk periodically.
+
+If a connection to the Peer is required the PEX IP address and port can be dialled to attempt a connection.
+
+\subsubsection{PEX Query}
+
+In the event that connection to a peer is lost, and both peers have changed address, PEX Requests can be used to attempt to find the location of the peer. A PEX request is sent to currently connected peers, asking for the most recent PEX Advertisement in their PEX ledger for the peer. The request must contain the peer id, which as established, is a sha-256 hash of their public RSA key.
+
+The chance of guessing the key for an existing peer is sufficiently infeasible that knowing the peer ID for the peer means the Membrane instance requesting the information has either connected to the peer before or has heard about them.
+
+If there exists a PEX Advertisement Entry for the requested peer in the PEX Ledger of the peer sent the request, this is sent back in the PEX response as a PEX Advertisement.
+
+As PEX Advertisements are signed using the original peers private key, we can be certain that the PEX response originated from the peer and was not forged. \citep{li1993remark} The time stamp in the advertisement prevents the peer sending old PEX Advertisement. The certificate of any contracted peer is persisted by Membrane to check for this signature. Therefore the PEX Advertisement can be reliably treated as if it came from the peer it describes.
+
+This mechanism is demonstrated in figure \ref{fig:pex-new-peer}. Two peers (1 and 3) attempt to relocate each other by using Peer 2.
+
+\subsubsection{Public PEX Entries}
+
+This mechanism is further extended to support public PEX entries. A PEX Request can also request fifty\footnote{Decided upon through observing the PEX mechanism in BitTorrent. \citep{vuze2010vuze}} public PEX entries. These are sent back without signature or peer ID information and are meant as an untrusted mechanism for attempting to establish peer connections.
+
+These are stored in a second non-persisted temporary ledger and is a mechanism for discovering new peers. When a peer A requests peer B for public PEX entries, peer B searches all entries in their real PEX Ledger, only selecting those entries less than 15 minutes old with the `Is Public' flag toggled.
+
+We attempt prevent accidental DOS attacks by requiring entries spread as public must be signed at least once by a unique Peer, requiring work to be done to generate new credentials. In addition only one entry per IP can exist in the public ledger.
+
+If a peer is looking for new peers to connect, it can allow peers with unknown X509 certificates to connect to it via SSL, and begin sending public PEX updates.
+
+\subsubsection{Tracker}
+
+A tracker is a peer found at a static IP, only running the networking module of Membrane and unable to form contracts with other peers. Is it a last resort mechanism for membrane peers if they are unable to find other contracted peers or looking for more peers to contract. The PEX mechanism functions in exactly the same way.
+
+The domain name of all available trackers and their user IDs is stored in Membrane instances. A user may run a Membrane tracker, however, this will not be added to all Membrane instances and it will simply be useful to those users that have manually added the tracker to their Membrane instances.
+
+\subsubsection{Conclusion}
+
+The described system allows for peers to locate each other and discover new potential peers, fulfilling the requirements for PEX within Membrane. The ability for peer discovery demonstrated in figure \ref{fig:pex-new-peer} is unit tested and proven to work.
+
+\subsection{Communication}
+
+As established in the literature review (\ref{sec:comm}) we design an ontology for communication in Membrane using the FIPA based agent communication language (ACL) as a container for our ontology.
+
+\subsubsection{Agent Communication Language}
+
+The FIPA Agent Communication Language (ACL) specification based on the Speech Act theory \citep{labrou1999agent} comprises of:
+
+\begin{itemize}
+ \item A Communicative Act CA
+ \item An ACL Message Structure
+ \item An Associated Ontology
+\end{itemize}
+
+We choose to adapt the FIPA specification for use in Membrane replacing the standard performatives (CAs) with an implicit INFORM/REQUEST performative. This is a change from the performative based approach suggested in the literature review (\ref{sec:comm}) as we decide the benefits of creating a stateless protocol with no replies\footnote{As per the recommendation of \citep{google2017api}'s API guide}, saving client memory and decrease in programming complexity far outweighs the benefits of the message having redundant information describing the content.
+
+Because of the extensiblity requirement, we have designed the message API such that performatives are completely compatible with current messages, they would simply be ignored by earlier versions.
+
+We opt to use the following fields from the FIPA ACL specification \citep{fipa2002fipa}:
+
+\begin{enumerate}
+ \item sender - Peer id of the sender
+ \item receiver - Peer id of the receiver
+ \item conversation-id - Unique message id for every message. This rolls around to $0$ when $2^{64}-1$ is reached.
+ \item in-reply-to - The message id can be included. $-1$ indicates an empty field
+ \item content - The content of the message
+ \item protocol - Indicates the version number of Membrane for parsing
+\end{enumerate}
+
+We find this layout holds all the information required for handling messages. The `in-reply-to' field is ONLY used for a PING-PONG message exchange, where we wait for the PONG to arrive to test connectivity.
+
+\subsubsection{Protocol Design}
+
+A protocol for both \emph{Block Storage} and \emph{Peer Exchange} messages is required. We discussed ontologies in section (\ref{sec:ontology}), however, on reflection the chosen contract technique does not require an ontology, as it just relies on values and doesn't rely on domain knowledge to make decisions. We therefore follow the API design guide's suggestions for formatting data to provide content for the described ACL using object oriented techniques to structure data.
+
+There are nine messages that need to be sent:
+
+\begin{itemize}
+ \item PING (For Debugging Only)
+ \item PONG (For Debugging Only)
+ \item Contract Update
+ \item Evidence Request (Block Instruction)
+ \item Evidence Response
+ \item PEX Advertisement
+ \item PEX Query
+ \item PEX Response
+ \item Data Block
+\end{itemize}
+
+Using the style guide suggests using base64 encoding byte arrays used for transferring blocks and salts described in RFC4648 \citep{josefsson2006base16}. It encodes each six bits of data as a byte, causing a $\frac{4}{3}$ expansion in data size. This allows the data to be transferred a string within the ACL specified, however, the data expansion is a huge downside.
+
+To improve on this we can chose a more efficient encoding such as \emph{basE91} \citep{joachim2015base91} or transfer data without packaging it in the ACL to improve efficiency. While developing the prototype it was useful to have the data in a readable format as it was easy to debug and compare by eye, one of the main reasons it is suggested in \cite{google2017api}'s API style guide.
+
 \subsection{Gatekeeper}
 
+The gatekeeper is the package of the networking module responsible for dialling and receiving connections from peers. It takes the maximum number of allowed connections, and whether it should aim to connect to uncontracted peers, and ensures only desirable peers connect. We include the relevant code in listing \ref{lst:peerPop}.
+
+During a periodic sweep the Gatekeeper first checks if more connections are required to fulfil the contract target requested by PCM and there are more connections that can be established without going over the maximum. If so a PEX Request asking about all contracted peers is sent to all connected peers. If the gatekeeper is searching for new public peers, the PEX request asks for public peers in the PEX Request and attempts to dial every new connection in the public PEX Ledger.
+
+A PEX Advertisement is then sent to all peers with the External Address and port collected from the UPnP port forwarding. The PEX Advertisement is public if searching for new peers and more contracted peers are required.
+
+Any redundant peers\footnote{Those not contracted and not a tracker} if the maximum connection count is surpassed.
+
+Finally the trackers are dialled if the speed at which the Gateway is finding new peers is too slow. It expect to connect to all contracted peers in 200 minutes.
+
+This maintenance procedure is sufficient to provide the PCM with new peers up to the requested maximum, while refraining to connect to the main trackers if unnecessary, satisfying the requirements for the Network Module
+
+\subsection{Conclusion}
+
+The components described connect together to form a distributed backup program the can fairly store data with other peers, in exchange for storing their data, resulting in the final architecture of Membrane.
+
+We discussed the journey of a file from initial detection, to local storage, to packaging into blocks for deployment with peers ending with the module responsible for establishing connections the peers that can Membrane can trade file blocks with. We now discuss the interfaces developed for interacting with Membrane.
+
 \chapter{User Interfaces}
+
 
 \section{GUI}
 
@@ -1994,6 +2104,72 @@ In order to communicate using Membrane we
   }
 \end{lstlisting}
 
+\begin{lstlisting}[language=Java, caption=Peer Population Control, label=lst:peerPop]
+  /**
+   * Attempt to connect to new peers, spread PEX information and disconnect redundant peers.
+   */
+  void maintainPeerPopulation() {
+    logger.info("Running peer maintenance.");
+    Set<String> contractedPeers = contractManager.getContractedPeers();
+    Set<String> connectedPeers = connectionManager.getAllConnectedPeerIds();
+    Set<String> trackerPeers = trackerManager.getTrackerIds();
+
+    // First attempt to connect to any peers with pre-established contracts
+    connectToContractedPeers(contractedPeers, connectedPeers);
+
+
+    // Check if new connections are required and have space
+    int knownPeerCount = getKnownPeerCount(contractedPeers, connectedPeers, friendPeers, trackerPeers);
+    int remainingConnectionCount = remainingConnections(knownPeerCount, maxConnections);
+    int requiredConnections = requiredPeers(knownPeerCount, contractManager.getContractCountTarget());
+
+    boolean requireMoreConnections = requiredConnections > 0;
+    boolean haveRemainingConnections = remainingConnectionCount > 0;
+
+    logger.info("{} more peer connections for contracts. {} to connect to more peers. Should {} connect to new public peers",
+        requireMoreConnections ? "Require" : "Do not require",
+        haveRemainingConnections ? "Able" : "Unable",
+        searchForNewPublicPeers ? "" : "not");
+
+    Collection<Peer> connectedPeerSet = connectionManager.getAllConnectedPeers();
+
+    if (requireMoreConnections && haveRemainingConnections) {
+      PexManager.requestPexInformation(connectedPeerSet, contractedPeers, searchForNewPublicPeers);
+      if (searchForNewPublicPeers) {
+        pexManager.connectToPublicPeersInPex(connectionManager, requiredConnections);
+      }
+    }
+
+    boolean isPexUpdatePublic = searchForNewPublicPeers && requireMoreConnections;
+
+    ExternalAddress externalAddress = portForwardingService.getExternalAddress();
+    logger.debug("Sending external address {}:{}", externalAddress.getIpAddress(), externalAddress.getPort());
+    PexManager.sendPexUpdate(externalAddress, connectedPeerSet, isPexUpdatePublic);
+
+    // Disconnect from peers taking up useful connection slots
+
+    if (remainingConnectionCount < 0) {
+      logger.debug("Need to disconnect redundant peers. Too many connections.");
+      disconnectRedundantPeers(-remainingConnectionCount, contractedPeers, connectedPeerSet);
+    }
+
+    // Connect to a tracker if struggling for peers.
+
+    logger.info("Checking if tracker connection necessary.");
+    int contractedPeerTarget = contractManager == null ? 0 : contractManager.getContractCountTarget();
+    int connectedPeerCount = connectedPeerSet.size();
+    int minutesFromStartup = Minutes.minutesBetween(startUpDateTime, DateTime.now()).getMinutes();
+    boolean hasPexEntries = pexManager.getPexEntryCount() > 0;
+
+    if (trackerManager.shouldConnectToTrackers(contractedPeerTarget, hasPexEntries, minutesFromStartup, connectedPeerCount)) {
+      logger.debug("Connecting to tracker to assist locating more peers.");
+      trackerManager.connectToTrackers(connectionManager, connectedPeers);
+    } else {
+      logger.info("Tracker connection not required.");
+    }
+  }
+\end{lstlisting}
+
 \section{Documents}
 
 \begin{lstlisting}[language=RsT, caption=Membrane API Documentation, label=lst:apiDocs]
@@ -2090,6 +2266,36 @@ Request File History
 - **Response Codes** : Success (200 OK), Partial Fail (304), Invalid Request (400), Unauthorized (403), Internal Error (500)
 - **Other** : fileHistoryEntry = {dateTime: [string], hashes: [string[]], size: [number], remove: [boolean]}
 \end{lstlisting}
+
+dominic@expiravit:/tmp/mbrn-test$ membrane 
+contracts          history            monitored-folders  peers              status             watch-add          watch-remove
+files              monitored-files    network            recover            storage            watching           
+dominic@expiravit:/tmp/mbrn-test$ membrane status 
+Status:         NORMAL
+Host:           expiravit:13200
+Version:        1.0.0-alpha.6
+Uptime:         00:31:14
+dominic@expiravit:/tmp/mbrn-test$ membrane storage 
+226 current files stored.
+227 total files.
+Local Shard Storage. 9MB of 655MB used (max 819MB)
+Peer Block Storage. 8MB of 3276MB used (max 3276MB)
+dominic@expiravit:/tmp/mbrn-test$ membrane contracts 
+Peers Contracted:       3 (max. 100)
+Undeployed Shards:      0
+Partially Deployed:     225
+Fully Deployed:         0
+dominic@expiravit:/tmp/mbrn-test$ membrane network 
+User ID:        92d81c1cb271d4110a3fec62cdeb41e352a63f391421ca9316e36525806a0b9d
+Peers:          2 (max. 100)
+Peer Port:      14200
+UPnP Address:   81.135.110.126:14217
+dominic@expiravit:/tmp/mbrn-test$ membrane peers 
+Contracted Peer(s):
+        e71ef553a177fef4fb4af6fd555f486bf33b02e9224b9c2dd15ec1e4eea8caf9
+        4df5387fc333612205b4715df6cb8e5160f20ac772fe15449bc394a90f98e7e2
+        de9426306d4e1adca19dec07529e669b809239cbeab20e51f0c785479e73c0d2
+
 
 \section{Tables}
 

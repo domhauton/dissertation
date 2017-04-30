@@ -164,7 +164,7 @@ Library and may be photocopied or lent to other libraries for the purposes of co
 
 \renewcommand{\abstractname}{Abstract}
 \begin{abstract}
-Membrane is an amalgamation of distributed storage and backup software, designed to operate on a very large scale: terabytes of data backed up across thousands of users across the world. A Membrane user is able to trade storage space with peers across the network, allowing them to securely store their backups world wide providing the user with data resilience with high availability at no monetary cost to the peer.
+Membrane is an amalgam of distributed storage and backup software, designed to operate on a very large scale: terabytes of data backed up across thousands of users across the world. A Membrane user is able to trade storage space with peers across the network, allowing them to securely store their backups world wide providing the user with data resilience with high availability at no monetary cost to the peer.
 
 The applications vary from users who require a secure backup tool with file versioning for their important documents, to corporations that need to provide data resilience to their employees without investing in infrastructure, instead making use of redundant storage space on employee terminals. Membrane seeks to offer an alternative to existing paid cloud services, guaranteeing data privacy through encryption and offering a comparable feature set by harnessing the storage potential of it's users.
 
@@ -181,7 +181,7 @@ In this report we explore the current distributed storage landscape and follow t
 \listoffigures
 
 \chapter{Introduction}
-Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In this project we study, design, build and analyse an amalgamation of distributed storage and backup technology. We must first decompose the problem into several parts and explore advances made in fields such as cryptography, file backup and intelligent agents as well as looking at advantages of existing technologies.
+Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In this project we analyse, design and build a meld of distributed storage and backup technology. We must first decompose the problem into several parts and explore advances made in fields such as cryptography, file backup and intelligent agents as well as looking at advantages of existing technologies.
 
 Throughout the remainder of the introduction we discuss the goals of the project and justify the creation of Membrane, analysing existing solutions and describing challenges we may face.
 
@@ -693,7 +693,7 @@ Finally users were also interested in the \emph{software licence}, with an empha
 
 We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them.
 
-\section{Requirements}
+\section{Requirements} \label{sec:requirements}
 
 In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane.
 
@@ -2221,21 +2221,130 @@ With the daemon and interfaces complete Membrane is now complete and functional.
 
 It is crucial to test software before deployment, particularly if it is run by users, where it cannot be monitored and and handling user's personal data. We ensure it is impossible for Membrane to delete any files that it has not created or otherwise adversely affect the host system.
 
-In this section we discuss three types of testing: unit, integration and usability testing outlining the importance and methodology in all three, trying to discover and address any problems discovered.
+In this section we discuss three types of testing: unit, integration and validation testing outlining the importance and methodology in all three, trying to discover and address any problems discovered.
 
 We end on a discussion about Membrane and distributed backup outlining lessons learned and proposing what could be done differently during development.
 
 \section{Unit Testing}
 
+Unit testing aims to test individual units of source code, to determine if they are fit for use and have expected inputs and outputs. \citep{huizinga2007automated} A unit is the smallest testable part of the application, ranging from an entire module to individual functions.
+
+In order to isolate components of Membrane we make use of method stubs and mock objects \citep{osherove2015art} using Mockito, a library that uses reflection for this. We also create temporary test objects such as the \code{EvictingContractManager}, in places where more complex functionality is required.
+
+Test Driven Development (TDD) is used to scope modules and units while testing. We turn requirements into test cases breaking them down into constituent components that can co-exist. This technique uses the following development cycle \citep{beck2003test}:
+
+\begin{enumerate}
+ \item Create a test
+ \item Run all tests and see if the new test fails.
+ \item Write or modify code to ensure the test passes
+ \item Refactor the code to move new code to where it logically belongs.
+\end{enumerate}
+
+By repeating this procedure the software slowly grows, without unnecessarily exceeding requirements. JUnit Jupiter is used as the testing framework. This integrates with Gradle into part of the project build, so any time code changes are made, tests are run to ensure code correctness.
+
+\begin{figure*}[!ht]
+ \centering
+ \includegraphics[width=\textwidth]{code-coverage}
+ \caption{Membrane Code Coverage (\url{http://codecov.io/gh/domhauton/membraned})}
+ \label{fig:code-coverage}
+\end{figure*}
+
+While designing unit tests it is important to prioritise areas of the program to test. Although it would be ideal to test every line of code sometimes this is impractical. An example of this is testing very niche situations such as, what would happen if the permissions on a config file, changed mid-save. Although important to handle, creating an environment where this happens automatically is both time consuming and ultimately irrelevant compared to more important functionality.
+
+Code coverage is a metric through which we can rate the unit test. This is a percentage of code lines that were executed during testing, a higher percentage usually indicating a lower number of unexpected bugs. \citep{miller1963systematic} More complicated coverage criteria such as branch coverage\footnote{Has every possible \code{if} statement been evaluated.} can also be used.
+
+Full coverage is often impractical as it can lead to the aforementioned convoluted test scenarios. In Membrane we aim for 80\% line coverage and 70\% branch coverage. We measure this using VersionEye, a code coverage tool integrated into Github which tests code coverage on every commit and find that we achieve 83.56\% line and 73.89\% complexity coverage, varying slightly between modules as seen in figure \ref{fig:code-coverage} where green, yellow and red is full, partial and not covered line count respectively.
+
+We ensure critical elements that ensure no file is ever over-written have 100\% coverage with every possible scenario considered.
+
 \section{Integration Testing}
+
+Integration testing combines all the software modules and tests them as a group. It's purpose is to verify both functional and non-functional requirements. The test cases focus less on individual object behaviour and more on the system as a whole.
+
+There are a few integration test patterns to select from such a big-bang, bottom-up and top-down testing. \citep{binder2000testing} We opt for top-down testing which looks to approach testing from the main module, the \code{Backup Manager} in Membrane, to all of the other sub-modules. One of the major advantages of this methodology is the ability to produce early skeletal program demonstrations, which was required during the ``demonstration of progress'' section of the project.
+
+Throughout development we ensure the software is free of integration problems by using Continuous Integration (CI), a technique first proposed by \cite{booch1991object}. We adopt an evolution of the concept that advocates build servers, that automatically build and test the project after every commit. 
+
+Using TravisCI, a Github integration we test the code using both OpenJDK 8 and OpenJDK 9, a future version of Java, ensuring we will have no trouble moving onto the more efficient JDK when it is fully released, in line with the extensiblity requirement. We are also able to automate deployment using TravisCI, assuring potential users who view the source code repository that the software is fully testing.
+
+We finally ensure that all of the requirements have been met. This is done through a combination of unit and integration testing where appropriate. We find that all of requested functional requirements have been fulfilled and the software is ready for usability testing by the users.
 
 \section{Usability Testing}
 
-\section{Discussion}
+Usability Testing is a testing methodology focused on user testing. It provides direct feedback on how real users will use the system \citep{nielsen1994usability} allowing us to verify that the original goals of Membrane have been satisfied.
+
+As we are not focusing on HCI testing, but rather the entirety of Membrane we choose hallway testing for our study. This is a quick and cheap method of testing that relies on asking a random selection of people to try Membrane. The only restriction in this methods is participants should not be too close to project, preventing bias.
+
+\subsection{Methodology}
+
+We use a slightly modified version of hallway testing, relying on remote testing and user feedback, which is far more appropriate. Using \cite{usajobs2014hallway}'s recommendations on successful hallway testing we design the test, slightly adapting their more physical testing scenario.
+
+When deciding on a location we opt for user groups that enjoy technology and tinkering. This should provide us with constructive feedback and is likely to have a higher overlap with people who use Unix-based operating systems compatible with the proof-of-concept version of Membrane.
+
+We prepare the testing scenario by providing documentation and packaging the software. We provide both \code{.deb} and \code{.rpm} packages, covering a wide range of Linux users, as well as an online chat available at \url{https://gitter.im/mbrnd} for feedback and support. To make the test as authentic as possible we ask testers to simply visit the membrane homepage (\url{http://mbrn.io}) and try to install the software.
+
+The full test specification that testers had to follow is available in the appendix (\ref{lst:mbrntst}). We run through the test with two friends first to ensure that the test works without issue. The volunteer is rewarded through a charity donation on their behalf and we take care to be mindful of the tester's time, by only requesting testers to perform one task.
+
+At the end of the test we simply ask testers for written summary on their thoughts of using Membrane and completing the task, using the given feedback to assess the success of the project.
+
+\subsection{Results}
+
+The usability testing was conducted with five participants and the raw results are available in listing \ref{lst:mbrntestresult}. Overall the test was a success. Membrane was successfully installed on the participant's systems and with the basic instructions provided testers were able to successfully backup the requested files. When simulating a full system loss, Membrane was able to recover and reconstruct requested files.
+
+The themes of the feedback are as follows:
+
+\begin{itemize}
+ \item Installation was short and simple. It did not cause any problems\footnote{One reported issue was caused because of incorrect RPM packaging, where the target system was unable to interpret \code{\#!/usr/bin/env bash} correctly at the start of scripts}.
+ \item The concept of adding a watch folder did not cause issues.
+ \item Copying authentication information out of membrane needs some work but was achievable for all testers.
+ \item Testers were surprised the GUI could only offer monitoring, despite this always being the intention.
+ \item Recovery was always successful.
+\end{itemize}
+
+The feedback is very encouraging, demonstrating that the core logic of Membrane works although the interfaces could be improved. It is important to also consider the limitations of this study. 
+
+The test was performed over a very short time span, so the trust mechanism could not be fully tested. As there were limited number of users online during testing\footnote{the maximum reaching four} it is difficult to fully assess the behaviour of the application when in a swarm of hundreds of users. There is no inherent advantage or disadvantage to using a smaller swarm and it is promising that four of our five test testers were able to use the distributed backup portion of Membrane with no issues.
+
+One of our testers was unable to connect to peers. After a thorough investigation we find the subject was installing Membrane on a AWS hosted virtual server. The underlying hyper-visor of the virtual machine was interfering with the SSL handshake between two peers during connection, closing the connection mid-handshake. Debugging using Wireshark, a network protocol analyser that offers deep packet inspection gave details as to the root of the issue.
+
+The usability testing showcases that the components of Membrane work, and tell us where improvements need to be made during further development to increase adoption.
 
 \section{Summary}
 
+Throughout testing we have used well established techniques, with modern tooling to prove with certainty that Membrane works and is capable of achieving all of the original requirements found during analysis (\ref{sec:requirements}).
+
+We ensure it is impossible for Membrane to cause damage on a user's system and observe that all of the use-cases have been satisfied through unit, integration and usability testing.
+
+With the Membrane tested we have a system ready for deployment to real users, barring a few patches requested by testers. We continue into a reflection on the project itself.
+
 \chapter{Conclusion}
+
+Throughout the project we studied, designed and built a marriage of distributed storage and backup technology. The problem was decomposed and researched ending in the creation of the distributed backup platform, Membrane.
+
+In the conclusion we ruminate on the project, delving into the process and limitations planning the future development of the platform.
+
+\section{Discussion}
+
+We began the project by setting out the goal for Membrane:
+
+\begin{displayquote}
+ \emph{Allow users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service.}
+\end{displayquote}
+
+The project was designed to question the backup industry and explore the possibility of provide a peer-based system that is easy to use and allows for file recovery. Throughout the project we build a proof-of-concept for exactly that, harnessing the cheap high-speed internet and redundant storage that many computer users have access to.
+
+We began the project by creating an outline for Membrane structuring it into five distinct modules and setting out the expected challenges during the development process, this step guided the literature review, from which we drew inspiration for the design.
+
+Reflecting on the literature review, we find that because the final form of Membrane was not set in stone we wander through the domains of both storage systems and agent based technology. Although we used concepts from intelligent agents, we find that practically, the reasoning system developed is much simpler than anticipated and a lot of original research was redacted.
+
+By taking a pragmatic approach to development and design, we find that sticking to the strict guidelines mandated by intelligent agent technology, although neat in theory can add huge amounts of complexity to the system. An example of this is ontology development which offers great flexibility in reasoning for agents, however, a successful system that is easy to debug and understand can be designed by using simple protocols.
+
+We also find that technologies researched, such as TCP hole punching, while very useful in theory may fall short in practise due to limitations of tools, especially when faced with time constrains and working at a higher level of abstraction. As a result we ended up using seemingly inferior options such as UPnP which requires support from the gateway.
+
+After the literature review we proceed to the analysis, during which we planned the design and structure of Membrane before starting development. We first questioned users which was an insightful way to gather requirements. In retrospect, it would have also been useful to discuss the final requirements with the polled users.
+
+Although all key requested requirements were fulfilled we find that some aspects of the application, namely the GUI was a far more desirable feature than first shown by polls, and a fully fledged GUI for interacting with Membrane was requested multiple times. In the future we will look at creating the requirements using an iterative approach, going back to the users after the initial poll
+
 
 \section{Limitations}
 
@@ -2647,6 +2756,76 @@ User 3 & 758                  & 34                     & 850                    
  - It needs to be able to show my old versions of files. I also want to be able to share files I've backed up from other people's computers.
  - It wouldn't be a must by any stretch, but I think it would be nice to have 1 backup tool that handles everything.  As in, it does this cloud sync thing, but you can also plug in an external drive and it uses the same tech to fill it up, etc.
 \end{lstlisting}
+
+\begin{lstlisting}[language=RsT, caption=Membrane Hallway Test Guide, label=lst:mbrntst]
+ Hallway Test Instructions for Testers
+ =====================================
+ 
+ This is a guide for Membrane testers.
+ 
+ For every test complete a £5 charity donation will be made to http://www.extra-life.org/
+ 
+ Goals
+ -----
+ 
+ Testing the usability of Membrane, ensuring it works as expected.
+ 
+ Instructions
+ ------------
+ 
+ 1. Visit http://mbrn.io and follow the installation instructions
+ 2. Ensure Membrane is running
+ 3. Checkout the membraned git repository into a folder in /tmp and add it to
+ 4. Add the git repository as a watch folder to Membrane.
+ 5. Ensure the backup is successful and all shards have been exchanged with at least one other peer.
+ 6. Backup the Membrane credentials manually onto your machine.
+ 7. Uninstall Membrane.
+ 8. Delete the checked out git repository
+ 9. Delete `/root/.membrane` and `/root/.config/membrane` folders on your machine.
+ 
+ 10. Install Membrane and run it once to regenerate the config folders.
+ 11. Replace the new generated credentials with your old credentials and restart Membrane.
+ 12. Wait until Membrane displays recovered files.
+ 13. Recover `/tmp/membraned/README.md`
+ 
+ Feedback and Support
+ --------------------
+ 
+ Please provide any observations and potential improvements in `gitter.im/mbrnd` or via chat with Dominic Hauton
+\end{lstlisting}
+
+\begin{lstlisting}[language=RsT, caption=Membrane Hallway Test Feedback, label=lst:mbrntestresult]
+ Response 1:
+ - Easy installation
+ - Gui was okay for watching the backups but should be improved.
+ - Fairly responsive, seemed to find people without any issues, wasn't able to fully backup the folders though.
+ - Re-installation was a bit convoluted but it worked.
+ - Was able to recover the requested file fairly quickly in the end. Nice!
+  
+ Response 2:
+ - Was okay to install, but would be better with a real page
+ - Wasn't able to connect to any hosts, but the local part of the backup worked.
+ - I've sent you over logs as requested.
+ - Was able to recover the files from the local copy, as you suggested.
+ 
+ Response 3:
+ - Was a bit fiddly to store the 'auth info'. It should be one file!
+ - Fairly easy to add watch folders. It should fill in the directories for me too. Not just the commands.
+ - Recovery was okay, but same as above, you have to be very precise with names while typing them in..
+ - Overall it worked, obviously needs some love before release to the masses though.
+  
+ Response 4:
+ - You should put sudo in the installation instruction, I was copy pasting and the command failed because of that.
+ - I wasn't able to do anything through the gui. I had to use the command line, you should be able to set up the whole backup through the gui.
+ - Had a few failed commands while using the command line. Help was okay though, you should consider a man page.
+ - Recovery worked fairly quickly, neat.
+ 
+ Response 5:
+ - Had a bit of trouble installing using the rpm. Was able to diagnose issues over chat though.
+ - Backup worked.
+ - Recovery worked but should be able to do more over the gui.
+\end{lstlisting}
+
 
 \begin{figure}[ht!]
  \centering

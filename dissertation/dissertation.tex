@@ -11,7 +11,11 @@
 \usepackage{ragged2e}
 \usepackage{parskip}
 \usepackage{lipsum}
+\usepackage{csquotes}
+\usepackage{float}
 \graphicspath{ {img/} }
+
+\def\code#1{\texttt{#1}}
 
 \newcommand{\chapfnt}{\fontsize{17.28}{19}}
 \newcommand{\secfnt}{\fontsize{14}{17}}
@@ -577,7 +581,7 @@ As Membrane is primarily an application built for home users the first step of a
 
 \section{User Survey}
 
-In order to gather relevant user opinions we first decide at who the target user for Membrane is. Although the final product is for as wide a range of users as possible, initial versions may be a bit more difficult to use, as bugs are ironed out and features are added. We focus on those early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane.
+In order to gather relevant user opinions we first decide at who the target user for Membrane is. Although the final product is for as wide a range of users as possible, initial versions may be a bit more difficult to use, as bugs are ironed out and features are added. We focus on those early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane. \label{txt:adv-users}
 
 To narrow the search, we will target Linux users, who will be more accustomed to manually installing software and debugging potential issues. To gather feedback we used an online survey. These are typically answered by more technical users, have a short response time and require minimal financial resource allocation \citep{ilieva2002online}. Eight participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
 
@@ -603,7 +607,7 @@ The final key request by potential users is that Membrane should not interfere w
 
 We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix in listing \ref{lst:mbrnsurvey}. Given enough time we will explore more of these once the minimum viable product is created.
 
-\section{Common Features}
+\section{Common Features} \label{sec:commonfeatures}
 
 Following the user survey we will look at popular features of existing solutions. In order to discover what features users are looking for we will explore features used to differentiate backup software in comparisons. The \cite{arch2017syncandbackup} wiki has a comprehensive list of available backup options and uses a feature table to allow readers to quickly determine which solution is best suited to them.
 
@@ -729,7 +733,7 @@ A fully featured CLI needs to be present. It must allow users to monitor network
 
 This feature is required to allow users to interact with Membrane.
 
-\subsubsection{13. Graphical User Interface}
+\subsubsection{13. Graphical User Interface} \label{sec:gui-req}
 
 A GUI needs to be present to give users the ability to monitor membrane activity.
 
@@ -1227,6 +1231,7 @@ The first major decision in the application structure is whether the GUI and CLI
 There are clear advantages to both a built in user interface and the server client architecture seen in figure \ref{fig:client-server} which we shall explore before selecting technologies to use.
 
 \begin{figure}[b!]
+ \centering
  \includegraphics[width=0.5\textwidth]{model-view-controller}
  \caption{Model View Controller}
  \label{fig:model-view-controller}
@@ -1253,6 +1258,7 @@ On balance, it makes sense for membrane to operate use a client interface. As Me
 Developers will also be able to build addition interfaces to Membrane if required, fulfilling the extensiblity requirement, and as both a GUI and CLI are required, this provides a nice way to develop both and gives users the desired flexibility between both.
 
 \begin{figure}[t]
+ \centering
  \includegraphics[width=0.5\textwidth]{client-server-model}
  \caption{Client Server Architecture}
  \label{fig:client-server}
@@ -1357,7 +1363,7 @@ There have been concerns using CoffeeScript adds bloat to development, every cha
 
 Another concern is that using a transcompiled language makes debugging difficult as the debugger steps through a file you have not created, however, because the compiled output is intended to be readable, this has not caused issues for developers. \citep{wheeler2017coffeescript}
 
-\subsubsection{TypeScript}
+\subsubsection{TypeScript} \label{sec:typescript}
 
 TypeScript is a super set of JavaScript and developed and maintained by Microsoft as open source software. It is designed for development of larger applications and aims to address the challenges of dealing with JavaScript code. It supports static typing and adds features such as classes, modules and arrow function syntax, leading to better, more readable code. \citep{typescript2017site}
 
@@ -1787,7 +1793,7 @@ We store a ratio of incomplete\footnote{$n$ is $<1.0$} and fully complete report
 
 We calculate peer appraisal with the following formula:
 
-$$\mbox{rat} = H * R * L$$
+$$\mbox{rating} = H * R * L$$
 
 where $H$ is the percentage of the time the peer was online at the same time the PCM, $R$ is the report completion ratio and $L$ is the block loss ratio. This produces a value that indicates the probability that the user will be online and able to pass PDP checks for all held shards, with a penalty for losing blocks.
 
@@ -1965,16 +1971,211 @@ We discussed the journey of a file from initial detection, to local storage, to 
 
 \chapter{User Interfaces}
 
-
-\section{GUI}
+In order to select files for backup and recover files users require a user interface. As discussed in during analysis (\ref{sec:commonfeatures}) both a CLI and GUI are required. In the following chapter we delve into the building and design of the interfaces showing examples of usage.
 
 \section{CLI}
 
-\chapter{Results \& Evaluation}
+A Command Line Interface (CLI) is a means of interacting with a computer program by issuing commands to the program in the form of successive lines of text. The program while handles the interface is commonly called a shell.
+
+The CLI is less widely used by casual computer users who favour graphical user interfaces, typically being preferred by advanced users as they provide a more concise and powerful means of controlling applications or the operating system and allow for easier scripting.
+
+A CLI typically requires less resources than a GUI, it is more expert friendly, it is easier to develop, making it easier to build alongside the main application. On the other hand it does have a very steep learning curve, and is unsuitable for beginners.
+
+As we are targetting more advanced users (\ref{txt:adv-users}) for the earlier versions of Membrane we make the CLI the main method of interaction.
+
+\subsection{Commands}
+
+Within the Bourne again shell (Bash), commonly used for CLI interaction with the Unix based systems targeted for early Membrane versions uses a common pattern for commands \citep{gnu2016man}:
+
+\begin{displayquote}
+ \code{prompt cmd par1 ... parN}
+\end{displayquote}
+
+where the \code{prompt} is provided by the shell to give context to the command, the \code{cmd} targets the script or command to be executed, and \code{par} are optional parameters that tell the script or application what to execute.
+
+We model the CLI of membrane after git, learning lessons from the years of evolution it has had. We require the following commands for membrane: \code{status}, \code{files}, \code{peers}, \code{history}, \code{recover}, \code{storage}, \code{network}, \code{contracts}, \code{monitored-folders}, \code{monitored-files}, \code{watch-add}, \code{watching}, \code{watch-remove}.
+
+An example command is shown below.
+
+\begin{displayquote}
+ \scriptsize
+ \code{dominic@expiravit:\~\$ membrane status} \\
+ \code{Status:         NORMAL} \\
+ \code{Host:           expiravit:13200} \\
+ \code{Version:        1.0.0-alpha.6} \\
+ \code{Uptime:         02:13:49}
+\end{displayquote}
+
+This command structure is easy to learn as it will be familiar to most users and has been proven to work.
+
+\subsection{Usability}
+
+It's important to make usage as easy as possible for potential users. We use three methods to assist users while using the interface.
+
+During first use users can use the command \code{membrane -h} or \code{membrane --help} for a complete manual on how to use the membrane CLI. If a user uses a command incorrectly or is unsure on a specific command they can use the \code{-h} flag to be given specific command usage instructions. At any point the \code{-v} flag can be used for verbose output, letting the user debug issues if anything does not work.
+
+\begin{displayquote}
+ \scriptsize
+ \code{dom@expiravit:\~\$ membrane history -h} \\
+ \code{Usage: membrane history <file>}
+\end{displayquote}
+
+Helpful error messages are also provided to help the user debug issues. There is both CLI and daemon-side error checking, with commands being as helpful as possible providing examples and telling the user exactly why the command did not work.
+
+\begin{displayquote}
+ \scriptsize
+ \code{membrane recover /tmp/f1.txt file2.txt} \\ \\
+ \code{You must specify the full filePath.} \\
+ \code{Example: /tmp/dir1/file.txt} \\
+ \code{You provided: file2.txt}
+\end{displayquote}
+
+Finally we add tab completion to the CLI, a common feature of interpreters that allows user to press a completion key (typically tab) to show all the available options or complete the command if there is only one option remaining. This makes CLI usage both faster and more intuitive.
+
+\subsection{Installation}
+
+Although Membrane is available as a jar archive containing the daemon code and an executable CLI, we provide both a \code{.deb} and \code{.rpm} package for ease of use. These contain install and uninstall scripts that place all of the files in sensible locations and setup features such as tab completion.
+
+These also place soft links to the executables and scripts in the user's \code{\$PATH} which allows users to specify the name of the program instead of the full directory where it is integrated.
+
+The install scripts also set the daemon up with \code{systemd}, a widely used init system \citep{saunders2015systemd} used to bootstrap the user environment and manage all processes, ensuring they are always in the requested state, running in the case of Membrane.
+
+This allows Membrane users to easily manage the daemon and interact with it immediately after installation using tools they are familiar with.
+
+\subsection{Conclusion}
+
+The Membrane CLI maintains all of the advantages of a CLI. It is lightweight and available in a small 5MB package compared to the 56MB GUI. It requires a lot less resources to run and although only appropriate for advanced users, that is also the target user group for the Membrane proof of concept.
+
+We offset the steep CLI learning curve by providing and using tools familiar to frequent CLI users, allowing them to learn commands as easily as possible. An example interaction with Membrane can be seen in listing \ref{lst:cli-status}.
+
+\section{GUI}
+
+A Graphical User Interfaces (GUI) allows users to interact with applications through icons and visual indicators. They were first introduced to reduce the learning curve associated with a CLI \citep{linfo2004gui} making it easier for new users to use applications.
+
+The most common combination of elements in a GUI is: windows, icons, menus and pointers referred to as WIMP. \citep{van1997post} The GUI has become the standard in human computer interaction (HCI) and has influenced the workflow of most computer users.
+
+We propose a GUI for monitoring in section \ref{sec:gui-req} to compete with other available backup solutions throughout the prototyping stage and plan to expand the GUI for general interaction as Membrane grows in the future. This section will discuss the choice of GUI framework, followed by usability decisions taken that influenced the design, ending with a demonstration of the interface.
+
+\subsection{Technology Choice}
+
+The choice of GUI technology can drastically effect the feeling of the final product. We compare the three competing frameworks JavaFX, Qt and Electron used in cross platform GUI development.
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[width=0.5\textwidth]{gui-trends}
+ \caption{GUIs \url{trends.google.co.uk}}
+ \label{fig:gui-trends}
+\end{figure}
+
+JavaFX is a platform for GUI development within Java, first included with Java 8. It is made to replace Java Swing, promising a more consistent API and easy MVC pattern support. JavaFX unfortunately lacks traction resulting in less support in the real world seen in fig \ref{fig:gui-trends}. We therefore have a look at the more popular platform Qt.
+
+Qt is a CLI and GUI development framework for native feeling applications. It uses C++ with several extensions for signal handling. Several popular applications such as Autodesk Maya and VirtualBox \citep*{oracle2017logging, autodesk2017qt} make use of Qt. The benefits of Qt include the massive community and good professional documentation. \citep{slant2017qtelectron}
+
+Electron is a much newer framework developed by Github. It uses Node.js for back-end and Chromium, the basis of the Chrome web browser for the front-end and forming the basis of notable software such as Github's Atom and Microsoft Visual Studio Code \citep{james2015vselectron}. It is has a very active community and a solid API, however, can sometimes use up a lot of memory unless developed with extreme care.
+
+We opt for Electron for the Membrane GUI. It provides the best combination of ease of development and large community, with most of the support queries also being answered by in-browser web developers. Although one of the requirements is for low-resource usage, this is the GUI rather than the main daemon so we do not have the same resource usage concerns.
+
+\begin{figure*}[!ht]
+ \centering
+ \includegraphics[width=\textwidth]{gui-main}
+ \caption{GUI Main Screen}
+ \label{fig:gui-main}
+\end{figure*}
+
+\subsection{Usability Research}
+
+In order to make the Membrane GUI as informative to the user as possible we look into Human Computer Interaction (HCI), specifically display designs which are typically designed to help with the perception and monitoring of relevant system variables, the exact goal of the Membrane GUI.
+
+\cite{wickens1998introduction} describes thirteen principles split into four categories: perceptual, mental model, attention and memory principles. We look at each of these plan to design Membrane accordingly, while bearing in mind that we are designing Membrane with a minimum feature set \citep{blank2010mfs} and if the project gains traction the GUI can be improved in the future.
+
+Principles that can be satisfied in the allocated time are met while those that are beyond the scope of the research are saved for further development. We still maintain the extensiblity requirement, ensuring that desirable features can be created in the future.
+
+Legibility, top-down processing, information access cost and consistency are prioritised. We ensure all of the data is clear and cannot be misinterpreted, by presenting all the information in a clear listing in the centre of the application.
+
+The information displayed is also split according to category so the user can easily find it and is not faced with unexpected and unnecessary information while using the application screens, adhering to the top-down processing principle.
+
+We keep information access cost low, by ensuring every part of the application can be reached in one click and the user is always aware where they are in the application by clearly highlighted sections.
+
+Finally we ensure application consistency by retaining consistent, static window decoration throughout the application. As the core sections of the application never change the user is always able to get to where they need.
+
+Redundancy gain and pictorial realism are out of scope of the GUI. Instead of simply displaying information as text, for example storage space, a bar could be shown, indicating current usage, target usage and maximum usage, becoming more and more red as usage reaches the maximum.
+
+This would help with user interaction, however, it is more important to get user feedback on Membrane as a whole instead of building the GUI to perfection and then finding that users do not like certain aspects of the daemon that would require a GUI redesign. 
+
+We have have however achieved an interface that is difficult to misinterpret and allows for simpler monitoring that the CLI.
+
+\begin{figure*}[!ht]
+ \centering
+ \includegraphics[width=\textwidth]{gui-storage}
+ \caption{GUI Storage Screen}
+ \label{fig:gui-storage}
+\end{figure*}
+
+\subsection{Development}
+
+Within Electron we build a simple web page that can display all of the required information. We make use of the popular front-end framework Bootstrap, developed by Twitter and Angular 2, a TypeScript based front-end web platform created by Google and a community of open source developers.
+
+The main competitor against Angular, React.js was decided against as both frameworks offer very similar features and the developers creating the GUI were familiar with Angular, which has a much higher learning curve than React \citep{house2016ng2react} and Angular uses TypeScript, which provides type correctness along with all of the other benefits discussed in section \ref{sec:typescript}.
+
+The choice of Angular forces the MVC pattern to be used in the GUI architecture, splitting the application into services which hold the model and components which control the view. Angular connects these in the background controlling their interaction as the controller.
+
+NPM is used for dependency management allowing packages to be automatically updated when required, automated packaging scripts and portability across multiple developments environments, fulfilling the role of Gradle in the JavaScript ecosystem.
+
+\subsection{Design}
+
+We now describe the design of the interface, which is split into four main sections. The home screen (fig. \ref{fig:gui-main}), storage (fig. \ref{fig:gui-storage}), watcher (fig. \ref{fig:gui-watcher}) and network screen (fig. \ref{fig:gui-network}). There is also a help screen (fig. \ref{fig:gui-help}) which contains a link to the main Github page with documentation and usage instructions.
+
+The design is kept clean and simple with the information being the key focus of the interface. Any information that the user may want to observe, such as number of connected users, is included.
+
+More complex information such as a listing of every file and folder monitored is missing, as the user is expected to use the CLI for more complex interactions.
+
+Navigation is assisted through using animations on elements that can be clicked to enable as intuitive a user experience as possible. We ensure that any information is accessible in one click and only through that one click causing intuitive and predictable navigation.
+
+\subsection{Installation}
+
+The user can either choose to download a \code{tar.gz} archive containing just the GUI. A common Unix packaging technique, or the full Membrane \code{.rpm} or \code{.deb} packages, which will automatically unpack the GUI into a sensible location and place it on the user path for simple access.
+
+One of the downsides of Electron, is the size of the package. At 56MB after compression it is the largest part of Membrane, but this is a great trade-off for the ease of development provided by the Electron framework for the quality of the resulting application.
+
+\subsection{Conclusion}
+
+The Membrane GUI allows users for visual monitoring of Membrane reducing the learning curve required for interaction.
+
+We discussed the choice of GUI framework and internal components, explaining usability decisions the design and the program structure.
+
+\section{Configuration}
+
+It is important to also mention the configuration file Membrane uses, which is also a valid method of interaction. Users can manually add watch folders letting users pragmatically modify watch folders, and behaviour such as the number of connected users.
+
+For many this a preferred form of interactions, as users can use tools of their choice to modify this and also transfer configuration files to new systems, transferring their preferences.
+
+We ensure any interface manipulations are immediately persisted to the configuration file, although a restart is required to load changes configuration file allowing a user to make mistakes during configuration without affecting any active instances of Membrane.
+
+YAML a human readable serialisation language \citep{evans2009yaml} is used for the configuration file, making it as user friendly as possible. This is inspired by the configuration of Elasticsearch \citep{elastic2017config}, a popular distributed database.
+
+By restricting some changes, such as the target number of contract and shard size to the config, we ensure that users will not accidentally modify key values during runtime. The fact the config can only using root permissions also keeps new users away from dangerous changes that could adversely affect their backups.
+
+\section{Conclusion}
+
+We have provided two interfaces and three methods to allow users to configure Membrane. This fulfils the requirements (\ref{sec:commonfeatures}) and gives the users an variety of options for interaction.
+
+With the daemon and interfaces complete Membrane is now complete and functional. It remains to test the functionality and ensure that users are able to use the application.
+
+\chapter{Testing \& Evaluation}
+
+It is crucial to test software before deployment, particularly if it is run by users, where it cannot be monitored and and handling user's personal data. We ensure it is impossible for Membrane to delete any files that it has not created or otherwise adversely affect the host system.
+
+In this section we discuss three types of testing: unit, integration and usability testing outlining the importance and methodology in all three, trying to discover and address any problems discovered.
+
+We end on a discussion about Membrane and distributed backup outlining lessons learned and proposing what could be done differently during development.
 
 \section{Unit Testing}
 
-\section{Empirical Testing}
+\section{Integration Testing}
+
+\section{Usability Testing}
+
+\section{Discussion}
 
 \section{Summary}
 
@@ -2267,35 +2468,46 @@ Request File History
 - **Other** : fileHistoryEntry = {dateTime: [string], hashes: [string[]], size: [number], remove: [boolean]}
 \end{lstlisting}
 
+\begin{lstlisting}[language=RsT, caption=CLI Usage Example, label=lst:cli-status]
 dominic@expiravit:/tmp/mbrn-test$ membrane 
 contracts          history            monitored-folders  peers              status             watch-add          watch-remove
 files              monitored-files    network            recover            storage            watching           
+
+
 dominic@expiravit:/tmp/mbrn-test$ membrane status 
 Status:         NORMAL
 Host:           expiravit:13200
 Version:        1.0.0-alpha.6
 Uptime:         00:31:14
+
+
 dominic@expiravit:/tmp/mbrn-test$ membrane storage 
 226 current files stored.
 227 total files.
 Local Shard Storage. 9MB of 655MB used (max 819MB)
 Peer Block Storage. 8MB of 3276MB used (max 3276MB)
+
+
 dominic@expiravit:/tmp/mbrn-test$ membrane contracts 
 Peers Contracted:       3 (max. 100)
 Undeployed Shards:      0
 Partially Deployed:     225
 Fully Deployed:         0
+
+
 dominic@expiravit:/tmp/mbrn-test$ membrane network 
 User ID:        92d81c1cb271d4110a3fec62cdeb41e352a63f391421ca9316e36525806a0b9d
 Peers:          2 (max. 100)
 Peer Port:      14200
 UPnP Address:   81.135.110.126:14217
+
+
 dominic@expiravit:/tmp/mbrn-test$ membrane peers 
 Contracted Peer(s):
         e71ef553a177fef4fb4af6fd555f486bf33b02e9224b9c2dd15ec1e4eea8caf9
         4df5387fc333612205b4715df6cb8e5160f20ac772fe15449bc394a90f98e7e2
         de9426306d4e1adca19dec07529e669b809239cbeab20e51f0c785479e73c0d2
-
+\end{lstlisting}
 
 \section{Tables}
 
@@ -2386,5 +2598,30 @@ User 3 & 758                  & 34                     & 850                    
  \caption{Uptime Survey}
  \label{fig:uptime-survey}
 \end{figure}
+
+\pagebreak
+
+\section{Images}
+
+\begin{figure*}[!htb]
+ \centering
+ \includegraphics[width=\textwidth]{gui-watcher}
+ \caption{GUI Watcher Screen}
+ \label{fig:gui-watcher}
+\end{figure*}
+
+\begin{figure*}[!htb]
+ \centering
+ \includegraphics[width=\textwidth]{gui-network}
+ \caption{GUI Network Screen}
+ \label{fig:gui-network}
+\end{figure*}
+
+\begin{figure*}[!htb]
+ \centering
+ \includegraphics[width=\textwidth]{gui-help}
+ \caption{GUI Help Screen}
+ \label{fig:gui-help}
+\end{figure*}
 
 \end{document}

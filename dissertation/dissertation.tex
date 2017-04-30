@@ -181,21 +181,25 @@ In this report we explore the current distributed storage landscape and follow t
 \listoffigures
 
 \chapter{Introduction}
-Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In order to implement a peer-to-peer distributed agent based storage system we must first decompose the problem into several parts and explore the advances made in those fields as well as looking at advantages of existing technologies.
+Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In this project we study, design, build and analyse an amalgamation of distributed storage and backup technology. We must first decompose the problem into several parts and explore advances made in fields such as cryptography, file backup and intelligent agents as well as looking at advantages of existing technologies.
+
+Throughout the remainder of the introduction we discuss the goals of the project and justify the creation of Membrane, analysing existing solutions and describing challenges we may face.
 
 \section{Project Goals}
 
-The goal of Membrane is to allow users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service. Looking at breadth of products available it quickly becomes evident that there is a huge desire for external backup, and many people now take popular cloud storage services such as Dropbox and Google Drive for granted. \citep{dropbox2015popularity}
+Membrane allows users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service. Looking at breadth of products available it quickly becomes evident that there is a huge desire for external backup, and many people now take popular cloud storage services such as Dropbox and Google Drive for granted. \citep{dropbox2015popularity}
 
-To make Membrane competitive with existing solutions we must aim for two important features, ease of use and the ability to access your files from any system provided you can log into your account. On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge.
+To compete with existing solutions we aim for two important features: ease of use and accessibility, the ability to access backed up files from anywhere. On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge.
 
-In this project we are working towards a proof of concept of the idea of distributed backup, creating the fundamentals of the Membrane, focusing on the key aspects of distributed storage, but we will leave certain convenience features out for later development if the project proves successful. This is consistent with the Minimum Feature Set methodology described by \cite{blank2010mfs}, a practise which is now used heavily amongst technology startups. The technique aims to reduce engineering hours and get the hands in the product of early visionary users early to encourage feedback.
+In this project we are working towards a proof-of-concept, creating the fundamentals of the Membrane and focusing on the key aspects of distributed storage. We exclude convenience features out for later development if the project proves successful remembering to leave space for this expansion.
 
-The first step of the project will involve looking at existing products, seeing what design lessons from them we can apply to Membrane. We will then approach potential users and inquire what features they think are important in a system such as Membrane. A technology survey will be performed to assess what technologies we can use to ease with development, the solution will be built, and tested by users, whose feedback we will incorporate in the final prototype.
+This is consistent with the Minimum Feature Set methodology described by \cite{blank2010mfs}, a practise which is now used heavily amongst technology startups. The technique aims to reduce engineering hours and get the hands in the product of early visionary users early to encourage feedback.
+
+The first step of the project will involve looking at existing products, seeing what design lessons from them we can apply to Membrane. We will then approach potential users and inquire what features they think are important the system. A technology survey will be performed to assess what technologies we can use to ease development and create a set of requirements. The solution will be built, and tested taking back user feed and using this in our final verdict.
 
 \section{Need for Membrane}
 
-With the advent of cheap high-speed internet users are now able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. \citep{batters2010dbsecurity} Especially if their data leaves the users country where data protection laws may be different.
+With the advent of cheap high-speed internet people are able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. \citep{batters2010dbsecurity} Especially if their data leaves the users country where data protection laws may be different.
 
 Over time personal storage capacities for users have also increased. It is now common for computers to come with large amounts of hard drive space which is often not filled to capacity. The project proposed promises to swap this free hard drive space to back up other users’ data in exchange for their surplus space to backup your data.
 
@@ -206,15 +210,15 @@ There is an open gap in the market for a distributed storage solution which focu
 \section{Challenges}
 There are multiple challenges associated with creating both decentralised systems and backup solutions.
 
-While doing this it is important to keep resource usage down as Membrane is a background process and should not be notice by the user. To achieve this we need to explore methods of reducing bandwidth, memory and processor usage.
+It is important to keep resource usage down to not impact the day to day usage computer usage of the user, requiring care to reducing bandwidth, memory and processor usage.
 
-As part of this we need to find a way to copy the minimum amount of data required during backups, an effective way of managing where file chunks are stored, a way to encrypt the files on the remote host and a way to periodically authenticate that the host still holds the file.
+A method for minimising backed up data is required, an effective way of managing where file chunks are stored, a way to encrypt the files on the remote peer and a way to periodically verify that the peer still holds the file.
 
-Part of the required research also includes exploring the more recent technology of intelligent agents, in which we are most interested in trust metrics. Intelligent agents will allow the software to make storage decisions based on the trust and reputation of other nodes in the network that it has interacted with in the past.
+Part of the required research also includes exploring trust metrics, a field closely related to Intelligent Agents. We look towards the advances there to make storage decisions based on the trust and reputation of other peers in the network using known previous behaviour.
 
 \section{Modules}
 
-Membrane will be built up of several predetermined modules performing distinct roles. This have been broadly identified at this stage as a guide for our literature review and for technology decisions.
+Membrane will be built up of several predetermined modules performing distinct roles. These have been broadly identified at this stage as a guide for our literature review and for technology decisions.
 
 The core of any backup system is the file system watcher that determines whether a file has been modified, added or removed. This must be able to cheaply assess if a file or folder has changed and determine whether the altered file needs to to be refreshed in the storage system.
 
@@ -236,131 +240,155 @@ We will first explore the history of file backup, proceeding into the challenge 
 
 \section{History of Problem}
 
-A simple file backup can be imagined as simply copying a file to another location. In order to keep the duplicated file in sync they must be compared. The program diff solves this through finding the longest common sub-sequence of bytes between files. In order to improve performance hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
+A file backup can be trivialised to simply copying a file to another location. In order to keep the backup up-to-date the current file and the backup be compared. The program \code{diff} solves this through finding the longest common sub-sequence of bytes between files. In order to improve performance: hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
 
 \subsection{Rsync}
-In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution through copying changed file chunks (deltas). \citep{tridgell1996rsync}. Rsync splits the file into shards and calculates a weak rolling checksum and strong MD4 checksum for each block that allows quick comparisons of shards along the file. When a discrepancy is found, we assume an extra byte or bytes have been added to the file. The weak checksum can be efficiency recalculated for the next offset and once there is a match, it is confirmed with the strong checksum. The new added chunk can now be transmitted. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong check-sums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
+In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution through copying changed file chunks (deltas). \citep{tridgell1996rsync}. It splits the file into shards and calculates a weak rolling checksum and strong MD4 checksum for each shard which allows quick comparisons of shards along the file. When a discrepancy is found, we assume an extra byte or bytes have been added to the file. The weak checksum can be efficiency recalculated for the next offset and once there is a match, it is confirmed with the strong checksum. The new added chunk can now be transmitted. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong check-sums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
 
-Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Blocks of smaller and smaller sized are used to find holes in the old file in each round and the file until the minimum block size is reached and a copy occurs. \citep{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
+Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Shards of smaller and smaller sizes are used to find holes in the old file, each round looking at more and more specific bits in the files until the minimum shard size is reached and a copy occurs. \citep{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
 
 Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques used in delta compression and Lempel-Ziv compression to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \citep{rasch2003place}
 
-
 \subsection{Git}
-Git is an improvement on Rsync as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast. This is also an important distinction from other version control systems and one of the reasons why Git was chosen as an example versioning system compared to other versioning systems like SVN. The systems can continue to operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it. \citep{torvalds2010git}
+
+Git is an improvement on Rsync in terms of file backup as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast. This is also an important distinction from other version control systems and one of the reasons why Git was chosen as an example versioning system compared to other versioning systems like SVN. The systems can continue to operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it. \citep{torvalds2010git}
 
 Git also uses a 3 stage workflow. A working directory, where the current files are stored, a staging area and a .git directory. The staging area prepares your next commit and then it is finally committed. When the staging is complete the change is irreversibly stored. This is a good approach that will be adopted in the final software solution. It will allow incrementally finding changed files, and assessing the need for a new version number to be saved.
 
-
 \subsection{Bittorrent}
-The BitTorrent protocol is a mechanism for sharing files between swarms of hosts. As BitTorrent splits files into parts, users start sharing data even before they have received the full file. Each file has a SHA-1 identifier, similar to Git. \citep{qiu2004modeling}
+
+The BitTorrent protocol is a mechanism for sharing files between swarms of hosts. BitTorrent splits files into parts and can transfer them out of order, so peers start sharing data even before they have received the full file. Each file has a SHA-1 identifier, similar to Git. \citep{qiu2004modeling}
 
 If a user wishes to download a file from the swarm, the user downloads a metadata file from the web and locates users sharing the data using a Tracker Server, Distributed Hash Table (DHT) or Peer Exchange (PEX). \citep{cohen2008bittorrent}
 
-A Tracker server is a centralised store of all current connected users along with how much of the file they hold. This approach is vulnerable to exploitation by authorities as all of the data about a swarm is stored on a single server and as a result cannot be used for the proposed system.
+A Tracker server is a centralised store of all current connected users along with how much of the file they hold. This approach is vulnerable to exploitation by authorities as all of the data about a swarm is stored on a single server. Ideally we want to be able to avoid this in the final implementation of Membrane.
 
 A DHT contacts other known users for information instead of a centralised server. The Mainline DHT as outlined in BEP No.5 is based on the Kademlia protocol that allows for decentralised peer discovery for a particular piece of content.
 
 PEX is a method for two clients to share a subset of their peer lists. Coupled with DHT, PEX removes a vulnerability from the Bittorrent network by allowing fully distributed bootstrapping, tracking and peer discovery.
 
-A DHT with a form of PEX a tried and tested way of successfully mapping and finding files on a network and will be used within the proposed project.
+A DHT with a form of PEX a tried and tested way of successfully mapping and finding files on a network and could be used within Membrane if required.
 
 \subsection{Resilio}
+
 Resilio Sync is an example of a distributed file storage system that utilises the BitTorrent protocol to automatically synchronise folders between a user’s systems. It is not a cloud backup solution and not intended as a form of off-site storage. There is no distributed file system and as a result, no redundant data block algorithm adding complexity. \citep{farina2014bittorrent}
 
-As Resilio Sync uses DHT to transfer data, there is no central authority to manage authentication or log data access attempts. This makes it difficult to determine whether a file has been accessed by another user. \citep{farina2014bittorrent} As a result in the project the assumption will be made that everyone in the network has access to all encrypted file chunks. To access and reassemble a file, a user will be required to request all of the file chunks individually and then locally reassemble them.
+As Resilio Sync uses DHT to transfer data, there is no central authority to manage authentication or log data access attempts. This makes it difficult to determine whether a file has been accessed by another user. \citep{farina2014bittorrent} The assumption has to be made that everyone in the network has access to all encrypted file chunks. To access and reassemble a file, a user will be required to request all of the file chunks individually and then locally reassemble them.
 
 \subsection{Storj}
-Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof of storage it uses Merkle Audits and pre-generated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
 
-The most efficient form for proof of storage is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. Erasure encoding is added to shards to detect any minor changes to the data. This is less I/O intensive than a full heartbeat, but still allows an attacker to complete heartbeats with only a data integrity of 1/n, where n is the number of nodes holding the data.
+Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof-of-storage it uses Merkle Audits and pre-generated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
 
-In order to add extra protection to files, we can use erasure encoding to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as the shards are expected to change on a regular basis because of versioning, this may not be possible.
+The most efficient form for proof of storage found in Storj is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. Erasure encoding is added to shards to detect any minor changes to the data. This is less I/O intensive than a full heartbeat, but still allows an attacker to complete heartbeats with only a data integrity of 1/n, where n is the number of nodes holding the data.
 
-To prevent Sybil based attacks, Storj encrypts each shard segment with a different salt. This stops workers completing proof of storage on behalf of another node.
+In order to add extra protection to files, we could use erasure encoding to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as shards are expected to change on a regular basis because of versioning, this may not be possible.
+
+To prevent Sybil based attacks, Storj encrypts each shard segment with a different salt. This stops workers completing proof-of-storage on behalf of another node.
 
 \section{Peer Admission}
-The first step in designing the distributed file system is locating other peers within the swarm. This is accomplished through Peer Admission. Once the first peer is found data within the swarm can be located using a DHT which guarantees content can always be found.
+
+The first step in designing the distributed backup system is locating other peers within the swarm. This is accomplished through Peer Admission. Once the first peer is found data within the swarm could be located using a DHT which guarantees content can always be found.
 
 \subsection{Bootstrapping}
 
 There are two types of PTP networks which must be examined:
+
 \begin{itemize}
  \item \emph{Asynchronous}
  \item \emph{Synchronous}
 \end{itemize}
 
-Within Synchronous networks the number of nodes on the network is constant and all of the nodes are aware of each others existence. This does not allow storage networks to scale but it does allow data to be kept private. \citep{saxena2003admission} This is the simplest and first approach that will be taken in locating nodes within Membrane.
+Within Synchronous networks the number of nodes on the network is constant and all of the nodes are aware of each others existence. This does not allow storage networks to scale but it does allow data to be kept private. \citep{saxena2003admission} This is the simplest and first approach that will be investigated in locating nodes within Membrane.
 
-In most current P2P systems such as Gnutella \citep{klingberg2002gnutella}, Chord and Tapestry as well cryptocurrencies such as in Bitcoin and Litecoin a bootstrapping node is contacted, which provides information about what clients are currently online. Once a bootstrapping node allows the client to find the edge of the swarm, more information can be found using peer exchange.
+In most current P2P systems such as Gnutella \citep{klingberg2002gnutella}, Chord and Tapestry as well cryptocurrencies\footnote{Bitcoin and Litecoin} a bootstrapping node is contacted to provide information about what clients are currently online. Once a bootstrapping node allows the client to find the edge of the swarm, more information can be found using peer exchange.
 
-Within a local network we can also use Universal Plug and Play to find other nodes within the local network. This prevents an external call to a bootstrapping node and as a result is less prone to attack.
+Within a local network we can also use Universal Plug and Play to find other nodes within the local network. This prevents an external call to a bootstrapping node and as a result is less prone to snooping.
 
 Through looking at availability metrics within Bittorrent systems \cite{neglia2007availability} determined that both trackers and DHT should be used in creating a highly available distributed storage system such as BitTorrent. DHT tends to be slower at finding new data, however it is much more reliable.
 
-Within Membrane, I plan to use a combination of Asynchronous and Synchronous techniques. Users will try to bootstrap from their last known neighbour nodes on the network, this takes advantage of the static nature of the backup data. Only if this fails, and with the user's permission will they contact a centralised bootstrapping node. This should only happen during a first install and if the user has no referrals. Throughout the lifetime of the application the centralised bootstrapping node would ideally be replaced with a referral system.
+Within Membrane, we plan to use a combination of asynchronous and synchronous techniques. Peers try to bootstrap from their last known neighbour nodes on the network taking advantage of the fact that IP addresses change fairly infrequently. It would be unlikely that all peers have changed address. If this fails, the system can contact a bootstrapping node. Ideally this should only happen during a first install. Throughout the lifetime of the application the centralised bootstrapping node would ideally be used less and less by peers.
 
-A further extension of this, would be to allow hosts to provide a DNS name along with their IP. Users that have setup Dynamic DNS (DDNS) \citep{bound1997dynamic} would be able to locate each other without the help of a bootstrapping server.
+Users could potentially also be allowed to provide a host name if they have set up Dynamic DNS (DDNS) \citep{bound1997dynamic}. This would completely remove the need for a bootstrapping server.
 
 \subsection{Peer Exchange} \label{sec:pex}
 
-When bootstrapping is complete new Peers can increase their knowledge of the network through Peer Exchange. This is used by Bittorrent to help share swarm information with other nodes. As soon as a client connects to the swarm, peer information is collected using DHT or PEX.
+When bootstrapping is complete peers can increase their knowledge of the network through Peer Exchange. This is used by Bittorrent to help share swarm information with other nodes. As soon as a client connects to the swarm, peer information is collected using DHT or PEX.
 
 There are two common extension protocols called AZMP and LTEP, which send at most one message a minute when a client leaves or exits the swarm. To reduce congestion at most 50 peers can be added or removed in one PEX message. \citep{vuze2010vuze}
 
+We look into this as our primary way for discovering new peers.
+
 \subsection{Shard Discovery}
 
-Bittorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once the metadata is stored on the host, if a host host wants to download a file, it can take the metadata on the known host to find the IP of hosts with the file.
+Bittorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once shard location is stored on the appropriate host in the DHT, the shard can be rediscovered by any node on the network.
 
-Hosts in Membrane will store a metadata file with all of the information required for the specific account to run, including friends, encryption keys as well as local mappings for which host owns which shard and which IP belongs to each host. As a result a DHT will only be required if this initial metadata is lost and needs to be recovered. The proposed version of Membrane will make use of this metadata, but recovery can be added in further iterations of the project.
+Hosts in Membrane could potentially store an encrypted metadata file with all local mappings for which host owns which shard and which IP belongs to each host. A DHT could serve as a mechanism for recovering from total data loss.
 
 \subsection{Dynamic IP Address}
 
-Dynamic IP addresses have proven to be problematic in distributed computing, as ISP typically charge more for users to have a static, unchanging IP. Bittorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a file. This approach is robust, however, it is a complex solution to IP address resolution.
+Dynamic IP addresses have proven to be problematic in distributed computing. Internet Service Providers (ISPs) typically charge more for users to have a static, unchanging IP which few users opt for.
 
-Another widely used approach is using Dynamic DNS (DynDNS) as described by \cite{bound1997dynamic} in RFC 2136. This allows a client to automatically update a nameserver with a new IP or other information, this allows clients to have a persistent addressing method for devices that change their location. This approach requires initial configuration by the user, however, it provides a reliable way to connect with a user when their IP is lost. There are several tools such as MintDNS, cURL and Iandyn that could be used to ease the development of a built in DynDNS. When setting up a relationship with another host, both an A/AAAA Address and CNAME could be provided, where the CNAME is a backup if the A/AAAA address does not work.
+BitTorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a shard. This approach is robust, however, it is a complex solution to IP address resolution.
 
-To resolve IP Address resolution within Membrane, I would like to take advantage of small-world networks. \citep{porter2012small}, in which the mean shortest-path between two nodes increases slowly compared to the number of notes in a network. Within a group of users in Membrane hosts are likely to share multiple first, second and third degree connections. By storing a list of IP addresses from all of the hosts. It is highly unlikely that all connections within three hops will have changed IP address. We take inspiration from ARP \citep{plummer1982ethernet}, and send broadcasts with a limited hop count in the network to see if anyone is aware of the current address of a host. The downside of this approach is that it relies on a node within your social network to be online. Measures will need to be put in place to reduce broadcast spam.
+Another widely used approach is using Dynamic DNS (DynDNS) as described by \cite{bound1997dynamic} in RFC 2136. This allows a client to automatically update a nameserver with new IP information, allowing clients to have a persistent addressing method for devices that change their IP frequently. This approach requires initial configuration by the user, however, it provides a reliable way to connect with a user when their IP is lost.
 
-A broadcast storms runaway broadcast events, common in networks that used broadcasting for communication, particularly when areas of the network overlap. \citep{Tseng:2002:BSP:506900.506905} These can be mitigated by reducing broadcast traffic, however, Membrane will rely on broadcasts to find hosts. The first step to limiting these broadcasts, is implementing a hop count on broadcasts. This is commonly seen in routing protocols such as IPv6 \citep{deering1998internet}. The Spanning Tree Protocol (STP) as seen in IEEE 802.1d \citep*{ieee802ieee, sharma2004viking} provides loop-free routing in LANs by pruning redundant links. Topology changes are dealt with by rebuilding the tree.
+There are several tools such as MintDNS, cURL and Iandyn that could be used to ease the development of a built in DynDNS. When setting up a relationship with another host, both an A/AAAA Address and CNAME could be provided, where the CNAME is a backup if the A/AAAA address does not work.
 
-Within Membrane rebuilding a Spanning Tree would be an expensive operation. If broadcasts become a problem a 'block request' system can be used, similar to that of ICMP redirects. \citep{postel1981rfc} If a node receives a duplicate broadcast message it sends a request back one hop to not send broadcasts from that source toward it for  some time. The time limit would allow allow for corrections if the network topology changes. This preventative approach and could be improved by using the full Spanning Tree implementation. As a further step it could be improved by using a DHT 'closest jump' approach if required.
+To resolve IP Address resolution within Membrane, we would like to propose a new method of discovering users that takes advantage of small-world networks. \citep{porter2012small}
+
+In small-world networks, the mean shortest-path between two nodes increases slowly compared to the number of notes in a network. Within a group of users in Membrane hosts are likely to share multiple first, second and third degree connections. By storing a list of IP addresses from all of the hosts we simply try to connect to all hosts were previously connected to. It is highly unlikely that all connections will have changed IP address and we can then rebuild our know IP address list.
+
+We take inspiration from ARP \citep{plummer1982ethernet}, and send broadcasts to the network to see if anyone is aware of the current address of a host. The downside of this approach is that it relies on the node within your social network to be online. Measures will need to be put in place to reduce broadcast spam.
+
+If we choose to forward these broadcasts we need to be weary of broadcast storms, runaway broadcast events common in networks that used broadcasting for communication. \citep{Tseng:2002:BSP:506900.506905} These can be mitigated by reducing broadcast traffic. The first step to limiting these potential broadcasts, is implementing a hop count on broadcasts. This is commonly seen in routing protocols such as IPv6 \citep{deering1998internet}. The Spanning Tree Protocol (STP) as seen in IEEE 802.1d \citep*{ieee802ieee, sharma2004viking} provides loop-free routing in LANs by pruning redundant links. Topology changes are dealt with by rebuilding the tree.
+
+Within Membrane rebuilding a Spanning Tree would be an expensive operation. If broadcasts become a problem a 'block request' system can be used, similar to that of ICMP redirects. \citep{postel1981rfc} If a node receives a duplicate broadcast message it sends a request back one hop, asking the peer to not send broadcasts from that source toward it for  some time. The time limit would allow allow for corrections if the network topology changes. This preventative approach and could be improved by using the full Spanning Tree implementation and further enhanced by using a DHT closest jump approach if required.
 
 \section{Data Allocation on External Nodes}
 
-In order to store data on another node Membrane must first have permission to store files on another node. In order to make a choice we must be able to look at trust information about other nodes on the network, and negotiate and trade space once a suitable candidate has been found. These two areas have been explored in the context of Multiagent Systems (MAS) in the past. \citep{wooldridge2009introduction}
+In order to store data on another node Membrane must first have permission to store files on another node. To decide which peer to request this permission from, we must be able to look at trust information for peers on the network, and negotiate and trade space once a suitable candidate has been found. These two areas have been explored in the context of Multi Agent Systems (MAS) in the past. \citep{wooldridge2009introduction}
 
 \subsection{Negotiation} \label{sec:neg}
 
-Negotiation aims to reach a level of resource allocation that is acceptable for all involved parties. \citep{rahwan2005interest} It allows two or more parties that value each others service, to participate in a mutually beneficial exchange of services, however, as there are multiple beneficial outcomes it can be defined as "distributed search through a potential space of agreements" \citep{jennings2001automated} Within Membrane, this service is storage space, that is physically separated from the current user. We now take a look at negotiation and how we can build a negotiation framework that our agents can use to exchange storage.
+Negotiation aims to reach a level of resource allocation that is acceptable for all involved parties. \citep{rahwan2005interest} It allows two or more parties that value each others service, to participate in a mutually beneficial exchange of services, however, as there are multiple beneficial outcomes it can be defined as ``distributed search through a potential space of agreements'' \citep{jennings2001automated} Within Membrane, this service is storage space, that is physically separated from the current user. We now take a look at negotiation and how we can build a negotiation framework that our agents can use to exchange storage.
 
-There are three main areas that are important for negotiation. Negotiation protocols, negotiation objects and the node's reasoning models. \citep{beer1999negotiation} The sophistication of the negotiation is determined by each of these and can take different forms such as auctions, argumentation and protocols in the style of a contract net. The simplest negotiation uses fixed size items, which Membrane shall be initially using for this reason. More complex negotiation allows for counter offers and stronger guarantees.
+There are three main areas that are important for negotiation. Negotiation protocols, negotiation objects and the node's reasoning models. \citep{beer1999negotiation} The sophistication of the negotiation is determined by each of these and can take different forms such as auctions, argumentation and protocols in the style of a contract net. The simplest negotiation uses fixed size items. These could be further augmented by counter offers and stronger guarantees in more complex negotiation systems.
 
-A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as KQML (Knowledge Query and Manipulation Language) \citep{finin1992specification} or the more modern FIPA (Foundation for Intelligent Physical Agents) \citep{fipa2002fipa}. \citep{rahwan2005interest} \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result can be more error prone.
+A simple negotiation protocol issues a call for proposals to a number of nodes and waits for their bids. To formalise this a Agent Communication Language (ACL) such as the Knowledge Query and Manipulation Language (KQML) \citep{finin1992specification} or the more modern Foundation for Intelligent Physical Agents (FIPA) \citep{fipa2002fipa} is used.
+
+\citep{rahwan2005interest} \cite{beer1999negotiation} tells us that within KQML the agent sending the query is expected to decide how the receiver will handle it, which places limits on negotiation. On the other hand, FIPA is newer and as a result could be more error prone.
 
 \subsection{Negotiation Logic}
 
-The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and multiagent systems. In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world. Within a MAS a non-monotonic logic can be more difficult to implement as theorems need to be constantly asserted, and as a result they often result to first-order (or monotonic) logic. Within Membrane we need to implement a monotonic logic to assert trust in our contracts and negotiations. In the context of a negotiated contract, throughout it's duration, we cannot effort to re-evaluate our trust of the agent.
+The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and MAS. In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world.
+
+Within a MAS a non-monotonic logic can be more difficult to implement as theorems need to be constantly asserted, and as a result they often resort to first-order (or monotonic) logic. Within Membrane we need to implement a monotonic logic to calculate trust in our contracts and negotiations. In the context of a negotiated contract, throughout it's duration, we cannot afford to re-evaluate our trust of the agent.
 
 \subsection{Negotiation Tactics}
 
-In order to exchange storage space we must find the most suitable node in the network. There are multiple negotiation tactics between agents for collaboration and coming to an agreement. \citep{beer1999negotiation} We shall explore the advantages and disadvantages of game-theoretic approaches \citep*{rosenschein1994rules, kraus2001strategic, sandholm2002algorithm}, heuristic-based approaches \citep*{faratin2000automated, fatima2002multi} and argumentation-based approaches \citep*{kraus1998reaching, jennings1998argumentation} as well as exploring practical implementations negotiation. Ideally a negotiation mechanism is computationally cheap, produces good outcomes, distributed, fair to all participants, compatible with fixed strategies and is able to function without complete information. \citep{rahwan2005interest}
+In order to exchange storage space we must find the most suitable node in the network. There are multiple negotiation tactics between agents for collaboration and coming to an agreement. \citep{beer1999negotiation} We shall explore the advantages and disadvantages of game-theoretic approaches \citep*{rosenschein1994rules, kraus2001strategic, sandholm2002algorithm}, heuristic-based approaches \citep*{faratin2000automated, fatima2002multi} and argumentation-based approaches \citep*{kraus1998reaching, jennings1998argumentation} as well as exploring practical implementations negotiation.
 
-Using a \emph{game theory} approach we assume all agents are self-interested and allows agents to analyse optimal behaviour. \citep{osborne1994course} We can apply this in agent reasoning by giving each combination of collaborations a utility. Doing this an optimal set of interactions can be calculated. This can even be used to help agents interact in a certain way. \citep{varian1995economic}. The main downsides include the assumption of unbounded computational resources, complete knowledge of the outcome space. \citep{rahwan2005interest} This makes a game theory approach unusable in Membrane as the network is not fully understood by each agent.
+Ideally a negotiation mechanism is computationally cheap, produces good outcomes, distributed, fair to all participants, compatible with fixed strategies and is able to function without complete information. \citep{rahwan2005interest}
+
+Using a \emph{game theory} approach we assume all agents are self-interested and allows agents to analyse optimal behaviour. \citep{osborne1994course} We can apply this in agent reasoning by giving each combination of collaborations a utility. Doing this an optimal set of interactions can be calculated. This can even be used to help agents interact in a certain way. \citep{varian1995economic}. The main downsides include the assumption of unbounded computational resources, complete knowledge of the outcome space. \citep{rahwan2005interest} This makes a game theory approach difficult to use in Membrane as information about the entire network is not known.
 
 A \emph{heuristic} approach produces 'good enough' negotiations. Instead of exploring the full extent of possibilities they focus on the subset most likely to lead to positive interactions. In the context of Membrane, this may be hosts that you have had successful interactions with before. The downsides of this approach is that it becomes difficult to predict the negotiation actions of other agents and as the full search space is not explored the result may not be optimal. \citep{jennings2001automated}
 
-A \emph{argumentation} approach is beneficial when a flexible negotiation is required and the agents have limited knowledge of the world. It's commonly used in the human world by advertisers to convince humans to try products. \citep{slade2002reasons}. Instead of simply rejecting an offer a agent can say why or offer a counter-proposal, which can result in more successful negotiations. Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane.
+A \emph{argumentation} approach is beneficial when a flexible negotiation is required and the agents have limited knowledge of the world. It's commonly used in the human world by advertisers to convince humans to try products. \citep{slade2002reasons}. Instead of simply rejecting an offer a agent can say why or offer a counter-proposal, which can result in more successful negotiations.
+
+Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane.
 
 \subsection{Practical Negotiation}
 
-We now look at practical real-world negotiation. Real world approaches take into consideration the practical implications of reasoning systems and prove that concepts work. Within cloud computing an agent is often required to request a service. The use of these resources is based on service-level agreements (SLAs) which are designed to provide users with a service when requested. \citep{paletta2009mas} One critical issue in SLAs determining the  Quality of Service (QoS) constraints of the offered service.
+We now look at practical real-world negotiation. Real world approaches take into consideration the practical implications of reasoning systems and often use more pragmatic approaches with that concepts work.
+
+Within cloud computing an agent is often required to request a service. The use of these resources is based on service-level agreements (SLAs) which are designed to provide users with a service when requested. \citep{paletta2009mas} One critical issue in SLAs determining the Quality of Service (QoS) constraints of the offered service.
 
 \cite{yan2007autonomous} explores creating a SLA negotiation system, splitting SLA negotiation into three parts. Defining \emph{Negotiation Protocol} that allows participants to send offers to each other, \emph{Negotiation Coordination} which ensures the final result of the negotiation fulfils the QoS requirements of the agent and a \emph{Decision Making Model} which allows the parties to decide if they are satisfied with the deal.
 
 Within Membrane, hosts are unable to know if they will be compatible with another agent. It might be the case that they both have 50\% uptime, however they are never online at the same time. As a result a system will have to be created to allow agents to find if they are compatible with each other and storage decisions will have to be based on this.
 
-\cite{paletta2009mas} presents an negotiation mechanism which makes use of mean algorithm and protocol, using key awareness concepts first proposed by \cite{herrero2007agents}. It uses an quantitative metric in the range [0, 1] to decide how much the agent should be collaborating with another agent. The agents can then communicate using the messages:
+\cite{paletta2009mas} presents an negotiation mechanism that uses key awareness concepts first proposed by \cite{herrero2007agents}. It uses an quantitative metric in the range [0, 1] to decide how much the agent should be collaborating with another agent. The agents can then communicate using the messages:
 
 \begin{enumerate}
  \item REQUEST - Can you perform A?
@@ -368,11 +396,11 @@ Within Membrane, hosts are unable to know if they will be compatible with anothe
  \item DISCONFIRM - No I will not do A.
 \end{enumerate}
 
-Collaboration decisions decided using an Artificial Neural Network (ANN). Three metrics are used, physical resource availability, if the node is available for collaboration and the number of previous collaborations of the same type. The ANN used was a Multi-Layer Perceptrons (MLPs) using one hidden layer and two units.
+Collaboration decisions are decided using an Artificial Neural Network (ANN). Three metrics are used, physical resource availability, if the node is available for collaboration and the number of previous collaborations of the same type. The ANN used was a Multi-Layer Perceptrons (MLPs) using one hidden layer and two units.
 
 When evaluated the mechanism was able to deal with 93\% of situations and negotiation with the first node was successful 68\% of times. \citep{herrero2007agents}
 
-Within Membrane we will aim to produce a new negotiation mechanism, built into the  contract system. This should be achieved using a feedback loop, where good behaviour results in upgraded contracts, that in turn result in increased good behaviour. This is discussed further in section \ref{sec:contractMech}. This is a fair and cheap method of matching peers as required by \cite{rahwan2005interest}.
+Within Membrane we will aim to produce a new negotiation mechanism built into the  contract system similar to \cite{paletta2009mas}s. We aim to use a feedback loop, where good behaviour results in upgraded contracts, that in turn result in increased good behaviour. This is discussed further in section \ref{sec:contractMech}. We hope this a fair and cheap method of matching peers as required by \cite{rahwan2005interest}.
 
 \subsection{Service Level Agreements}
 
@@ -383,7 +411,8 @@ They describes 3 key areas that must be present in an SLA.
  \item Service Description
  \item Obligation
 \end{enumerate}
-Within Membrane the parties involved will always be the two nodes exchanging information. The service description will be a promise to store a block of data on another host. The obligation will include various parts such as proof of storage and the ability to update and retrieve the data a set number of times. These will be explored when the SLAs for membrane is designed.
+
+Within Membrane the parties involved will always be the two nodes exchanging information. The service description will be a promise to store a block of data on another host. The obligation will include various parts such as proof-of-storage and the ability to update and retrieve the data a set number of times. These will be explored when the SLAs for membrane is designed.
 
 Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA life-cycle.
 \begin{enumerate}
@@ -393,19 +422,25 @@ Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA l
  \item Corrective Management Actions (in case of violation)
  \item SLA Termination (in case of violation)
 \end{enumerate}
+
 These are the backbone of every real SLA and will be explored in more detail while designing the negotiation system for Membrane.
 
 \section{Trust and Reputation}
 
-Agents in a distributed system need to be able to protect themselves from 'bad' agents. \cite{pinyol2013computational} describes three main approaches to control the acts of agents. The \emph{Security Approach} which guarantees the authenticity and integrity of interactions. The \emph{Institutional approach} which relies on a central authority to enforce good behaviour and finally the \emph{Social approach} which allows agents themselves to punish other agent for 'bad' behaviour. This final approach is where trust and reputation is used.
+Agents in a distributed system need to be able to protect themselves from `bad' peers. \cite{pinyol2013computational} describes three main approaches to control the acts of agents. The \emph{security approach} which guarantees the authenticity and integrity of interactions. The \emph{institutional approach} which relies on a central authority to enforce good behaviour and finally the \emph{social approach} which allows agents themselves to punish other agent for 'bad' behaviour. This final approach is where trust and reputation is used.
 
-Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009introduction} A classification presented by \cite{balke2009using} defines 5 stages that exist in reputation and trust models. Co-operative behaviour is first stored and then rated using a utility function. Within Membrane it is easy to see the utility being rated as shared transaction time. This cooperative behaviour is then stored in an image of the other agent at a predetermined level of detail. This image can now be recalled to infer trust. Finally the agent can use this trust to learn and adapt it's strategy.
+Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009introduction} A classification presented by \cite{balke2009using} defines 5 stages that exist in reputation and trust models. Co-operative behaviour is first stored and then rated using a utility function.
 
-The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we shall use it to see what a good trust system includes. It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider simulating a situation in which complete data loss was experienced.
+Within Membrane it is easy to see the utility being rated as shared uptime. This cooperative behaviour could then stored in an image of the peer at a predetermined level of detail and recalled to infer trust. Finally the agent can use this trust to learn and adapt it's strategy.
+
+The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we use it to see what a good trust system includes.
+
+It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider periodically simulating a situation in which complete data loss was experienced to ensure the backup system will work when required.
 
 \subsection{Trust and Reputation Attacks} \label{sec:tar}
 
 Attempts to misrepresent reliability and manipulate reputation are common in traditional communities and have been exploited by con artists for centuries. In a distributed system agents must be able to protect themselves against common trust attacks. \cite{josang2009challenges} describes 9 potential attacks on reputation systems.
+
 \begin{itemize}
  \item Playbooks - Gain high reputation and burn it quickly with low quality actions
  \item Unfair ratings - Give incorrect reputation or image
@@ -417,32 +452,41 @@ Attempts to misrepresent reliability and manipulate reputation are common in tra
  \item Value Imbalance Exploitation - Gain reputation with easy actions
  \item Sybil Attack - Inflate reputation with fake accounts.
 \end{itemize}
+
 When implementing a trust system in Membrane these attacks should be considered and special attention should be paid to prevent a new user being exploited for their storage space when joining the swarm.
 
 \section{Communication} \label{sec:comm}
 
-As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion. Formalising communication using ACLs is a more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves. Instead of using a strict protocol we shall instead take an agent-based approach to communication using ACLs.
+As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion.
+
+We look to ACLs which provide a formal but more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves.
 
 \subsection{Agent Communication Language}
 
-On balance, we shall be using FIPA for communication. This is an ACL based on Speech Act Theory \citep{labrou1999agent}. It splits communication into a communicative act (CA), an ACL message structure and a set of communication protocols such as XML or OWL (Web Ontology Language). In FIPA communication should be rational, in that when sending a message:
+FIPA is an ACL based on Speech Act Theory \citep{labrou1999agent}. It splits communication into a communicative act (CA), an ACL message structure and a set of communication protocols such as XML or OWL (Web Ontology Language). In FIPA communication should be rational, in that when sending a message:
+
 \begin{itemize}
   \item The sender believes the proposition.
   \item The recipient does not already believe the proposition.
   \item The recipient will believe the proposition after the proposition.
 \end{itemize}
+
 In the case of Membrane this could be put into the context of asking another node to store data, it would only be reasonable to send another node data to be stored, if the two nodes had negotiated storage of that block between them previously.
 
 To keep communication simple for nodes, we shall use two CAs
+
 \begin{itemize}
   \item REQUEST
   \item INFORM
 \end{itemize}
+
 where \emph{REQUEST} expects a reply of some sort and \emph{INFORM} does not. This will enable easier implementation and can be expanded if required.
 
 \subsection{Ontology} \label{sec:ontology}
 
-An ontology is a way of defining basic terms and relations comprising the vocabulary of a topic area. \cite{sugumaran2002ontologies} tells us the the three most commonly used relationships in an ontology are \emph{is-a}, \emph{synonym} and \emph{related-to} (which is a generic association between entities). So why should we create an ontology for membrane? \cite{noy2001ontology} lists the benefits of ontology within distributed systems:
+An ontology is a way of defining basic terms and relations comprising the vocabulary of a topic area. \cite{sugumaran2002ontologies} tells us the the three most commonly used relationships in an ontology are \emph{is-a}, \emph{synonym} and \emph{related-to}\footnote{A generic association between entities}. 
+
+\cite{noy2001ontology} lists the benefits of ontology within distributed systems:
 
 \begin{itemize}
  \item Enable common understanding of the structure of information
@@ -460,49 +504,58 @@ Network Address Translation (NAT), defined in RFC 2663 by \cite{srisuresh1999ip}
 
 \emph{Relaying} is a method of communicating through a well known server, that has a static IP address and port. This has the advantage of being simple, however, it has the disadvantage of using the server's processing power, network bandwidth and increases latency between peers. It is a good fallback strategy but also requires both clients to initiate the connection, which makes listening for incoming connections difficult. The TURN protocol \citep{rosenberg2005traversal} describes a fairly secure method for relaying.
 
-\emph{Connection Reversal} is the use of an external server to request a 'call back' to a host. The connecting host contacts an external server with a target host and leaves it's public IP and port. The relaying host can then choose to send a request to host behind NAT and the host behind NAT can choose to forward the request. It has similar limitations to relaying, however, it is easy to imagine an implementation that uses connection reversal for bootstrapping a P2P connection.
+\emph{Connection Reversal} is the use of an external server to request a `call back' to a host. The connecting host contacts an external server with a target host and leaves it's public IP and port. The relaying host can then choose to send a request to host behind NAT and the host behind NAT can choose to forward the request. It has similar limitations to relaying, however, it is easy to imagine an implementation that uses connection reversal for bootstrapping a P2P connection.
 
-\emph{UDP Hole Punching} is a technique defined in RFC 3027 5.1 \citep{holdrege2001rfc} that allows two clients behind NAT to connect with the use of a rendezvous (RV) server. Hosts contact the RV and leave their UDP port and address. You should be weary of poor NAT implementations translating IP addresses within data when packets are coming in and out. \citep{ford2005peer} When clients are both behind the same NAT, packets between them do not need to go through NAT. If Hairpin NAT is correctly configured they will be bounced back within the internal network, however, it could result in overheads otherwise. If this problem is detected during the implementation of Membrane private IP address could also be sent to the RV server. It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host. The initial outbound packet from a host to a the RV server is key in 'punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
+\emph{UDP Hole Punching} is a technique defined in RFC 3027 5.1 \citep{holdrege2001rfc} that allows two clients behind NAT to connect with the use of a rendezvous (RV) server. Hosts contact the RV and leave their UDP port and address. We need to be weary of poor NAT implementations translating IP addresses within data when packets are coming in and out. \citep{ford2005peer}
+
+When clients are both behind the same NAT, packets between them do not need to go through NAT. If Hairpin NAT is correctly configured they will be bounced back within the internal network, however, it could result in overheads otherwise. If this problem is detected during the implementation of Membrane private IP address could also be sent to the RV server. It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host. The initial outbound packet from a host to a the RV server is key in `punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
 
 \emph{TCP Hole Punching} is more complex than with UDP as clients need to establish sessions across the NAT. For hole punching to work the same port needs to be used for listening and establishing a connection. This can be done using \emph{SO\_REUSEPORT} option, which allows an application to claim multiple sockets from the same endpoint. Within the application an new port needs to used for handling the connection.
 
 There are two practical solutions that I shall explore for implementation within Membrane. TURN \citep{wing2010traversal} provides a set of methods for NAT hole punching. UPnP \citep{boucadair2013universal} is a method through which a host can request a NAT gateways to open a port for the application. There have been security concerns with UPnP which has resulted in UPnP being disabled on many routers. This will need to be explored during implementation of Membrane.
 
-\section{Distributed File System}
+\section{Distributed File Systems}
 
 Membrane shards files and stores copies on multiple nodes for redundancy. This is a technique that is commonly found in distributed file systems (DFS) such as Hadoop File System (HDFS) \citep{hdfsAnalysis}, Google File System (GFS) \citep{TheGFS} and Parallel Virtual File System (PVFS) \citep{ross2000pvfs}. This section aims to explore the reasoning and decisions taken with these file systems.
 
-HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. It stores file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. This is a similar approach to GFS \citep{mckusick2010gfs}. Membrane takes this approach by storing file metadata on the client. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph} This allows for larger, more distributed system, this could be used within Membrane if meta-data proves too large to store on the client.
+HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. It stores file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. This is a similar approach to GFS \citep{mckusick2010gfs}. Membrane takes this approach by storing file metadata on the client. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph} This allows for larger, more distributed system, this could be investigated if meta-data proves too large to store on the client.
 
-Files and directories are represented my inodes, these record attributes such as permissions and location. Within Membrane this will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisms described previously.
+Files and directories are represented by inodes, these record attributes such as permissions and location. Membrane will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisms described previously.
 
 The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
 
-In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj.
+In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj, possibly eliminating the need for a DHT.
 
 In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
 
 \section{Authentication and Encryption} \label{sec:encryption}
 
-In order to maintain a relationship a host needs to be able to verify it's identity when it connects to a host a second time. When visiting a website there is often a need to map a virtual identity to a real identity of a service user \citep{hericourt2001method} a bank for example, this is typically done using a certificate authority. Membrane requires authentication in two situations:
+In order to maintain a relationship a host needs to be able to verify it's identity when it connects to a host a second time. When visiting a website there is often a need to map a virtual identity to a real identity of a service user \citep{hericourt2001method} a bank for example, this is typically done using a certificate authority.
+
+Membrane requires authentication in two situations:
 \begin{itemize}
  \item Is this the same node I was talking to before?
- \item Have I found the correct node when adding a friend?
+ \item Have I found the correct node when adding a friend? (A possible future feature)
 \end{itemize}
+
 Session authentication is a common occurrence while using the web and it typically happens with every HTTPS site visit. A session cookie is stored on both clients to allow for authorisation and authentication without the use of a password in further interaction. \citep{mayo2008security}
 
-SSL/TLS, defined in RFC 5246 \citep{dierks2008transport} is often used for this authentication. It uses asymmetric public-key cryptography for initial connection, which uses a separate key is used for encryption and decryption. A client generates a public SSL certificate that it sends for any users that want to communicate with it. They encrypt their communication with it, and the server can decrypt it. This is called a SSL Handshake.
+SSL/TLS, defined in RFC 5246 \citep{dierks2008transport} is often used for this authentication. It uses asymmetric public-key cryptography for initial connection, which uses a separate key is used for encryption and decryption. A client generates a public SSL certificate that it sends for any users that want to communicate with it. They encrypt their communication with it, and the server can decrypt it.
+
+This is called a SSL Handshake:
+
 \begin{enumerate}
  \item Server sends the client it's asymmetric public keys
  \item Client creates a symmetric session key and encrypts it using the public key.
  \item Server decrypts the encrypted session keys
  \item Client and Server can now communicate using the symmetric key.
 \end{enumerate}
+
 The client can ensure it is talking to the same server by ensuring the public key is the same. RSA is the commonly used algorithm for this.
 
 Pre-shared key encryption uses algorithms like Twofish, AES or Blowfish to create keys. These come in two flavours; stream ciphers and block ciphers. Stream ciphers encrypt binary digit by binary digit in a stream, and block ciphers encrypt a block of data at a time. We shall be using pre-shared key encryption to encrypt data blocks using a password saved on the host, that never under any circumstances leaves the Membrane host.
 
-Studies have shown that Twofish (and Blowfish which it is derived from) has the best performance and has no know security flaws. AES showed poorest performance. \citep*{thakur2011aes, rizvi2011performance, mushtaque2014evaluation} An interview with the creator of Blowfish suggested ``I'm amazed it's still being used. If people ask, I recommend Twofish instead.'' \cite{fish2007bruce}.
+Studies have shown that Twofish (and Blowfish which it is derived from) has the best performance and has no know security flaws. AES showed poorest performance. \citep*{thakur2011aes, rizvi2011performance, mushtaque2014evaluation} An interview with the creator of Blowfish suggested ``I'm amazed it's still being used. If people ask, I recommend Twofish instead.'' \cite{fish2007bruce}, so we opt to use TwoFish as our asymmetric encryption algorithm.
 
 \section{Compression} \label{sec:compression}
 
@@ -515,11 +568,11 @@ Several compression algorithms were considered for Membrane. There are two impor
 
 Three algorithms were considered: gzip (DEFLATE), LZ4 and Snappy.
 
-\emph{gzip} is a popular file format that uses \emph{DEFLATE} for compression internally. DEFLATE relies a combination of LZ77\footnote{Lossless data compression algorithm published by \cite{ziv1977universal}.} and Huffman coding\footnote{An optimal prefix (string deduplication) code used for lossless data compression developed by \cite{huffman1952method}., }was developed by \cite{deutsch1996deflate}. It is extensively used for compression and packaging in the Linux ecosystem, accessible via the \emph{tar} utility and also notably used in the PNG image format and for HTTP compression.
+\emph{gzip} is a popular file format that uses \emph{DEFLATE} for compression internally. DEFLATE relies on a combination of LZ77\footnote{Lossless data compression algorithm published by \cite{ziv1977universal}.} and Huffman coding\footnote{An optimal prefix (string deduplication) code used for lossless data compression developed by \cite{huffman1952method}.}. It was developed by \cite{deutsch1996deflate} and has been used extensively used for compression and packaging in the Linux ecosystem\footnote{accessible via the \emph{tar} utility}, the PNG image format and for HTTP compression.
 
-\emph{LZ4} is an evolution of DEFLATE and belongs in the LZ77 family of compression algorithms. It gives worse compression than gzip, however, benefits from faster compression and significantly faster decompression. \citep{legesse2014performance} As a result it has been adopted in file system such as ZFS for real time data compression. This makes LZ4 far more appropriate for Membrane than gzip, as low resource usage is a key requirement.
+\emph{LZ4} is an evolution of DEFLATE and belongs in the LZ77 family of compression algorithms. It gives worse compression than gzip, however, benefits from faster compression and significantly faster decompression. \citep{legesse2014performance} As a result it has been adopted in file systems such as ZFS for real time data compression. This makes LZ4 far more appropriate for Membrane than gzip, as low resource usage is a key requirement.
 
-\emph{Snappy} is a compression algorithm used by Google for data compression it was developed to improve on the speed of DEFLATE and offers excellent compression and decompression speeds. \citep{google2017snappy}
+\emph{Snappy} is a compression algorithm used by Google for data compression. It was developed to improve on the speed of DEFLATE and offers excellent compression and decompression speeds. \citep{google2017snappy}
 
 When benchmarked against LZ4, Snappy is marginally slower \citep{vorontsov2015compression}, however, it provides a native Java implementation. We therefore give users the option between Snappy and LZ4 compression, although we default to LZ4 due to it's superior speed and compression ratio. \citep{lz42017lz4}
 
@@ -527,7 +580,10 @@ When benchmarked against LZ4, Snappy is marginally slower \citep{vorontsov2015co
 
 A Membrane client needs a method to ensure the storage host still holds the data it says it has. To prevent Sybil attacks where agents collude to store a shard between each other, a shard will be salted before encryption and transfer. This has proven effective in Storj \citep{Wilkinson14storja}.
 
-In order to determine consistency of what the storage agent has stored a mix of different hash verification is used.
+\subsection{Existing Systems}
+
+Storj uses a variety of has verification for PDP:
+
 \begin{itemize}
  \item Full Heartbeat - Expensive and complete
  \item Cyclic Check - This checks a sections of the file in sequence, wrapping to the start when the end is reached. Cheap but could be exposed to attacks if the storage agent wants to remove part of the file over time.
@@ -564,7 +620,7 @@ $$MAC(K, m) = H(K \parallel m \parallel K)$$
 
 offers better protection but there have been several papers claiming this can been exploitable. \citep{bellare1996keying}
 
-Within Membrane we build HMAC challenges when deploying a block to allow for proof-of-ownership
+Within Membrane we build HMAC challenges when deploying a block to allow for PDP
 
 \section{Conclusion}
 In this literature review we discussed the key important areas of creating a distributed storage system.

@@ -1853,9 +1853,20 @@ $$\mbox{rating} = H * R * L$$
 
 where $H$ is the percentage of the time the peer was online at the same time the PCM, $R$ is the report completion ratio and $L$ is the block loss ratio. This produces a value that indicates the probability that the user will be online and able to pass PDP checks for all held shards, with a penalty for losing blocks.
 
-If a peer rating is $<1.50\sigma - \mu$ away from the average we drop the peer as a contract, where $\sigma$ and $\mu$ indicates the standard deviation and mean respectively.
+\begin{figure}[h]
+ \centering
+ \includegraphics[width=0.5\textwidth]{peer-appraisal}
+ \caption{Peer Appraisal Demonstration}
+ \label{fig:peer-appraisal}
+\end{figure}
+
+If a peer rating is $<\sigma - \mu$ away from the average we drop the peer as a contract, where $\sigma$ and $\mu$ indicates the standard deviation and mean respectively.
 
 This system was simulated in unit testing, asserting that the peer appraisal correctly punishes peers that fail to deliver PDPs, have incompatible uptime or lose blocks.
+
+We show a visual demonstration of the peer appraisal system in figure \ref{fig:peer-appraisal}. We configure the host generating these ratings to have standard a uptime taken from the uptime survey (\ref{fig:uptime-survey}). The good peer simulates a server with 100\% uptime and with no bad behaviour. The mid peer is online less than the host but during fairly similar times. The bad peer is only online for small parts of the weekend.
+
+We also display the minimum rating to remain contracted as \code{min-limit} if there were two bad peers, two mid peers and one good peer. The rating mechanism is performing exactly as expected. A myriad of test cases using peers with different characteristics  are tested numerically through automated unit tests ensuring the mechanism works correctly.
 
 Using \cite{josang2009challenges}'s nine potential attacks on reputation and trust systems described in section \ref{sec:tar}.
 
@@ -1883,7 +1894,7 @@ It is important that users store these credentials in a safe place. We prominent
 
 \subsection{Peer Connection}
 
-We can expect Membrane peers to be behind a NAT gateway, which acts as a bijective converter for ip and port combinations, grouping all internal IPs as one external IP. This poses an issue when establishing a connection with peers as NAT will typically block connections to unmapped ports. In section \ref{sec:p2pconn} we discussed four solutions, two of which we attempt. UPnP port forwarding \citep{boucadair2013universal} and TCP Hole Punching \citep{wing2010traversal}.
+We can expect Membrane peers to be behind a NAT gateway, which acts as a bijective converter for IP and port combinations, grouping all internal IPs as one external IP. This poses an issue when establishing a connection with peers as NAT will typically block connections to unmapped ports. In section \ref{sec:p2pconn} we discussed four solutions, two of which we attempt. UPnP port forwarding \citep{boucadair2013universal} and TCP Hole Punching \citep{wing2010traversal}.
 
 We use a UPnP communication library in Java for port forwarding. First we broadcast a UPnP request for potential gateways on the network. If a response is received we use UPnP to request a port forward for 5 minutes. If this request fails we try the next port up for a maximum of 20 attempts. In practice this has proven a large enough number to locate an available port. We then ask the gateway what the external IP is. A refresh is performed every 130 seconds to ensure the port forwarding entry never expires. A time of 5 minutes is used to ensure the port forward stops after a reasonable time.
 
@@ -2343,7 +2354,11 @@ We also find that technologies researched, such as TCP hole punching, while very
 
 After the literature review we proceed to the analysis, during which we planned the design and structure of Membrane before starting development. We first questioned users which was an insightful way to gather requirements. In retrospect, it would have also been useful to discuss the final requirements with the polled users.
 
-Although all key requested requirements were fulfilled we find that some aspects of the application, namely the GUI was a far more desirable feature than first shown by polls, and a fully fledged GUI for interacting with Membrane was requested multiple times. In the future we will look at creating the requirements using an iterative approach, going back to the users after the initial poll
+Although all key requested requirements were fulfilled we find that some aspects of the application, namely the GUI was a far more desirable feature than first shown by polls, and a fully fledged GUI for interacting with Membrane was requested multiple times. In the future we will look at creating the requirements using an iterative approach, going back to the users after the initial poll.
+
+Looking at features of existing solutions, specifically looking at how they differ proved an extremely valuable way on scoping Membrane, in fact, many of the desirable features discovered during the user survey were reiterated during the common feature analysis.
+
+
 
 
 \section{Limitations}

@@ -1,4 +1,4 @@
-\documentclass[11pt, a4paper, twocolumn, twoside]{report}
+\documentclass[11pt, a4paper, twoside]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[a4paper,headheight=13.6pt,width=150mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
 \usepackage{natbib}
@@ -73,7 +73,7 @@
 ]
 
 \fancyhead{}
-\fancyhead[RO,LE]{Membrane - Distributed File Backup}
+\fancyhead[RO,LE]{Membrane: Peer-To-Peer File Backup}
 \fancyfoot{}
 \fancyfoot[LE,RO]{\thepage}
 \fancyfoot[LO,CE]{Chapter \thechapter}
@@ -89,7 +89,7 @@
 \setcitestyle{square}
 
 %opening
-\title{Membrane - Distributed File Backup}
+\title{Membrane - A Peer-To-Peer File Backup System}
 \author{Dominic Hauton}
 
 \begin{document}
@@ -99,7 +99,7 @@
 	\includegraphics[width=0.3\textwidth]{uob-logo}\par\vspace{0.5cm}
 	{\scshape\LARGE University of Bath \par}
 	\vspace{3cm}
-	{\huge\bfseries Membrane - Distributed File Backup\par}
+	{\huge\bfseries Membrane\par A Peer-To-Peer File Backup System\par}
 	\vspace{1cm}
 	{\Large\itshape Dominic Hauton\par}
 	\vspace{1cm}
@@ -127,7 +127,7 @@ Library and may be photocopied or lent to other libraries for the purposes of co
 \begin{titlepage}
 	\centering
 	\includegraphics[width=0.5\textwidth]{membrane-logo}\par\vspace{1cm}
-	{\huge\bfseries Membrane - Distributed File Backup\par}
+	{\huge\bfseries Membrane\par A Peer-To-Peer File Backup System\par}
 	\vspace{1cm}
 	Submitted by 
 	{\Large\itshape Dominic Hauton\par}
@@ -175,7 +175,25 @@ In this report we explore the current distributed storage landscape and follow t
 
 \renewcommand{\abstractname}{Acknowledgements}
 \begin{abstract}
-\hfil With thanks to my supervisor, Dr.~Russell Bradford\hfil
+\vspace{2cm}
+I would first like to thank my supervisor Dr.~Russell Bradford, who has provided excellent advice and guidance throughout the year
+
+\vspace{1cm}
+
+To my parents for providing me with unfailing support and continuous encouragement throughout my years of study. This accomplishment would not have been possible without them.
+
+\vspace{1cm}
+
+To Tom and Jason, who have given me great joy and support throughout my four years of University, helping shape both my life and work.
+
+\vspace{1cm}
+
+Finally to my other family members and friends who have supported me along the way.
+
+\vspace{1cm}
+
+Thank you.
+
 \end{abstract}
 
 \listoffigures
@@ -640,13 +658,13 @@ Drawing on techniques explored in the literature review we will proceed to desig
 
 \chapter{Analysis}
 
-As Membrane is primarily an application built for home users the first step of analysis is querying potential users about what features they would like to see. This is proceeded by looking at what features existing solutions provide to create a Minimum Feature Set which, with the user requests taken into consideration, we will formally describe as software requirements. From this feature set we are able to create a development plan and explore helpful technologies that we will be able to reuse during product development. Finally we describe a target architecture for Membrane.
+As Membrane is primarily an application built for home users the first step of analysis is querying a sample of them about what features they would like to see. This is proceeded by looking at what features existing solutions provide to create a Minimum Feature Set which, with the user requests taken into consideration, we will formally describe as software requirements. From this feature set we are able to create a development plan and explore helpful technologies that we will be able to reuse during product development. Finally we describe a target architecture for Membrane.
 
 \section{User Survey}
 
-In order to gather relevant user opinions we first decide at who the target user for Membrane is. Although the final product is for as wide a range of users as possible, initial versions may be a bit more difficult to use, as bugs are ironed out and features are added. We focus on those early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane. \label{txt:adv-users}
+In order to gather relevant user opinions we first decide who exactly the target user for is. Although the final product is intended for as wide a range of users as possible, initial versions may be a bit more difficult to use while bugs are ironed out and features are added. We focus on those early visionary users that will be able to provide constructive and informed feedback during the early life of Membrane. \label{txt:adv-users}
 
-To narrow the search, we will target Linux users, who will be more accustomed to manually installing software and debugging potential issues. To gather feedback we used an online survey. These are typically answered by more technical users, have a short response time and require minimal financial resource allocation \citep{ilieva2002online}. Eight participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
+We decided on Linux users, who will be more accustomed to manually installing software and debugging potential issues. To gather feedback we used a short online survey. These are typically answered by more technical users, have a short response time and require minimal financial resource allocation \citep{ilieva2002online}. Eight participants were selected and asked to describe five key features they would like to see in the proposed distributed backup system.
 
 We gathered all of the requested features and placed the most popular into five categories that we will look to implement in the first version of Membrane:
 
@@ -655,152 +673,160 @@ We gathered all of the requested features and placed the most popular into five 
  \item File Versioning
  \item Maintenance Free
  \item Fast Recovery
- \item Lightweight
+ \item Lightweight Operation
 \end{itemize}
 
-The most important request by survey participants is \emph{data security}. The concerns focused on how Membrane will ensure files stored on another user's computer are guaranteed to be inaccessible to the host user. Special care will need to be taken while showcasing Membrane to address this.
+The most important request is \emph{data security}. The concerns focused on how Membrane will ensure files stored on another user's computer are guaranteed to be securely encrypted. Special care will need to be taken while showcasing Membrane to address this.
 
-\emph{File versioning} is seen as a key feature. Users want to be able to recover files that have been deleted or changed accidentally. This is expected many of the survey participants are accustomed to file versioning software such as Git. This poses a storage space challenge, as files that change frequently will take up valuable space.
+\emph{File versioning} is seen as a key feature. Users want to be able to recover files that have been deleted or changed accidentally. This is expected by many of the survey participants who are accustomed to file versioning software such as Git. This poses a storage space challenge, as files that change frequently will take up valuable space.
 
-Users also requested that after the first set-up Membrane would act transparently, with \emph{no need for re-configuration} unless a change in functionality is required. During design we will aim to provide flexible configuration options, that will be able to gracefully recover from failure.
+Users also requested that after the first set-up, Membrane would act transparently with \emph{no need for re-configuration} unless a change in functionality is required. During design we will aim to provide flexible configuration options, that will be able to gracefully recover from any failure.
 
-An unexpected feature requested is \emph{fast recovery}. Users expressed concern about the amount of time that will be required to access files stored on the swarm. This is an interesting challenge as it is difficult to guarantee that users storing data will be online at any given point in time.
+An unexpected feature requested is \emph{fast recovery}. Users expressed concern about the amount of time required to access files stored on the swarm. This is an interesting challenge as it is difficult to guarantee that users storing data will be online at any given point in time.
 
-The final key request by potential users is that Membrane should not interfere with normal computer usage by the user, particularly processor time, memory and network utilisation. The request is particularly common among gamers who do not want to experience any slow-down to their games during backup.
+The final key request by potential users is that Membrane should not interfere with normal computer usage, particularly processor time, memory and network utilisation. The request is common among gamers who do not want to experience any slow-down to their games during backup.
 
 We will focus on these five requests in the next steps of our analysis, however, more categorised requests can be found in the appendix in listing \ref{lst:mbrnsurvey}. Given enough time we will explore more of these once the minimum viable product is created.
 
 \section{Common Features} \label{sec:commonfeatures}
 
-Following the user survey we will look at popular features of existing solutions. In order to discover what features users are looking for we will explore features used to differentiate backup software in comparisons. The \cite{arch2017syncandbackup} wiki has a comprehensive list of available backup options and uses a feature table to allow readers to quickly determine which solution is best suited to them.
+Following the user survey we will look at popular features of existing solutions. In order to discover what features users are looking for we compare existing backup software solutions. The \cite{arch2017syncandbackup} wiki has a comprehensive list of available backup options and uses a feature table to allow readers to quickly determine which solution is best suited to them.
 
-We will try to explore all of these features, and incorporate feasible features into the Minimum Viable Product for Membrane.
+We explore all of these features, and sorting out the feasible ones into the minimum feature set for Membrane.
 
-\emph{Compressed Storage} for files. The type and style of compression used. Within software this is not a difficult feature to add as there are many compression libraries. Implementing compression will reduce the amount of bandwidth Membrane uses during operation.
+\emph{Compressed Storage} for files is first. This describes the type and style of compression used. Within software this is not a difficult feature to add as there are many compression libraries and we even discussed these during the literature review. Implementing compression will reduce the amount of bandwidth Membrane uses during operation.
 
-\emph{Storage Encryption} is extremely important in Membrane as discovered during the user survey. We will need to look into potential encryption options in-depth while designing Membrane and ensure that there is no chance of a data leak.
+\emph{Storage Encryption} is extremely important as discovered during the user survey. We will need to look into potential encryption options in-depth during design to ensure that there is no chance of a data leak.
 
-\emph{Delta Transfer} only transfers the modified part of the file if there is a change. This is important for users as it limits bandwidth and storage requirements. Within Membrane we will need to implement this as multiple copies of any stored data need to be transfered to peers.
+\emph{Delta Transfer} only transfer the modified part of the file if there is a change. This lowers bandwidth and storage requirements, which will help with low resource utilisation requested by peers in the user survey.
 
-\emph{Encrypted Transfer} checks if the data is transferred over a secure connection. This is less important for Membrane as files are encrypted for storage, however, an encrypted transfer would prevent a third party being able to see the interaction between two Membrane peers.
+\emph{Encrypted Transfers} ensure data is transferred over a secure connection. This is less important for Membrane as files are encrypted for storage, however, an encrypted transfer would prevent a third party being able to see the interaction between two Membrane peers.
 
-\emph{File system meta-data} can be stored with the data so it is restored along with the file. This could be implemented in Membrane, however, as this wasn't requested by users and does not help demonstrate the advantages of peer-to-peer storage it will not be added to the Minimum Viable Product.
+\emph{File system meta-data} can be stored with the data so it is restored along with the file. This could be implemented in Membrane, however, as this wasn't requested by users and does not help demonstrate the advantages of peer-to-peer storage it will not be added to the minimum feature set.
 
-\emph{Easy access} to files is an important feature in backup systems, however, as the MVP of Membrane seeks to show peer-to-peer backup instead of a perfect backup system, we will add this feature to future work.
+\emph{Easy access} to files is an important feature in backup systems, however, the proof-of-concept we aim to build seeks to show peer-to-peer backup instead of a perfect backup system. We instead consider adding this in future work.
 
-\emph{Resumable Backup} is very important in Membrane. If a connection to a peer is lost Membrane needs to be able to resume the backup with other peers.
+\emph{Resumable Backup} is very important in Membrane. If a connection to a peer is lost Membrane needs to be able to resume the backup with other peers and needs to be resilient to sudden connection drops and failed transfers.
 
-Another vital feature in Membrane is the ability to \emph{handles renames}. If a file is moved or renamed, the software needs to be able to detect this to reduce data duplication.
+Another vital feature is the ability to \emph{handle renames}. If a file is moved or renamed, the software needs to be able to detect this to reduce data duplication, therefore lowering bandwidth.
 
-Users searching for backup solutions were also very interested in the software's \emph{interface}. This needs to work well and be suited to the user. Within Membrane we will be looking to implement a fully featured \emph{command line interface} (CLI) for configuration, as well as a \emph{graphical user interface}  (GUI) for backup monitoring. This is common in most of the featured backup solutions, so to remain competitive these need to be implemented.
+Users searching for backup solutions were also interested in the software's \emph{interface}. This needs to work well and be suited to the user. We look to implement a fully featured \emph{command line interface} (CLI) for configuration, as well as a \emph{graphical user interface} (GUI) for backup monitoring, common in most of the compared backup solutions.
 
 The comparisons also covered platforms supported by the backup solutions. An interesting observation is that although multi-platform support has clear benefits, many of the backup solutions covered only supported one or two of the available platforms. This will be taken into consideration while creating the formal specification for Membrane.
 
-Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is.
+Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is. We aim to licence our code under the MIT licence to be as open as possible.
 
-We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them.
+We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them. The next section looks to blend these into a single harmonious specification.
 
 \section{Requirements} \label{sec:requirements}
 
-In the requirements we will formalise the aforementioned research into goals to be completed during development. These requirements will be able help with planning development and designing an architecture for Membrane.
+In the requirements we formalise the aforementioned research into goals to be completed during development to help with planning and designing an architecture for Membrane.
 
-We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate it's behaviour and will aid in its design by ensuring key features of interest are present \citep{van2009requirements} followed by Non-Functional Requirements which help support functional requirements \cite{chung2012non}.
+We will begin with functional requirements which describe technical features within the desired system, allow us to evaluate its behaviour and will aid in its design by ensuring key features of interest are present. \citep{van2009requirements} These are followed by supporting Non-Functional Requirements that help better define the non-binary software goals such as resource utilisation \cite{chung2012non}.
 
-There is some debate about the usefulness of software requirements \cite{kneuper1997limits}, so the requirements below will be kept brief, however, they will be able to help guide the software development goals and produce targets for development stages.
+There is some debate about the usefulness of software requirements \cite{kneuper1997limits} so they will be kept brief, while still helping guide the software development goals and produce targets for development stages.
 
 \subsection{Functional Requirements}
 
-Functional requirements describe components found within software and their function; inputs, the behaviour, and outputs. These requirements consist of name and number, a brief summary, and a rationale. It's important to ensure the requirements are clear to prevent misinterpretation.
+Functional requirements describe components found within software and their function\footnote{inputs, the behaviour, and outputs}. These consist of name and number, a brief summary, and a rationale. It's important to ensure the requirements are clear to prevent misinterpretation.
 
 \subsubsection{1. File System Monitoring}
-The system must be able to be given the name of one or more folders, and monitor all the files for changes in those folders. Another module must be able to subscribe to a stream of these changes for further processing of the modified files. The system should make use of preexisting file system features for monitoring if available.
+The system must be able to be given the name of one or more folders with a wild card and the option to monitor all inner folders recursively. All the files in these folders need to be monitored for changes using of preexisting file system features for monitoring if available.
 
 This is core to the backup system. It cannot function without this.
 
 \subsubsection{2. Sharding Module}
-The module must be able to receive the path of a file and determine whether the file has changed since the last read. If a change, addition or deletion is confirmed this update must be sent to any subscribers for further processing. Individual file chunks for the modified file (if any exist) must be sent to any subscribers to be persisted. Updates for preexisting or suppressed files must be suppressed. On launch the system must be able to receive a list of files already stored by the system for suppression.
+The module must be able to receive the path of a file and determine whether the file has changed since the last read. If a change, addition or deletion is confirmed this update must be sent to any subscribers for further processing. Individual file chunks of the modified file (if any exist) must be sent to any subscribers to be persisted as well as metadata about the file. Updates for preexisting or excluded files must be suppressed. On launch the system must be able to receive a list of files already stored by the system for suppression.
 
 This strategy limits resource usage and allows for deduplication of the backups, saving storage space. Sharding also allows for better packing for the distributed modules.
 
 \subsubsection{3. File History}
-Must be able to keep a log of file system modifications. It must be able to remove entries from the log to match storage requirements by analysing the storage requirements for storing the entire history and selectively removing elements of the history to meet requirements. The history must be immediately persisted, so an application crash does not affect the operation.
+Must be able to keep a log of file system modifications, with the ability to remove entries from the log to meet storage size requirements by selectively removing elements of the history. File system modifications must be persisted to non-volatile storage immediately so an application crash does not affect the log.
 
-This needs to be done to match the request in the user survey to store file history. In addition this will allow for delta transfers as files can be compared between versions.
+This needs to be done to match the request in the user survey to store file history and allow for delta transfers\footnote{Partial transfers. As files differences can be compared between versions}.
 
-\subsubsection{3. Shard Storage}
-Must be able to persist and fetch requested shards to a given folder. It must perform consistency checks on retrieval and support hard limits on total storage size. Finally it must be able to return a complete listing of all shards inside the storage unit.
+\subsubsection{4. Shard Storage}
+Must be able to persist and fetch requested shards to a given folder. It must perform consistency checks on retrieval, support hard limits on total storage size and return a complete listing of all shards inside the storage unit.
 
-This is a key feature of the backup system as it persists shards, which can then be assembled into files.
+This is a key feature of the backup system as it persists shards, which can then be reassembled into files.
 
-\subsubsection{4. NAT Traversal}
-Must be able to establish a secure TCP connection when two peers are behind a NAT Gateway. The suggested mechanism is to use UPnP Port Forwarding offered and enabled on most routers. In future iterations consider using TCP Hole Punching. This must be able to temporarily forward and maintain a port on the target router. If a port is taken another open port should be used. The system must also be able to return the external IP address.
+\subsubsection{5. NAT Traversal}
+Must establish a secure TCP connection when two peers are behind a NAT Gateways. The suggested mechanism is to use UPnP Port Forwarding offered and enabled on most routers.
+
+If time allows consider using TCP Hole Punching to temporarily forward TCP ports and maintain the forwarding.
+
+If a port is taken another open port should be used. The system must also be able to return the external IP address.
 
 This is required to allow two users who wish to use each others external storage, who are both behind a NAT Gateway wish to connect. It is a common feature of distributed storage such as BitTorrent
 
-\subsubsection{5. Authentication}
-Must be able to generate, persist and reload a public private key pair and X509 self-signed certificate used for establishing secure SSL connections. These details must be used throughout the application lifetime and will act as a unique identifier for the user.
+\subsubsection{6. Authentication}
+Must be able to generate, persist and load a public private key pair and X.509 self-signed certificate used for establishing secure SSL connections. These details must be used throughout the application lifetime and will act as a unique identifier for the user.
 
 This is required to allow users to create accounts on the distributed network.
 
-\subsubsection{6. Peer Connection}
-Must be able to establish a secure connection to a given an IP and port. When this connection is established the user must be authenticated using their provided SSL certificate public key. This must be  converted into a unique user identifier. All messages from the peer must contain this unique identifier or they should be dropped.
+\subsubsection{7. Peer Connection}
+Must be able to establish a secure connection to a given an IP and port. When this connection is established the user must be authenticated using their provided X.509 certificate public key and converted into a unique user identifier. All messages from the peer must contain this unique identifier or they should be dropped.
 
 This module forms the core of the connectivity in Membrane allowing users to dial each other.
 
-\subsubsection{7. Peer Exchange (PEX)}
-Must be able to send and receive connection information about yourself and other peers. Peer information about yourself needs to be signed with a time stamp for future verification. Incoming verification about specific peers needs to be verified. Needs to support peer discovery, finding peers that have never been contacted before.
+\subsubsection{8. Peer Exchange (PEX)}
+Must be able to send and receive connection information about yourself and other peers respectively.
 
-This is done to allow peers to find each other if they have changed external IP address or port and to allow new peer discovery.
+Peer information about yourself needs to be signed with a time stamp for future verification. The signature of any incoming PEX information needs to be verified.
 
-\subsubsection{8. Connection Management}
-Given a target user count, maximum connection count and whether new users should be found, should dial known contracted peers on a regular basis, request PEX information for connected peers and send up-to-date PEX information to connected peers. Should connect to trackers if peer target has not been reached in time.
+Must support new peer discovery\footnote{finding peers that have never been contacted before} and be able to find old peers.
+
+This is done to allow for general swarm discovery, helping peers connect with users they have files stored with.
+
+\subsubsection{9. Connection Management}
+Given a target user count, maximum connection count and whether new users should be found, should dial known contracted peers on a regular basis, request PEX information for connected peers and send up-to-date PEX information to connected peers. Should connect to trackers if expected peer count has not been reached in time.
 
 This module is responsible for providing live connections to peers that can be contracted and have data blocks sent to them.
 
-\subsubsection{9. Shard Distributing}
-Given a list of local shards and file history, needs to be able to package appropriate shards into blocks and send them to peers, depending on which peer is most suitable for storing the shards. Needs to send contract updates on a regular basis and respond to and issue proof of ownership requests for blocks to and from peers. Needs to be able to remove peers that are not worthwhile.
+\subsubsection{10. Shard Distributing}
+Given a list of local shards and file history, must package appropriate shards into blocks and send them to the most suitable peer. Needs to send contract updates on a regular basis and respond to contract updates by sending proof of ownership requests for blocks to and from peers. Needs to be able to remove peers that are not worthwhile.
 
 This is a core module connecting the local backup to the network module and required for distributed backup.
 
-\subsubsection{9.1 Distribution Storage}
-Must be able to store information about generated blocks, which blocks are given to which peers and what blocks have been provided by what peer. This includes any proof-of-ownership verification information that may be required in the future, shard contents and block unique identifier. The module must be able to persist this information and load it from disk.
+\subsubsection{10.1 Contract Storage}
+Must be able to store information about generated blocks, namely: which blocks are given to which peers and what blocks have been provided by what peer, any proof-of-ownership verification information that may be required in the future, shard contents and block unique identifier. The module must be able to persist this information and load it from disk.
 
-This is a core module required for (9.0) to verify module information and compute which shards should be given to which connected peer.
+This is a core module required for (10.0) to verify module information and compute which shards should be given to which connected peer.
 
-\subsubsection{9.2 Block Encryption}
-Any blocks of data sent to peers must be encrypted using TwoFish encryption using the private modulo used for network SSL connection.
+\subsubsection{10.2 Block Encryption}
+Any blocks of data sent to peers must be encrypted using TwoFish encryption using a SHA-256 hash of the private modulo used for SSL connection to peers.
 
 This is required for data security requested by potential users during the Analysis survey.
 
-\subsubsection{9.3 Peer Appraisal}
+\subsubsection{10.3 Peer Appraisal}
 
 Peer interactions must be logged at a resolution of one hour for rating peers. Given the number of expected shards, all of the shards that have been proven to be held by the peer and any lost shards this must produce a single number between 0.0 and 1.0 rating the peer to allow for comparison.
 
 This is required for selecting which peer is most appropriate for upload.
 
-\subsubsection{10. Proof of Ownership}
+\subsubsection{11. Proof of Ownership}
 
-A system that can determine whether a peer is holding a block is required. The suggested method is a mixture of salted hashing and asking for the entire block to be returned. 
+A system that can determine whether a peer is holding a block is required. The suggested method is a mixture of HMACs and asking for the entire block to be returned. 
 
 This needs to be done to determine whether the given peer is holding a block without having to request all of the data every time.
 
-\subsubsection{11. Tracker}
+\subsubsection{12. Tracker}
 
-Membrane needs to be able to run in tracker mode, in which the backup backup is disabled but peer exchange is active for other hosts to share PEX information through the tracker.
+Membrane needs to be able to run in tracker mode, in which the backup backup is disabled but PEX is active for other hosts to share PEX information through the tracker.
 
 This is required for new peers, or peers that have expired PEX information.
 
-\subsubsection{12. Command Line Interface}
+\subsubsection{13. Command Line Interface}
 
 A fully featured CLI needs to be present. It must allow users to monitor network activity and their backups, as well as adding other folders to backup and recovering files.
 
 This feature is required to allow users to interact with Membrane.
 
-\subsubsection{13. Graphical User Interface} \label{sec:gui-req}
+\subsubsection{14. Graphical User Interface} \label{sec:gui-req}
 
 A GUI needs to be present to give users the ability to monitor membrane activity.
 
-This feature was common in existing solutions and is required for Membrane to be competitive.
+This feature is common in existing solutions and is required for Membrane to be competitive.
 
 \subsection{Non-Functional Requirements}
 
@@ -810,488 +836,77 @@ Non-functional requirements, also aptly named quality requirements help support 
  \item Evolution Qualities - Those found in the structure of the system including extensiblity, scalability, maintainability and testing.
 \end{itemize}
 
-\subsubsection{13. Maintenance Free}
+\subsubsection{14. Maintenance Free}
 The software must be able to run without external monitoring or reconfiguration. The user cannot be asked to solve any non-configuration related issues. For example, if a peer loses all of our blocks, the software should be able to recover without any user intervention.
 
 This was requested by users during the analysis survey.
 
-\subsubsection{14. Fast Recovery}
+\subsubsection{15. Fast Recovery}
 The software must be able to recover files quickly after data loss.
 
 This was requested by users during the analysis survey.
 
-\subsubsection{15. Resource Usage}
+\subsubsection{16. Resource Usage}
 Membrane's resource usage must be as low as possible to minimise impact on other software running on the system.
 
 This was requested by users during the analysis survey.
 
-\subsubsection{16. Open Source}
+\subsubsection{17. Open Source}
 
 The implementation must be fully open source. No closed source libraries can be used during development.
 
 This feature will help with adoption as Membrane will be marked as open source in backup utility comparison charts.
 
-\subsubsection{17. Extensiblity/Transparency}
+\subsubsection{18. Extensiblity/Transparency}
 
 The project should be built to allow for easy contribution from other open source programmers.
 
 This will help with community engagement in the product. More technical users will be able to add their own features, which they will be able to push back into the main code base.
 
-\subsubsection{18. Testability}
+\subsubsection{19. Testability}
 
-The project should be built with extensive tests asserting the behaviour. Tests should be automated to assist with requirement 16. It will allow easy verification of the behaviour of the modification.
+The project should be built with extensive tests asserting the behaviour. Tests should be automated to assist with requirement 17, allowing for easy verification of the behaviour of any modifications.
 
 This will help to gain the trust of potential users.
 
 \clearpage
 
 \section{Use Cases}
-\setlist{nolistsep}
 
 A use case defines a set of goal-oriented interactions between a user and the system. Actors are any external parties that interact with the system \citep{malan2001functional}. \cite{cockburn1997structuring} tells us use cases can have multiple forms and purposes.
 
 We opt to use the scenarios below to help strengthen the requirements, with the purpose of helping developers check if the software is able to perform the use cases.
 
-As with the requirements, we keep the use-case brief, as we expect they may change during development as better approaches to problems are found.
-
-\subsection{Add Watch Folder}
-The expected behaviour of Membrane during a normal backup operation when a new folder is added. The computer owner is primary actor.
-
-\subsubsection{Goal}
-
-Store redundant copies of files on the system
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item User adds folder for backup with files.
- \item Folder is persisted to the configuration file.
- \item New files in folder are detected.
- \item Files are sharded into equal chunks and sent to shard storage.
- \item The change is logged and saved in the file's history.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Submitted folder does not exist:
-	\begin{enumerate}
-	  \item Accept entry and wait until it does.
-	\end{enumerate}
-  \item Cannot persist watch folder due to IO error
-	\begin{enumerate}
-	  \item Inform the user
-	  \item Do not continue
-	\end{enumerate}
-  \item Shard storage full:
-	\begin{enumerate}
-	  \item Do not log the change in file history.
-	  \item Shorten the history until soft limit is reached.
-	  \item Retry submission later.
-	\end{enumerate}
-  \item Cannot log change in file history:
-	\begin{enumerate}
-	  \item Leave new shards.
-	  \item Retry submission later.
-	\end{enumerate}
-\end{enumerate}
-
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Folder is file:
-	\begin{enumerate}
-	  \item continue and wait until file becomes a folder
-	\end{enumerate}
-  \item File present in multiple watch folders:
-	\begin{enumerate}
-	  \item De-duplicate file by sharding
-	  \item log changes from both folders if path different
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Watched File Modified}
-The expected behaviour of Membrane when a watched file is modified. The computer users are the primary actor.
-
-\subsubsection{Goal}
-
-Store a copy of the modified file in shard storage
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item User modifies files in watch folder.
- \item During next scan file change is observed.
- \item Assert if file modification time has changed.
- \item File is sharded.
- \item File shards are hashed to check for similarities.
- \item Assert at least one shard has changed.
- \item Chunks and sent to shard storage.
- \item The change is logged and saved in the file's history.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Modification time has not changed:
-	\begin{enumerate}
-	  \item Ignore change
-	\end{enumerate}
-  \item None of the file shards have changed:
-	\begin{enumerate}
-	  \item Ignore change
-	\end{enumerate}
-  \item Shard storage full:
-	\begin{enumerate}
-	  \item Do not log the change in file history.
-	  \item Shorten the history until soft limit is reached.
-	  \item Retry submission later.
-	\end{enumerate}
-  \item Cannot log change in file history:
-	\begin{enumerate}
-	  \item Leave new shards.
-	  \item Retry submission later.
-	\end{enumerate}
-  \item File cannot be read:
-	\begin{enumerate}
-	  \item Retry later.
-	\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item File renamed:
-	\begin{enumerate}
-	  \item De-duplicate file by sharding
-	  \item Log as different files.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Remove Watch Folder}
-
-The expected behaviour of Membrane during a normal backup operation when watch folder is removed. The computer owner is primary actor.
-
-\subsubsection{Goal}
-
-Stop watching the provided folder
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item User removes folder for backup with files.
- \item Removal is persisted to the configuration file.
- \item Any queued modified files are removed.
- \item Stop scanning for changes in folder.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Submitted folder is not watched:
-	\begin{enumerate}
-	  \item Report user error to user.
-	\end{enumerate}
-  \item Cannot persist watch folder due to IO error
-	\begin{enumerate}
-	  \item Inform the user
-	  \item Do not continue
-	\end{enumerate}
-  \item Files from folder persisted
-	\begin{enumerate}
-	  \item Do not remove file history.
-	\end{enumerate}
-\end{enumerate}
-
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Folder is file:
-	\begin{enumerate}
-	  \item treat as folder
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Recover File}
-
-The expected behaviour of Membrane when user tries to recover a file. The computer owner is primary actor.
-
-\subsubsection{Goal}
-
-Recover a file into a new location
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item User asks to recover a file to a given location.
- \item File log checks for most recent version of file.
- \item File shards read and reassembled.
- \item File written to target destination.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item File never saved to Membrane:
-	\begin{enumerate}
-	  \item Report user error to user.
-	\end{enumerate}
-  \item File deletion most recently recorded in Membrane:
-	\begin{enumerate}
-	  \item Report user error to user.
-	\end{enumerate}
-  \item Shards cannot be retrieved or not present
-	\begin{enumerate}
-	  \item Inform the user
-	\end{enumerate}
-  \item Target destination already has file in it
-	\begin{enumerate}
-	  \item Do not overwrite
-	  \item Report error to user
-	\end{enumerate}
-\end{enumerate}
-
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Given file is a folder:
-	\begin{enumerate}
-	  \item Report error. Only accept files.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Recover Old File Version}
-
-The expected behaviour of Membrane when user tries to recover a previous version of a file. The computer owner is primary actor.
-
-\subsubsection{Goal}
-
-Recover a previous version of a file into a new location
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item User requests for all available versions of file.
- \item Show users all known 
- \item User asks to recover the version of the file at a specific point in time to a given location.
- \item File log checks for most recent version of file.
- \item File shards read and reassembled.
- \item File written to target destination.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item File never saved to Membrane:
-	\begin{enumerate}
-	  \item Inform user no versions exist.
-	\end{enumerate}
-  \item File deleted in period of time user requested:
-	\begin{enumerate}
-	  \item Inform the user.
-	\end{enumerate}
-  \item Shards cannot be retrieved or not present
-	\begin{enumerate}
-	  \item Inform the user
-	\end{enumerate}
-  \item Target destination already has file in it
-	\begin{enumerate}
-	  \item Do not overwrite
-	  \item Report error to user
-	\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Given file is a folder:
-	\begin{enumerate}
-	  \item Report error. Only accept files.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Peer Connects}
-
-The expected behaviour of Membrane when a peer connects and wants to exchange storage. The peer should be given one free block to allow them to start storing data.
-
-\subsubsection{Goal}
-
-Establish a new storage contract with peer if required.
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item Peer connects.
- \item Peer identity is verified.
- \item If contracts are required.
- \item Peer certificate is persisted
- \item Peer is given to the contract manager.
- \item Contract Manager gives the peer one new shard of storage.
- \item Contract Manager sends a Contract Update to the Peer.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Peer already contracted:
-	\begin{enumerate}
-	  \item Proceed whether or not contract is required.
-	\end{enumerate}
-  \item Peer identity verification fails:
-	\begin{enumerate}
-	  \item Drop connection.
-	\end{enumerate}
-  \item No contracts required
-	\begin{enumerate}
-	  \item Keep connected
-	  \item Do not contract
-	  \item Do not persist certificate
-	\end{enumerate}
-  \item Disconnects before contract update can be sent
-	\begin{enumerate}
-	  \item Keep contracted
-	  \item If peer does not provide you with one contract inequality before shutdown remove them.
-	\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Peer is a tracker:
-	\begin{enumerate}
-	  \item Do not contract them.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Peer Sends Contract Update}
-
-The expected behaviour of Membrane when a peer sends a contract update. The peer should be provided with proof-of-ownership instructions for any owned blocks they have not authenticated this hour.
-
-\subsubsection{Goal}
-
-Provide peer with proof-of-ownership instructions.
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item Verified Peer sends Contract Update
- \item Remove any blocks we thought the peer had but they have lost. Note these down in the appraisal.
- \item Request any unexpected blocks (We may have lost information about them on our side)
- \item Request deletion of any expired blocks which we cannot assert ownership of.
- \item Request salted hash for any blocks they have not confirmed yet this hour. Include salt.
- \item Record that peer has been in contact this hour.
- \item Send requests back to peer.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Peer not contracted:
-	\begin{enumerate}
-	  \item All blocks will be unexpected.
-	  \item Request all of the blocks. They might have been lost during a data loss incident.
-	  \item Blocks will be deleted on the next request.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Peer Sends Proof of Ownership}
-
-The expected behaviour of Membrane when a peer sends a proof of ownership response. Any successful responses should be noted down for the peer.
-
-\subsubsection{Goal}
-
-Check ownership details for the peer and record them in appraisal if successful.
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item Verified Peer sends Proof of Ownership Response
- \item Process any full blocks returned, adding missing shards.
- \item Check salted hash was correct.
- \item Add correctly confirmed or returned blocks to peer appraisal.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item Peer not contracted:
-	\begin{enumerate}
-	  \item Ignore any salted hashes
-	\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Full block returned as response:
-	\begin{enumerate}
-	  \item Decrypt the block
-	  \item Decompress any compress shards in the block
-	  \item Place shards in local shard store
-	  \item Place any file history in the block into the file history store.
-	\end{enumerate}
-\end{enumerate}
-
-\subsection{Distribute Shard}
-
-The expected behaviour when a shard is stored in local backup. The shard should be packaged with other similar shards into a block, and sent to a peer offering storage space.
-
-\subsubsection{Goal}
-
-Deploy shard to peers.
-
-\subsubsection{Steps}
-
-\begin{enumerate}
- \item Shard is placed into local shard storage.
- \item Distributor performs periodic local shard storage scan and finds shard.
- \item Connected peers are ranked from best to worst.
- \item Any peers with a rating $<1.5 \sigma$ are ignored and the contracts are cancelled.
- \item Shards not yet sent to each peer are collected.
- \item Shards are compressed and placed into a block until the block reaches a predetermined size.
- \item The history of any files associated with the shards is placed into the block.
- \item The block is encrypted.
- \item The block is sent to the peer.
- \item The peer sends a contract update on receipt.
-\end{enumerate}
-
-\subsubsection{Extensions}
-\begin{enumerate}
-  \item No contracted peers connected:
-	\begin{enumerate}
-	  \item Wait for new contract or contracted peer to connect.
-	  \item Retry.
-	\end{enumerate}
-  \item Shard is missing from local shard storage during read:
-	\begin{enumerate}
-	  \item Log the error and skip the shard during this pass.
-	  \item Retry.
-	\end{enumerate}
-  \item No shards fit into the block:
-	\begin{enumerate}
-	  \item Log the error and move onto the next peer.
-	  \item Continue as normal.
-	\end{enumerate}
-  \item Shard compression is unsuccessful:
-	\begin{enumerate}
-	  \item Place the shard into the block with the compression flag disabled.
-	  \item Continue as normal.
-	\end{enumerate}
-\end{enumerate}
-
-\subsubsection{Variations}
-\begin{enumerate}
-  \item Block does not arrive at peer:
-	\begin{enumerate}
-	  \item Mark loss of block on peer appraisal.
-	  \item Mark incomplete hourly report on peer appraisal.
-	  \item Remove block from local contract.
-	\end{enumerate}
-\end{enumerate}
-
-\setlist{}
-
-\clearpage
+As with the requirements we keep the use-case brief, as we expect they may change during development as better approaches to problems are found. The following use-cases are crafted to document the flow of information through Membrane:
+
+\begin{itemize}
+ \item Add Watch Folder
+ \item Remove Watch Folder
+ \item Recover File
+ \item Recover Old File Version
+ \item Peer Connects
+ \item Peer Sends Contract Update
+ \item Peer Sends Proof of Ownership
+ \item Distribute Shard
+\end{itemize}
+
+The use-cases are available in the Appendix (\ref{sec:apdx-usecase}), and have been adapted during development to closely reflect the behaviour in each of these situations. They serve as an overview of the system for future developers and should be kept up-to-date in future development as a form of documentation.
+
+We encourage the reader to view relevant sections if any clarification of the system is required after the description of system components.
 
 \section{Architecture}
 
 Before deciding on the technology stack used in Membrane we must consider the application architecture.
 
-Although Membrane is a peer-to-peer network application, which is distinctive from a client server application, because peers act as a \emph{Servent}\footnote{A term coined by \cite{schollmeier2001definition} to describe a peer acting as both a Client and Server},  we can still make use of recent developments in client server architectures, in particular the arrival of widespread adoption of Representational State Transfer (REST)ful Web services \citep{rodriguez2008restful}, and the tooling that the popularity has generated.
+Although Membrane is a peer-to-peer network application, distinctive from a client-server application because peers act as a \emph{Servent}\footnote{A term coined by \cite{schollmeier2001definition} to describe a peer acting as both a Client and Server},  we can still make use of recent developments in client-server architectures. In the widespread adoption of Representational State Transfer (REST)ful Web services \citep{rodriguez2008restful}, and the tooling that the popularity has generated.
 
 \subsection{Structure}
 
-The first major decision in the application structure is whether the GUI and CLI will be built directly into the application or if Membrane will expose an API for interaction. To prevent coupling and enable software reuse within the application \citep{gamma1995design} we will use a \ref{fig:model-view-controller} or the more general n-tier architecture components of the application.
+The first major decision in the application structure is whether the GUI and CLI will be built directly into the application or if Membrane will expose an API for interaction. To prevent coupling and enable software reuse within the application \citep{gamma1995design} we explore the use of a model-view-controller (fig. \ref{fig:model-view-controller}) and more general n-tier architecture.
 
-There are clear advantages to both a built in user interface and the server client architecture seen in figure \ref{fig:client-server} which we shall explore before selecting technologies to use.
+\subsubsection{Native Interface vs. Client Interface}
+
+We first investigate the advantages of a native user interface and the server-client architecture seen (fig. \ref{fig:client-server}).
 
 \begin{figure}[b!]
  \centering
@@ -1300,25 +915,23 @@ There are clear advantages to both a built in user interface and the server clie
  \label{fig:model-view-controller}
 \end{figure}
 
-\subsubsection{Native Interface vs. Client Interface}
+A native application interface is popular among server software and frequently used for desktop applications such as Microsoft Word and Microsoft PowerPoint but there has recently been a shift to using a thin-client\footnote{Use only to facilitate communication to a server}, running back-end\footnote{Main application logic} services in the cloud.
 
-A native application interface is popular among server software and frequently used for desktop applications such as Microsoft Word and Microsoft PowerPoint, however, there has recently been a shift back to using a client, running back-end services in the cloud, exposing an API which can then be interacted with client side applications.
+With modern networking speeds a user is typically unable to distinguish between running an application locally or interfacing with a remote server. \citep{schmidt1999interactive}.
 
-A separate client interface has multiple advantages and with modern networking speeds a user is typically unable to distinguish between running the interface on the server or a thin remote client \citep{schmidt1999interactive}.
+By standardising the interface through an API, the user is also given the flexibility of using their preferred client, switching client without needing to worry about losing data and developers can design new interfaces without affecting and in parallel with the core application.
 
-The user is given the flexibility of using their preferred client to interface with the application, switching client without needing to worry about losing data, and developers are given the option to design a new interface without affecting the core application.
+Users can also interact with multiple instances of the application running remotely. A feature particularly useful when running the application on a headless\footnote{With no monitors or peripherals.} server.
 
-The user is also given the ability to interact with multiple instances of the application running remotely with no issues, which is particularly useful when running the application on a headless server.
+We must not neglect the benefits of using a native application. By making the UI interface with the application over the network, a whole host of complexity and security issues form.
 
-Development of both the client and interface can also happen in parallel leading to better time to market in large development teams.
-
-However, we must not forget the benefits of using a native application. By making the UI interface with the application over the network, a whole host of complexity and security issues arise. The development team needs to ensure that any user interacting with the API is authenticated and secure, as well as ensuring that there are no network issues between the interface and application.
+The software needs to ensure that any user interacting with the API is authenticated and secure, as well as ensuring that there are no network issues between the interface and application.
 
 The software itself also becomes more complex with a separate client as functionality needs to be built for handling network in both the UI and core application.
 
-On balance, it makes sense for membrane to operate use a client interface. As Membrane will need to be run constantly, it needs to be able to operate as a software daemon. One of the requirements is to keep Membrane lightweight and maintenance free, running any user interface constantly would distract users.
+On balance, it makes sense for Membrane to operate use a client interface. It will need to be run constantly, as a software daemon. In order to keep this lightweight and maintenance free we cannot also run the interface at the same time as the daemon.
 
-Developers will also be able to build addition interfaces to Membrane if required, fulfilling the extensiblity requirement, and as both a GUI and CLI are required, this provides a nice way to develop both and gives users the desired flexibility between both.
+The freedom of building additional interfaces to Membrane also helps extensiblity. Developers can easily tap into the API for additional interfaces making the requirement for both a GUI and CLI easy to fulfil.
 
 \begin{figure}[t]
  \centering
@@ -1329,19 +942,19 @@ Developers will also be able to build addition interfaces to Membrane if require
 
 \subsubsection{Model View Controller (MVC)}
 
-The Model View Controller (MVC) pattern, first described by \cite{krasner1988cookbook}, decouples the interface from the main logic of the program by establishing a subscribe notify protocol between them. The view must always reflect the state of the model and the model must always update the view when a change occurs.
+The Model View Controller (MVC) pattern, first described by \cite{krasner1988cookbook}, decouples the interface from the main logic of the program by establishing a subscribe-notify protocol between them. The view must always reflect the state of the model and the model must always update the view when a change occurs.
 
-This approach allows for code-reuse and lets the developer to create new models without rewriting the software, and provides high cohesion, meaning groups of related actions can be grouped together.
+This approach allows for code-reuse and lets the developer to create new models without rewriting the software providing high cohesion\footnote{Groups of related actions are together}.
 
-This has the disadvantage of making code harder to navigate due to added structural complexity, increasing scattering meaning multiple representations of objects need to be modified at the same time if required and increases the learning curve for developers, as they need to learn how to structure the application in a new way.
+MVC has the disadvantage of making code harder to navigate due to added structural complexity, increasing scattering\footnote{multiple representations of objects need to be modified at the same time if required} and increases the learning curve for developers, as they need to learn how to structure the application in a new way.
 
 Although the MVC model provides a structurally sound way of building the application we need to generalise in into the N-Tier architecture for larger applications.
 
 \subsubsection{N-Tier Architecture}
 
-An N-Tier architecture is simply an extension of the MVC model, it takes the idea of layers in an application further, allowing sections of the software to be developed and tested without interfering with each other.
+An N-Tier architecture is simply an extension of the MVC model taking the idea of layers further. Sections of the software (or layers) can be developed and tested without interfering with each other.
 
-One of the key advantages to this approach is extra layers can be added and removed, even during run time. In Membrane we will look to take advantage of this when running in Tracker or Local Backup mode. The tracker can disable all of the local backup functionality, while the tracker only needs to run the network layer.
+A key advantage to this approach is extra layers can be added and removed, even during run time. In Membrane we will take advantage of this when running in Tracker or Local Backup mode. The Tracker can disable all of the local backup functionality as only the network layer will be required.
 
 \begin{figure}[b!]
  \centering
@@ -1350,13 +963,13 @@ One of the key advantages to this approach is extra layers can be added and remo
  \label{fig:membrane-n-tier}
 \end{figure}
 
-We can see the Membrane N-Tier architecture in fig \ref{fig:membrane-n-tier}. Only modules next to each other are able to communicate directly and modules can be disabled as required.
+We can see the Membrane N-Tier architecture in figure \ref{fig:membrane-n-tier}. Only modules next to each other are able to communicate directly and modules can be disabled as required.
 
-The local backup performs all the basic tasks of file monitoring and local shard storage. The distributor monitors the local backup for shards to send to peers and packages them up to the Peer Networking layer for transmission. The Peer Networking layer is able to locate new peers and provides them to the Distributor if connected.
+The \emph{Local Backup} performs all the basic tasks of file monitoring and local shard storage. The \emph{Distributor} monitors the local backup for shards to send to peers and packages them up to the \emph{Peer Networking} layer for transmission. The Peer Networking layer is able to locate new peers and provides them to the \emph{Distributor} if connected.
 
 \section{Technologies}
 
-The technologies used in a project can define the success of a software project. Incorrectly chosen tools can slow development and in some cases even cause projects to fail. While selecting technologies we will need to be weary of excitement surrounding modern technologies and look for unbiased advantages and disadvantages of each.
+The technologies used in a project can define the success of a software project. Incorrectly chosen tools can slow development and be frustrating to use. While selecting technologies we will need to be weary of excitement surrounding modern technologies and look for unbiased advantages and disadvantages of each.
 
 We will begin by selecting the language to use, followed by key libraries used within the software itself. Some of these libraries were chosen during development when the need for them arose.
 
@@ -1364,85 +977,97 @@ We will begin by selecting the language to use, followed by key libraries used w
 
 A wide variety of languages are available for software development. We need to consider the best language for development of the Membrane Daemon, the GUI and the CLI. One of the most important features of a language is support from the developer community. An active developer community means any issues we encounter during development will most likely, already be solved by someone else.
 
-We used the 2017 Stack Overflow Developer Survey \citep{stackoverflow2017survey} to find language popularity statistics. This is an annual survey held for users of one of the most popular developer forums, covering everything from languages, to frameworks, to demographics.
+We used the 2017 Stack Overflow Developer Survey \citep{stackoverflow2017survey} to find language popularity statistics. This is an annual survey held for users of one of the most popular developer forums covering everything from languages, to frameworks, to demographics.
 
 \subsubsection{Daemon}
 
-There are a few requirements when selecting a programming language for the daemon. The language must scale efficiently, restricting our choice to object-oriented languages. It must also be compiled, to reduce the chance of runtime exceptions the user would need to debug. Platform Independence is also key so Membrane can be easily ported to other platforms after the proof of concept is developed.
+There are a few requirements when selecting a programming language for the daemon. The language must scale efficiently, restricting our choice to object-oriented languages. It must also be compiled, to reduce the chance of runtime exceptions the user would need to debug. Platform Independence is also key so Membrane can be easily ported to other platforms after the proof-of-concept is developed.
 
 \subsubsection{JavaScript}
 
-The most popular language by far is JavaScript, a high-level, dynamic, untyped language that is interpreted during runtime. \citep{flanagan2011javascript} It is one of the three core technologies used in the world wide web, which has done a lot to push it's popularity. It has been standardised in the ECMAScript language specification, which has recently reached it's 7th edition. \citep{stefanov2010javascript}.
+The most popular language by far is JavaScript, a high-level, dynamic, untyped language that is interpreted during runtime. \citep{flanagan2011javascript} It is one of the three core technologies used in the world wide web, the main driver of JavaScript's adoption. It has been standardised in the ECMAScript language specification, which has recently reached it's seventh edition. \citep{stefanov2010javascript}.
 
 High-level languages uses strong abstraction to hide details of the underlying computer, such as memory management. This makes them easier to use and usually makes them much less bug prone.
 
-Dynamic languages are a class of high level programming languages that execute behaviours usually performed at compile time in static languages during runtime. \citep{trattdyamicallytypedlanguages} This typically means the language is dynamically typed (although not always). In the case of JavaScript, this is true.
+Dynamic languages are a class of high level programming languages that execute behaviours usually performed at compile time in static languages, during runtime. \citep{trattdyamicallytypedlanguages} This typically means the language is dynamically typed (although not always). In the case of JavaScript, this is true.
 
-An interpreted language is one for which most of the implementations execute instructions directly on the machine without compilation. The interpreter translates each statement into a sequence of subroutines that have already been compiled into machine code. In the case of JavaScript most of the runtime environments include a just-in-time (JIT) compiler, which compiles the program during runtime, allowing for dynamically recompiling frequently used code sections, optimising those sections. \citep{aycock2003brief}
+An interpreted language is one for which most of the implementations execute instructions directly on the machine without compilation. The interpreter translates each statement into a sequence of subroutines that have already been compiled into machine code. In the case of JavaScript most of the runtime environments include a just-in-time (JIT) compiler, which compiles the program during runtime, dynamically recompiling and optimising frequently used code sections. \citep{aycock2003brief}
 
 \subsubsection{Java}
 
-We move onto Java, the second most popular (applicable) language. This is a general-purpose language that is object-oriented, class based and concurrent, \citep{gosling2014java} designed to run anywhere, meaning that compiled Java code can run on all platforms that support Java without the need for recompilation. \citep{gosling1995java}
+We move onto Java, the second most popular (applicable) language. This is a general-purpose language that is object-oriented, class based and concurrent, \citep{gosling2014java} designed to run on all platforms that support Java without the need for recompilation. \citep{gosling1995java}
 
-Object Orientation is a programming paradigm based on ``objects'' which contain data and methods that can act on that data. The class based aspect of java means that these objects are in fact instances of classes that determine their type. \citep{kindler2011object} Object are able to offer encapsulation, an desirable feature that means only objects can manipulate data inside them. This facilitates code refactoring and encourages decoupling, which makes it very desirable for large software projects.
+Object Orientation is a programming paradigm based on ``objects'' which contain data and methods that can act on that data. The class based aspect of java means that these objects are in fact instances of classes that determine their type. \citep{kindler2011object}
+
+Objects offer encapsulation, an desirable feature that means they can only manipulate data inside them. This facilitates code refactoring, testing and encourages decoupling, which makes it very desirable for large software projects.
 
 \subsubsection{C\#}
 
-The final language we consider is C\#, which is another general purpose programming language that offers strong typing, is imperative, declarative, functional and object-oriented. This makes it very similar to Java \citep{kreft2017afterjava}, and in fact has been criticised as a ``imitation'' of Java, although this has been disputed. C\# is a younger language that Java, so it was playing catch-up to Java's feature set for a long time, however, it has at this point surpassed Java.
+The final language we consider is C\#, which is another general-purpose programming language that offers strong typing, is imperative, declarative, functional and object-oriented. This makes it very similar to Java \citep{kreft2017afterjava}, and in fact has been criticised as a ``imitation'' of Java, although this has been disputed. C\# is a younger language than Java, so it was playing catch-up to Java's feature set for a long time, however, it has at this point surpassed Java.
 
-On balance Java's popularity, larger community of users and open source nature means it is more suited to Membrane, although C\# has some clear advantages, it is not as well supported on Linux, requiring Mono to be run. It is also important to take into consideration the ability of the programmers coding Membrane, who have coded predominately in Java in the past.
+On balance Java's popularity, larger community of users and open source nature means it is more suited to Membrane, although C\# has some clear advantages. Unfortunately C\# is not as well supported on Linux, requiring the Mono software platform to be run.
+
+It is also important to take into consideration the ability of the developers coding Membrane, who have coded predominately in Java in the past.
 
 \subsubsection{CLI}
 
-We also consider the language to use in the GUI and CLI. For the CLI a fast, lightweight language is required. The three languages under consideration are Python, C and Go, selected because of their popularity, and the programmers familiarity with them.
+We also need to consider the language to use in the GUI and CLI. For the CLI a fast, lightweight language is required. The three languages under consideration are Python, C and Go, selected because of their popularity, and the developer's familiarity with them.
 
 \subsubsection{Python}
 
-Python is a general purpose, dynamic, high level programming language. It is know for it's design philosophy, which emphasises readability through forced indentation and a syntax tailored to representing algorithms in as few lines as possible. This is a strong contender for the CLI, however, the most popular implementation of Python, \emph{CPython}, is a runtime interpreter of language making it slightly more difficult to ensure code correctness.
+Python is a general purpose, dynamic, high level programming language. It is known for it's design philosophy which emphasises readability through forced indentation and a syntax tailored to representing algorithms in as few lines as possible.
+
+This is a strong contender for the CLI, however, the most popular implementation of Python, \emph{CPython}, is a runtime interpreter making it slightly more difficult to ensure code correctness.
 
 \subsubsection{C}
 
-C is a general-purpose, imperative, statically-typed language developed in 1973 at Bell Labs. \citep{banahan1988c} It has become one of the most widely used programming languages of all time, providing low-level access to the hardware, uses language constructs that map efficiently to machine instructions, and requires minimal run-time support.
+C is a general-purpose, imperative, statically-typed language developed in 1973 at Bell Labs. \citep{banahan1988c} It has become one of the most widely used programming languages of all time, providing low-level access to the hardware, and using language constructs that map efficiently to machine instructions requiring minimal run-time support.
 
-One of the key disadvantages of C is that it's power makes it easy to make mistakes. This low level access is not required for the CLI of Membrane and it could potentially lead to subtle errors.
+One of the key disadvantages of C is that its power makes it easy to make mistakes. The low level access is not required for the CLI and it could potentially lead to subtle bugs.
 
 \subsubsection{Go}
 
-The final language, Go is a complied, statically typed language with garbage collection. It is designed to be scalable, not require IDEs, support networking and concurrency, and be productive and readable. \citep{golang2017faq}
+The final language, Go is a complied, statically typed language with garbage collection. It is designed to be scalable, not require IDEs\footnote{Integrated Developer Environment. A platform for developing.}, support networking and concurrency, and be productive and readable. \citep{golang2017faq}
 
-This is a great compromised between the ease of programming in Python and the strictness found in C without sacrificing any of the benefits. Critics of Go say the lack of generics limit static
+This is a great compromised between the ease of programming in Python and the strictness found in C without sacrificing any of the benefits. Critics of Go say the lack of generics lead to some code duplication, but as the CLI will not require too much code, we are not concerned.
 
-We also refer back to the Stack Overflow developer survey and see that Go is one of the most wanted and loved languages by developers, leading us to select Go for the CLI of the Membrane.
+We also refer back to the Stack Overflow developer survey and see that Go is one of the most wanted and loved languages by developers, leading us to select Go for the CLI.
 
 \subsubsection{GUI}
 
-Finally a language for GUI development needs to be selected. This depends strongly on the choice of Electron for the GUI framework discussed in detail below. Although, as we have selected a web technology we need to use JavaScript, there are two newer languages which can transcompiles to JavaScript that enhance JavaScript's feature set. We will compare these.
+Finally a language for GUI development needs to be selected. This depends strongly on the choice of Electron for the GUI framework discussed in detail in section \ref{sec:gui-technology-choice}.
+
+As we have selected a web technology we need to use JavaScript but there are two newer languages which transcompiles\footnote{Source code to source code compilation.} to JavaScript, enhancing JavaScript's feature set.
 
 \subsubsection{CoffeeScript}
 
 CoffeeScript aims to add syntactic sugar inspired by Python, Ruby and Haskell to improve JavaScript's brevity and readability. \citep{maccaw2012little} The compiled output is readable and tends to run as fast or faster as equivalent JavaScript. \citep{coffeescript2017faq}
 
-There have been concerns using CoffeeScript adds bloat to development, every change must be compiled before the effect can be seen, however, this can be solved by automating the process during development, any time a page is reloaded, the server automatically transcompiles any modified CoffeeScript files to JavaScript. \citep{wheeler2017coffeescript}
+There have been concerns using CoffeeScript adds bloat to development. Every change must be transcompiled before the effect can be seen, however, this can be solved by automating the process during development. Any time a page is reloaded, the server can automatically transcompile any modified CoffeeScript files to JavaScript. \citep{wheeler2017coffeescript}
 
-Another concern is that using a transcompiled language makes debugging difficult as the debugger steps through a file you have not created, however, because the compiled output is intended to be readable, this has not caused issues for developers. \citep{wheeler2017coffeescript}
+Another concern is that using a transcompiled language makes debugging difficult as the debugger steps through a file that has been automatically generated for you, however, because the compiled output is intended to be readable, this has not caused issues for developers. \citep{wheeler2017coffeescript}
 
 \subsubsection{TypeScript} \label{sec:typescript}
 
-TypeScript is a super set of JavaScript and developed and maintained by Microsoft as open source software. It is designed for development of larger applications and aims to address the challenges of dealing with JavaScript code. It supports static typing and adds features such as classes, modules and arrow function syntax, leading to better, more readable code. \citep{typescript2017site}
+TypeScript is a super set of JavaScript developed and maintained by Microsoft as open source software. It is designed for the development of larger applications and aims to address the challenges of dealing with JavaScript code.
 
-There are two major concerns with using TypeScript. To get the most out of TypeScript, developers need to add type annotations everywhere in their code, which makes coding a bit more cumbersome in comparison to JavaScript. In addition, although TypeScript's type system is more flexible than mainstream statically typed languages, it still makes some common JavaScript software patterns difficult for developers to use. \citep{dataart2017site}
+It supports static typing and adds features such as classes, modules and arrow function syntax, leading to better, more readable code. \citep{typescript2017site}
+
+There are two major concerns with using TypeScript. To get the most out of TypeScript, developers need to add type annotations everywhere in their code, which makes coding a bit more cumbersome in comparison to JavaScript.
+
+In addition, although TypeScript's type system is more flexible than mainstream statically typed languages, it still makes some common JavaScript software patterns difficult for developers to use. \citep{dataart2017site}
 
 This is in addition to all of the considerations of CoffeeScript. On balance, we chose to use TypeScript for the Membrane GUI. The extra type safety provided outweighs the downsides of making it slightly more tricky to write the code. In addition if any quick coding is required, it is fully compatible with JavaScript so any sections of code unsuitable for TypeScript can be written using JavaScript seamlessly.
 
 \subsubsection{Conclusion}
 
-We have decided on three programming languages to use to create Membrane. Java, Go and TypeScript. These are three well-supported, popular languages best suited for both the programming task required and for the developers coding the Membrane proof of concept, to produce a stable and complete product.
+We have decided on three programming languages to use to create Membrane. Java, Go and TypeScript. These are three well-supported, popular languages best suited the developers coding the Membrane proof-of-concept to produce a stable and complete product.
 
-Other languages including Bash, HTML, CSS, Python, Markdown and Groovy will be used during development, however, these are simply a requirement of the languages, frameworks and tooling chosen.
+Other languages including Bash, HTML, CSS, Python, Markdown, reStructuredText, and Groovy will be used during development, however, these are simply a requirement of the languages, frameworks and tooling chosen.
 
 \subsection{Frameworks, Tools and Libraries}
 
-To aid with development multiple frameworks will be used some of these will be chosen at the start of development, whereas other will be selected during development as a need for them arises.
+To aid with development frameworks will be used. Some of these will be chosen at the before development, whereas other will be selected as a need for them arises.
 
 \subsubsection{Java Build System}
 
@@ -1452,35 +1077,37 @@ There are three major build automation systems available for Java that help with
 
 Ant uses XML based configurations, to created build scripts, which is not ideal for writing the procedural scripts required. The use of XML also makes Ant difficult to use with larger projects. The build process is the biggest advantage of Ant.
 
-\emph{Apache Maven} was released in 2004, designed to address problems developers encountered with Ant. Although it uses XML configurations like Ant, it is better designed relying on conventions and provides subroutines that can be invoked. Unfortunately the inherent downside of large build scripts remains.
+\emph{Apache Maven} was released in 2004, designed to address problems developers encountered with Ant. Although it uses XML configurations like Ant it is better designed, relying on conventions and provides subroutines that can be invoked. Unfortunately the inherent downside of large build scripts remains.
 
 One of the major advantages of Maven is the ability to download libraries and other dependencies over the network. Since this is the main purpose of Maven, custom build scripts are actually more difficult, however, these are not required by most users. \citep{viktor2014buildtools}
 
-\emph{Gradle}, developed in 2012, is the most modern build tool and attempts to combine the power of both Maven and Ant. It uses Groovy (a JVM based language) for build scripts which results in shorter and clearer build scripts and reduces the boilerplate required for creating basic configurations. \citep{gradle2017comparison} Gradle's flexibility is one of it's major advantages. \citep{casperson2014comparison}
+\emph{Gradle}, developed in 2012, is the most modern build tool and attempts to combine the power of both Maven and Ant. It uses Groovy (a JVM based language) for build scripts which results in shorter and clearer scripts, reducing the boilerplate required for creating basic configurations. \citep{gradle2017comparison} Gradle's flexibility is one of it's major advantages. \citep{casperson2014comparison}
 
-The two contenders for the build system become Gradle and Ant. Ant is preferred for developers new to build tools because of it's low learning curve, however, as the developers creating Membrane have experience using all three build system, we opt to use Gradle, because of it's clearer configurations.
+The two contenders for the build system become Gradle and Ant. Ant is preferred for developers new to build tools because of it's low learning curve, however, as the developers creating Membrane have experience using all three build systems, we opt to use Gradle because of it's clearer configurations.
 
 \subsubsection{Java Networking}
 
-The core feature of Membrane is it's ability to communicate with other peers. Using Java core networking libraries for this is an option, however, they provide an unnecessarily  granular a control over network communications.
+The core feature of Membrane is it's ability to communicate with other peers. Using Java core networking libraries for this is an option, however, they provide an unnecessarily  low-level control over network communications. Use of these would no doubt result in reinventing one of the networking libraries available.
 
-We look at various networking libraries in Java to see which is most appropriate for Membrane. One of the first requirements is the ability to send HTTP requests. These will be required for creating the API to interface with Membrane. Learning two networking libraries to develop Membrane would take more time with very little benefit.
+We look at three networking libraries in Java to see which is most appropriate for Membrane. One of the first requirements is the ability to send HTTP requests. These will be required for creating the API to interface with Membrane. Learning two networking libraries to develop Membrane would take more time with very little benefit.
 
 The networking library of choice must also be able to establish SSL connections, which serve both the purpose of User Authentication and provide data security.
 
-There are three major contenders Netty, Vert.x and Akka.
+The contenders are Netty, Vert.x and Akka.
 
 \emph{Netty} is a low level widely used library that promises quick and easy development without maintainability or performance issues. \citep{netty2017site} It is based around the reactor pattern to handle requests concurrently, and provides a wide variety of protocols for communication. It is more difficult to debug than traditional networking libraries because of the inherent concurrency, but has a wide variety of features and options.
 
-\emph{Vert.x} is a polyglot library supporting seven languages including Java. It is built on top of Netty, focusing on a simple concurrency model, removing the complexity of debugging concurrent programs and has a simple asynchronous programming model to allow handling multiple requests at once. It aims to be a JVM alternative for Node.js, a popular JavaScript framework. \citep{vertx2017site}
+\emph{Vert.x} is a polyglot\footnote{Multilingual.} library supporting seven languages including Java. It is built on top of Netty, focusing on a simple concurrency model, removing the complexity of debugging concurrent programs and has a simple asynchronous programming model to allow handling multiple requests at once. It aims to be a JVM alternative for Node.js, a popular JavaScript framework. \citep{vertx2017site}
 
 \emph{Akka} is a library made for concurrent and distributed JVM applications. It draws on inspiration from Erlang for it's actor-based concurrency model, focusing on immutability and allowing actor interactions across multiple hosts when required. \citep{gupta2012akka}
 
-We opt to use Vert.x in Membrane, it offers all the required features for peer networking with an appropriate concurrency model and without the complexity that comes from using a low-level library.
+We opt to use Vert.x in Membrane. It offers all the required features for peer networking with an appropriate concurrency model and without the complexity that comes from using a low-level library.
 
 \subsubsection{Java Cryptography}
 
-Security was a major concern for potential Membrane users and therefore the library we use for encryption needs to be selected carefully. We again consider three libraries for this purpose. Membrane requires TwoFish encryption support and the ability to generate RSA public private key pairs and certificates, as well as signing and authenticating messages using those keys.
+Security was a major concern for potential Membrane users and therefore the library we use for encryption needs to be selected carefully, again considering three contenders.
+
+Membrane requires TwoFish encryption support and the ability to generate RSA public private key pairs and X.509 certificates\footnote{A way to present public keys for SSL}, as well as signing and authenticating messages using those keys.
 
 \emph{Apache Shiro} is an open source security framework that offers authentication, authorisation, cryptography and session management, and aims to provide robust security while being easy to use. It was first released in 2010 and the latest release was 8 months prior to selection. \citep{apache2017shiro}
 
@@ -1488,11 +1115,13 @@ Security was a major concern for potential Membrane users and therefore the libr
 
 \emph{Keyczar} is a newcomer created by Google, aiming to make it easier and safer for developers to use cryptography in their applications, providing simple one line cryptography functions to developers instead of being a general-purpose cryptography library. It was first released in 2010 and the latest release was one month prior to selection. \citep{keyczar2017github}
 
-Shiro is a good option, however, it provides a lot of unnecessary features. It's focus is not aligned with the requirements of Membrane. Keyczar is a good library for limited use-cases, however, Bouncy Castle is best suited to Membrane. It is the oldest library by far, and it's popularity during that time makes it much less likely to have bugs.
+Shiro is a good option, however, it provides a lot of unnecessary features. It's focus is not aligned with the requirements of Membrane. Keyczar is a good library for limited use-cases.
+
+We find that Bouncy Castle offers the best feature set. It is the oldest library by far, and it's popularity during that time makes it much less likely to have bugs.
 
 \subsubsection{Version Control} \label{sec:versionControl}
 
-Version Control is an important aspect of any software project. We will be mostly focusing on the extensiblity requirement, which requests easy contribution for other open source programmers.
+Version Control is an important aspect of any software project. During selection we focus on the extensiblity requirement, which requests easy contribution for other open source programmers.
 
 There are two leading platforms \emph{Github} and \emph{Bitbucket}. We opt to use Git for version control because of it's clear advantages, allowing for decentralised version control while working from multiple workstation, over competitors such as SVN and CVS.
 
@@ -1500,13 +1129,29 @@ There are two leading platforms \emph{Github} and \emph{Bitbucket}. We opt to us
 
 \emph{Bitbucket} was launched at the same time as Github in 2008 and started only hosting Mercurial projects but quickly expanded to Git as well. \citep{bitbucket2017site} It's main advantage is it's close integration with JIRA, a popular issue tracker. \citep{upguard2014gitvbit}
 
-On balance, given the popularity and available integrations, we opt to use Github for version control. We use four Github integrations in the project. \emph{TravisCI} offers continuous integration, running testing on all targeted JVMs after every commit and notifying developers if a test fails. \emph{VersionEye} ensures that all external dependencies used are up-to-date and have no security flaws. \emph{CodeCov} automatically checks test coverage for every commit, warning the developer if coverage is decreasing due to the commit. Lastly \emph{rtfd.io} provides documentation for the project, hosting the web page.
+On balance, given the popularity and available integrations, we opt to use Github for version control. We use four Github integrations in the project.
+
+\emph{TravisCI} offers continuous integration, running testing on all targeted JVMs after every commit and notifying developers if a test fails.
+
+\emph{VersionEye} ensures that all external dependencies used are up-to-date and have no security flaws.
+
+\emph{CodeCov} automatically checks test coverage for every commit, warning the developer if coverage is decreasing due to the commit.
+
+Finally \emph{rtfd.io} provides documentation for the project, building a hosting documentation from the project source code.
 
 \subsubsection{Other Libraries}
 
-We will also use \emph{Google Guava} and \emph{Apache Commons Collections} in Membrane, to enhance the standard Java libraries, offering a wider range of functions and desirable features such as immutable collections.
+We use \emph{Google Guava} and \emph{Apache Commons Collections} to enhance the standard Java libraries, offering a wider range of functions and desirable features such as immutable collections.
 
-For marshalling data we opt to use \emph{Jackson}, both for transmission and local storage, serialising objects to both JSON and YAML. Advanced date functionality is added using \emph{Joda} and finally \emph{Junit Jupiter} in conjunction with \emph{Mockito} will be used for unit testing.
+For marshalling\footnote{Converting objects to text and back.} data we opt to use \emph{Jackson} for data transmission and local storage. It can serialise objects to both JSON and YAML. Advanced date functionality is added using \emph{Joda} and finally \emph{Junit Jupiter} in conjunction with \emph{Mockito} will be used for unit testing.
+
+
+
+
+
+
+
+
 
 \chapter{System Components}
 
@@ -1882,7 +1527,7 @@ where $H$ is the percentage of the time the peer was online at the same time the
 
 \begin{figure}[h]
  \centering
- \includegraphics[width=0.5\textwidth]{peer-appraisal}
+ \includegraphics[width=0.7\textwidth]{peer-appraisal}
  \caption{Peer Appraisal Demonstration}
  \label{fig:peer-appraisal}
 \end{figure}
@@ -2150,31 +1795,24 @@ The most common combination of elements in a GUI is: windows, icons, menus and p
 
 We propose a GUI for monitoring in section \ref{sec:gui-req} to compete with other available backup solutions throughout the prototyping stage and plan to expand the GUI for general interaction as Membrane grows in the future. This section will discuss the choice of GUI framework, followed by usability decisions taken that influenced the design, ending with a demonstration of the interface.
 
-\subsection{Technology Choice}
+\subsection{Technology Choice} \label{sec:gui-technology-choice}
 
 The choice of GUI technology can drastically effect the feeling of the final product. We compare the three competing frameworks JavaFX, Qt and Electron used in cross platform GUI development.
+
+JavaFX is a platform for GUI development within Java, first included with Java 8. It is made to replace Java Swing, promising a more consistent API and easy MVC pattern support. JavaFX unfortunately lacks traction resulting in less support in the real world seen in fig \ref{fig:gui-trends}, where the predecessor Swing and alternative Qt in the lead.
 
 \begin{figure}[h]
  \centering
  \includegraphics[width=0.5\textwidth]{gui-trends}
- \caption{GUIs \url{trends.google.co.uk}}
+ \caption{GUI Framework Usage Trends (\url{trends.google.co.uk})}
  \label{fig:gui-trends}
 \end{figure}
 
-JavaFX is a platform for GUI development within Java, first included with Java 8. It is made to replace Java Swing, promising a more consistent API and easy MVC pattern support. JavaFX unfortunately lacks traction resulting in less support in the real world seen in fig \ref{fig:gui-trends}. We therefore have a look at the more popular platform Qt.
-
 Qt is a CLI and GUI development framework for native feeling applications. It uses C++ with several extensions for signal handling. Several popular applications such as Autodesk Maya and VirtualBox \citep*{oracle2017logging, autodesk2017qt} make use of Qt. The benefits of Qt include the massive community and good professional documentation. \citep{slant2017qtelectron}
 
-Electron is a much newer framework developed by Github. It uses Node.js for back-end and Chromium, the basis of the Chrome web browser for the front-end and forming the basis of notable software such as Github's Atom and Microsoft Visual Studio Code \citep{james2015vselectron}. It is has a very active community and a solid API, however, can sometimes use up a lot of memory unless developed with extreme care.
+Electron is a much newer framework developed by Github. It uses Node.js for back-end and Chromium, the basis of the Chrome web browser for the front-end and forming the basis of notable software such as Github's Atom and Microsoft Visual Studio Code \citep{james2015vselectron}. It is has a very active community and a solid API, however, can sometimes use up a lot of memory unless developed with extreme care. Unfortunately we cannot find trends for Electron in fig \ref{fig:gui-trends}.
 
 We opt for Electron for the Membrane GUI. It provides the best combination of ease of development and large community, with most of the support queries also being answered by in-browser web developers. Although one of the requirements is for low-resource usage, this is the GUI rather than the main daemon so we do not have the same resource usage concerns.
-
-\begin{figure*}[!ht]
- \centering
- \includegraphics[width=\textwidth]{gui-main}
- \caption{GUI Main Screen}
- \label{fig:gui-main}
-\end{figure*}
 
 \subsection{Usability Research}
 
@@ -2198,11 +1836,11 @@ This would help with user interaction, however, it is more important to get user
 
 We have have however achieved an interface that is difficult to misinterpret and allows for simpler monitoring that the CLI.
 
-\begin{figure*}[!ht]
+\begin{figure*}
  \centering
- \includegraphics[width=\textwidth]{gui-storage}
- \caption{GUI Storage Screen}
- \label{fig:gui-storage}
+ \includegraphics[width=\textwidth]{gui-main}
+ \caption{GUI Main Screen}
+ \label{fig:gui-main}
 \end{figure*}
 
 \subsection{Development}
@@ -2218,6 +1856,13 @@ NPM is used for dependency management allowing packages to be automatically upda
 \subsection{Design}
 
 We now describe the design of the interface, which is split into four main sections. The home screen (fig. \ref{fig:gui-main}), storage (fig. \ref{fig:gui-storage}), watcher (fig. \ref{fig:gui-watcher}) and network screen (fig. \ref{fig:gui-network}). There is also a help screen (fig. \ref{fig:gui-help}) which contains a link to the main Github page with documentation and usage instructions.
+
+\begin{figure*}
+ \centering
+ \includegraphics[width=\textwidth]{gui-storage}
+ \caption{GUI Storage Screen}
+ \label{fig:gui-storage}
+\end{figure*}
 
 The design is kept clean and simple with the information being the key focus of the interface. Any information that the user may want to observe, such as number of connected users, is included.
 
@@ -3083,6 +2728,433 @@ User 3 & 758                  & 34                     & 850                    
  - Recovery worked but should be able to do more over the gui.
 \end{lstlisting}
 
+\section{Use Cases} \label{sec:apdx-usecase}
+
+\setlist{nolistsep}
+\subsection{Add Watch Folder}
+The expected behaviour of Membrane during a normal backup operation when a new folder is added. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Store redundant copies of files on the system
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User adds folder for backup with files.
+ \item Folder is persisted to the configuration file.
+ \item New files in folder are detected.
+ \item Files are sharded into equal chunks and sent to shard storage.
+ \item The change is logged and saved in the file's history.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Submitted folder does not exist:
+	\begin{enumerate}
+	  \item Accept entry and wait until it does.
+	\end{enumerate}
+  \item Cannot persist watch folder due to IO error
+	\begin{enumerate}
+	  \item Inform the user
+	  \item Do not continue
+	\end{enumerate}
+  \item Shard storage full:
+	\begin{enumerate}
+	  \item Do not log the change in file history.
+	  \item Shorten the history until soft limit is reached.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item Cannot log change in file history:
+	\begin{enumerate}
+	  \item Leave new shards.
+	  \item Retry submission later.
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Folder is file:
+	\begin{enumerate}
+	  \item continue and wait until file becomes a folder
+	\end{enumerate}
+  \item File present in multiple watch folders:
+	\begin{enumerate}
+	  \item De-duplicate file by sharding
+	  \item log changes from both folders if path different
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Watched File Modified}
+The expected behaviour of Membrane when a watched file is modified. The computer users are the primary actor.
+
+\subsubsection{Goal}
+
+Store a copy of the modified file in shard storage
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User modifies files in watch folder.
+ \item During next scan file change is observed.
+ \item Assert if file modification time has changed.
+ \item File is sharded.
+ \item File shards are hashed to check for similarities.
+ \item Assert at least one shard has changed.
+ \item Chunks and sent to shard storage.
+ \item The change is logged and saved in the file's history.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Modification time has not changed:
+	\begin{enumerate}
+	  \item Ignore change
+	\end{enumerate}
+  \item None of the file shards have changed:
+	\begin{enumerate}
+	  \item Ignore change
+	\end{enumerate}
+  \item Shard storage full:
+	\begin{enumerate}
+	  \item Do not log the change in file history.
+	  \item Shorten the history until soft limit is reached.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item Cannot log change in file history:
+	\begin{enumerate}
+	  \item Leave new shards.
+	  \item Retry submission later.
+	\end{enumerate}
+  \item File cannot be read:
+	\begin{enumerate}
+	  \item Retry later.
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item File renamed:
+	\begin{enumerate}
+	  \item De-duplicate file by sharding
+	  \item Log as different files.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Remove Watch Folder}
+
+The expected behaviour of Membrane during a normal backup operation when watch folder is removed. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Stop watching the provided folder
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User removes folder for backup with files.
+ \item Removal is persisted to the configuration file.
+ \item Any queued modified files are removed.
+ \item Stop scanning for changes in folder.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Submitted folder is not watched:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item Cannot persist watch folder due to IO error
+	\begin{enumerate}
+	  \item Inform the user
+	  \item Do not continue
+	\end{enumerate}
+  \item Files from folder persisted
+	\begin{enumerate}
+	  \item Do not remove file history.
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Folder is file:
+	\begin{enumerate}
+	  \item treat as folder
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Recover File}
+
+The expected behaviour of Membrane when user tries to recover a file. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Recover a file into a new location
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User asks to recover a file to a given location.
+ \item File log checks for most recent version of file.
+ \item File shards read and reassembled.
+ \item File written to target destination.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item File never saved to Membrane:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item File deletion most recently recorded in Membrane:
+	\begin{enumerate}
+	  \item Report user error to user.
+	\end{enumerate}
+  \item Shards cannot be retrieved or not present
+	\begin{enumerate}
+	  \item Inform the user
+	\end{enumerate}
+  \item Target destination already has file in it
+	\begin{enumerate}
+	  \item Do not overwrite
+	  \item Report error to user
+	\end{enumerate}
+\end{enumerate}
+
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Given file is a folder:
+	\begin{enumerate}
+	  \item Report error. Only accept files.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Recover Old File Version}
+
+The expected behaviour of Membrane when user tries to recover a previous version of a file. The computer owner is primary actor.
+
+\subsubsection{Goal}
+
+Recover a previous version of a file into a new location
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item User requests for all available versions of file.
+ \item Show users all known 
+ \item User asks to recover the version of the file at a specific point in time to a given location.
+ \item File log checks for most recent version of file.
+ \item File shards read and reassembled.
+ \item File written to target destination.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item File never saved to Membrane:
+	\begin{enumerate}
+	  \item Inform user no versions exist.
+	\end{enumerate}
+  \item File deleted in period of time user requested:
+	\begin{enumerate}
+	  \item Inform the user.
+	\end{enumerate}
+  \item Shards cannot be retrieved or not present
+	\begin{enumerate}
+	  \item Inform the user
+	\end{enumerate}
+  \item Target destination already has file in it
+	\begin{enumerate}
+	  \item Do not overwrite
+	  \item Report error to user
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Given file is a folder:
+	\begin{enumerate}
+	  \item Report error. Only accept files.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Peer Connects}
+
+The expected behaviour of Membrane when a peer connects and wants to exchange storage. The peer should be given one free block to allow them to start storing data.
+
+\subsubsection{Goal}
+
+Establish a new storage contract with peer if required.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Peer connects.
+ \item Peer identity is verified.
+ \item If contracts are required.
+ \item Peer certificate is persisted
+ \item Peer is given to the contract manager.
+ \item Contract Manager gives the peer one new shard of storage.
+ \item Contract Manager sends a Contract Update to the Peer.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer already contracted:
+	\begin{enumerate}
+	  \item Proceed whether or not contract is required.
+	\end{enumerate}
+  \item Peer identity verification fails:
+	\begin{enumerate}
+	  \item Drop connection.
+	\end{enumerate}
+  \item No contracts required
+	\begin{enumerate}
+	  \item Keep connected
+	  \item Do not contract
+	  \item Do not persist certificate
+	\end{enumerate}
+  \item Disconnects before contract update can be sent
+	\begin{enumerate}
+	  \item Keep contracted
+	  \item If peer does not provide you with one contract inequality before shutdown remove them.
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Peer is a tracker:
+	\begin{enumerate}
+	  \item Do not contract them.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Peer Sends Contract Update}
+
+The expected behaviour of Membrane when a peer sends a contract update. The peer should be provided with proof-of-ownership instructions for any owned blocks they have not authenticated this hour.
+
+\subsubsection{Goal}
+
+Provide peer with proof-of-ownership instructions.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Verified Peer sends Contract Update
+ \item Remove any blocks we thought the peer had but they have lost. Note these down in the appraisal.
+ \item Request any unexpected blocks (We may have lost information about them on our side)
+ \item Request deletion of any expired blocks which we cannot assert ownership of.
+ \item Request salted hash for any blocks they have not confirmed yet this hour. Include salt.
+ \item Record that peer has been in contact this hour.
+ \item Send requests back to peer.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer not contracted:
+	\begin{enumerate}
+	  \item All blocks will be unexpected.
+	  \item Request all of the blocks. They might have been lost during a data loss incident.
+	  \item Blocks will be deleted on the next request.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Peer Sends Proof of Ownership}
+
+The expected behaviour of Membrane when a peer sends a proof of ownership response. Any successful responses should be noted down for the peer.
+
+\subsubsection{Goal}
+
+Check ownership details for the peer and record them in appraisal if successful.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Verified Peer sends Proof of Ownership Response
+ \item Process any full blocks returned, adding missing shards.
+ \item Check salted hash was correct.
+ \item Add correctly confirmed or returned blocks to peer appraisal.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item Peer not contracted:
+	\begin{enumerate}
+	  \item Ignore any salted hashes
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Full block returned as response:
+	\begin{enumerate}
+	  \item Decrypt the block
+	  \item Decompress any compress shards in the block
+	  \item Place shards in local shard store
+	  \item Place any file history in the block into the file history store.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Distribute Shard}
+
+The expected behaviour when a shard is stored in local backup. The shard should be packaged with other similar shards into a block, and sent to a peer offering storage space.
+
+\subsubsection{Goal}
+
+Deploy shard to peers.
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+ \item Shard is placed into local shard storage.
+ \item Distributor performs periodic local shard storage scan and finds shard.
+ \item Connected peers are ranked from best to worst.
+ \item Any peers with a rating $<1.5 \sigma$ are ignored and the contracts are cancelled.
+ \item Shards not yet sent to each peer are collected.
+ \item Shards are compressed and placed into a block until the block reaches a predetermined size.
+ \item The history of any files associated with the shards is placed into the block.
+ \item The block is encrypted.
+ \item The block is sent to the peer.
+ \item The peer sends a contract update on receipt.
+\end{enumerate}
+
+\subsubsection{Extensions}
+\begin{enumerate}
+  \item No contracted peers connected:
+	\begin{enumerate}
+	  \item Wait for new contract or contracted peer to connect.
+	  \item Retry.
+	\end{enumerate}
+  \item Shard is missing from local shard storage during read:
+	\begin{enumerate}
+	  \item Log the error and skip the shard during this pass.
+	  \item Retry.
+	\end{enumerate}
+  \item No shards fit into the block:
+	\begin{enumerate}
+	  \item Log the error and move onto the next peer.
+	  \item Continue as normal.
+	\end{enumerate}
+  \item Shard compression is unsuccessful:
+	\begin{enumerate}
+	  \item Place the shard into the block with the compression flag disabled.
+	  \item Continue as normal.
+	\end{enumerate}
+\end{enumerate}
+
+\subsubsection{Variations}
+\begin{enumerate}
+  \item Block does not arrive at peer:
+	\begin{enumerate}
+	  \item Mark loss of block on peer appraisal.
+	  \item Mark incomplete hourly report on peer appraisal.
+	  \item Remove block from local contract.
+	\end{enumerate}
+\end{enumerate}
+
+\setlist{}
 
 \begin{figure}[ht!]
  \centering

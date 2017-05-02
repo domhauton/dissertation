@@ -189,7 +189,14 @@ Throughout the remainder of the introduction we discuss the goals of the project
 
 Membrane allows users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service. Looking at breadth of products available it quickly becomes evident that there is a huge desire for external backup, and many people now take popular cloud storage services such as Dropbox and Google Drive for granted. \citep{dropbox2015popularity}
 
-To compete with existing solutions we aim for two important features: ease of use and accessibility, the ability to access backed up files from anywhere. On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge.
+To compete with existing solutions we aim for two important features: 
+
+\begin{itemize}
+ \item A simple installation
+ \item The ability to backup files and recover them from peers after data loss.
+\end{itemize}
+
+On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge.
 
 In this project we are working towards a proof-of-concept, creating the fundamentals of the Membrane and focusing on the key aspects of distributed storage. We exclude convenience features out for later development if the project proves successful remembering to leave space for this expansion.
 
@@ -2284,7 +2291,7 @@ While designing unit tests it is important to prioritise areas of the program to
 
 Code coverage is a metric through which we can rate the unit test. This is a percentage of code lines that were executed during testing, a higher percentage usually indicating a lower number of unexpected bugs. \citep{miller1963systematic} More complicated coverage criteria such as branch coverage\footnote{Has every possible \code{if} statement been evaluated.} can also be used.
 
-Full coverage is often impractical as it can lead to the aforementioned convoluted test scenarios. In Membrane we aim for 80\% line coverage and 70\% branch coverage. We measure this using VersionEye, a code coverage tool integrated into Github which tests code coverage on every commit and find that we achieve 83.56\% line and 73.89\% complexity coverage, varying slightly between modules as seen in figure \ref{fig:code-coverage} where green, yellow and red is full, partial and not covered line count respectively.
+Full coverage is often impractical as it can lead to the aforementioned convoluted test scenarios. In Membrane we aim for 80\% line coverage and 70\% branch coverage. We measure this using VersionEye, a code coverage tool integrated into Github which tests code coverage on every commit and find that we achieve 83.20\% line and 73.74\% complexity coverage, varying slightly between modules as seen in figure \ref{fig:code-coverage} where green, yellow and red is full, partial and not covered line count respectively.
 
 We ensure critical elements that ensure no file is ever over-written have 100\% coverage with every possible scenario considered.
 
@@ -2312,9 +2319,9 @@ We use a slightly modified version of hallway testing, relying on remote testing
 
 When deciding on a location we opt for user groups that enjoy technology and tinkering. This should provide us with constructive feedback and is likely to have a higher overlap with people who use Unix-based operating systems compatible with the proof-of-concept version of Membrane.
 
-We prepare the testing scenario by providing documentation and packaging the software. We provide both \code{.deb} and \code{.rpm} packages, covering a wide range of Linux users, as well as an online chat available at \url{https://gitter.im/mbrnd} for feedback and support. To make the test as authentic as possible we ask testers to simply visit the membrane homepage (\url{http://mbrn.io}) and try to install the software.
+We prepare the testing scenario by providing documentation and packaging the software. We provide both \code{.deb} and \code{.rpm} packages, covering a wide range of Linux users, as well as an online chat available at \url{https://gitter.im/mbrnd} for feedback and support. To make the test as authentic as possible we ask testers to simply visit the membrane homepage (\url{http://mbrn.io}) and try to install the software. The markdown documentation the testers were presented with is also available in listing \ref{lst:readme}.
 
-The full test specification that testers had to follow is available in the appendix (\ref{lst:mbrntst}). We run through the test with two friends first to ensure that the test works without issue. The volunteer is rewarded through a charity donation on their behalf and we take care to be mindful of the tester's time, by only requesting testers to perform one task.
+The full test specification that testers had to follow is available in the appendix (\ref{lst:mbrntst}). We run through the test with two friends first to ensure that the test works without issue. The volunteer is rewarded through a charity donation on their behalf and we take care to be mindful of the tester's time, by only requesting testers to perform one task, that validates the project's main goals: a simple installation and the ability to backup files and recover them from the peer swarm after data loss. We hope the users are able to achieve this without external assistance, to simulate normal expected usage.
 
 At the end of the test we simply ask testers for written summary on their thoughts of using Membrane and completing the task, using the given feedback to assess the success of the project.
 
@@ -2516,15 +2523,41 @@ In short, Membrane works in the lab, but the distributed nature means real-world
 
 \section{Further Work}
 
-\subsection{FUSE Mount}
+The software in it's current state is a proof-of-concept, demonstrating that distributed backup is indeed possible and the concepts behind it are sound. We look into the four main features users have demanded in both the initial survey and during hallway testing.
 
-\subsection{USB Launcher}
+\subsection{USB Credential Store}
+
+Throughout hallway testing users reported that the method of extracting credentials from Membrane was clunky and very easy to do incorrectly. We propose a system that encrypts the credentials and launcher, placing them onto a USB stick along side a script for easy, single command installation and restoration.
+
+By automating the process we stop users every needing to visit the root-owned folder that holds Membrane's backup, making the process much safer and simpler.
 
 \subsection{GUI Improvements}
 
+The GUI was another concern raised by testers. We plan to completely overhaul the GUI, converting it into the only mechanism required to interact with Membrane. This would yet again help improve interaction with Membrane making it accessible to those that do not like interacting with applications over a CLI.
+
+This would also eliminate usability problems discovered with the CLI, as that will be aimed solely for expert users who do not have access to the GUI, for example on a headless server.
+
 \subsection{Cloud Integration}
 
+As discussed in the limitations, cloud integration with commercial cloud services would offer a cheap way for users to backup and recover data without any of the downsides of distributed storage. We designed the shard storage to be hot-swappable with cloud block storage APIs, so users would simply need to provide their credentials to start backing up at \$0.005/GB/Month \citep{backblaze2017pricing}. Much cheaper than any plan offered by solutions like Dropbox or Google Drive.
+
+Membrane would benefit from the cheap storage on services such as B2, without the downside of download charges unless it's a last resort and Membrane cannot recover blocks that it backed up with peers, offering the best of both worlds.
+
+\subsection{FUSE Mount}
+
+The current method of accessing files requires a command per file version the user wishes to recover, which is only useful if the user want's a very specific file. Although we could allow for full folder recover in one command FUSE offers a much better solution by allowing us to mount a virtual file system on the user's file system.
+
+The user could select the time slice they wish to recover from using a slider on the GUI, the FUSE mount would reflect the state of the system at that point in time and users could copy files out using familiar tools. Membrane would reconstruct files on the fly as the file system requested them.
+
 \section{Summary}
+
+Throughout the project we analysed, design and built the proof-of-concept for an amalgam of distributed storage and backup technology, demonstrating that it is indeed possible to create a system that fairly exchanges your data with peers, to provide backup, file versioning and recovery.
+
+We find that Membrane can provide all of the requirements set out during the specification, successfully testing the validity of the software using unit, integration and usability testing. Feedback gathered from system was mainly positive with concerns mostly revolving around the interface which can easily be improved now the concept is proven.
+
+We also find the limitations of the concept: constraints on storage space dictated by the redundant space on the host machine, the possibility that all the peers holding a portion of data disappear when it's needed for recovery, periodic system resource usage for proving to peers you still hold their data and finally the need for a large group of users also using the service.
+
+
 \onecolumn
 
 \bibliography{dissertation}
@@ -2701,6 +2734,64 @@ In short, Membrane works in the lab, but the distributed nature means real-world
 \end{lstlisting}
 
 \section{Documents}
+
+\begin{lstlisting}[language=RsT, caption=Membrane README, label=lst:readme]
+# Membrane Daemon
+[![Build Status](https://travis-ci.org/domhauton/membraned.svg?branch=master)](https://travis-ci.org/domhauton/membraned) [![Dependency Status](https://www.versioneye.com/user/projects/58a5efc6a782d10041e105d7/badge.svg?style=flat-square)](https://www.versioneye.com/user/projects/58a5efc6a782d10041e105d7) [![codecov](https://codecov.io/gh/domhauton/membraned/branch/master/graph/badge.svg)](https://codecov.io/gh/domhauton/membraned) [![rtfd](https://readthedocs.org/projects/mbrn/badge/?version=latest)](http://mbrn.rtfd.io/) [![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
+
+Membrane is a Distributed Backup System that swaps your storage space with other users in the Membrane swarm to backup your data.
+
+Features
+--------
+
+- Both [GUI](https://github.com/domhauton/membrane-gui) and [CLI](https://github.com/domhauton/membrane-cli) interfaces
+- File history ensures file versions are never removed until necessary.
+- Log in from anywhere using your generated 4096-bit RSA key
+- Twofish encryption ensuring strong security for data privacy.
+- Deduplication reduces storage requirements for similar files.
+- Prioritise backup to friends and family.
+
+Installation
+------------
+
+- Download the [deb](https://github.com/domhauton/membraned/releases/download/1.0.0-alpha.7/membrane-1.0.0-alpha.7.deb) or  [rpm](https://github.com/domhauton/membraned/releases/download/1.0.0-alpha.7/membrane-1.0.0.alpha.7.rpm) package
+- Install using `dpkg -i /path/to/membrane-1.0.0-alpha.7.deb` or `rpm -i /path/to/membrane-1.0.0-alpha.7.rpm`
+- Start the daemon using `sudo systemctl start membraned.service`
+- Check status using `membrane status`
+- Run GUI using `membrane-gui`
+- Logs can be viewed using `journalctl -u membraned.service`
+- Backup your credentials from `/root/.config/membrane/auth`
+- To restore another account replace `/root/.config/membrane/auth` with your backed up credentials
+
+Requirements
+------------
+
+- Java 8 or above
+- Systemd (if using packages)
+
+Usage
+-----
+
+- Use the GUI to monitor the membrane daemon `membrane-gui`
+- To add watch folders to backup use `membrane watch-add <folder>`
+- To check backed up files use `membrane files`
+- To explore file history use `membrane history <file>`
+- To recover file use `membrane recover <file> <target> <optional: date>`
+- Use the `-h` flag at any point for command help
+
+Support
+-------
+
+If you are having issues, please let us know.
+
+We have a mailing list located at: support@mbrn.io
+
+License
+-------
+
+The project is licensed under the MIT license.
+\end{lstlisting}
+
 
 \begin{lstlisting}[language=RsT, caption=Membrane API Documentation, label=lst:apiDocs]
 API

@@ -98,9 +98,9 @@
 	\centering
 	\includegraphics[width=0.3\textwidth]{uob-logo}\par\vspace{0.5cm}
 	{\scshape\LARGE University of Bath \par}
-	\vspace{3cm}
+	\vspace{2.5cm}
 	{\huge\bfseries Membrane\par A Peer-To-Peer File Backup System\par}
-	\vspace{1cm}
+	\vspace{1.5cm}
 	{\Large\itshape Dominic Hauton\par}
 	\vspace{1cm}
 	{\scshape\Large BSc (hons) Computer Science\par}
@@ -176,23 +176,30 @@ In this report we explore the current distributed storage landscape and follow t
 \renewcommand{\abstractname}{Acknowledgements}
 \begin{abstract}
 \vspace{2cm}
-I would first like to thank my supervisor Dr.~Russell Bradford, who has provided excellent advice and guidance throughout the year
+I would first like to thank my project supervisor Dr.~Russell Bradford, who has provided excellent advice and guidance throughout the year.
 
-\vspace{1cm}
+\vspace{0.75cm}
 
 To my parents for providing me with unfailing support and continuous encouragement throughout my years of study. This accomplishment would not have been possible without them.
 
-\vspace{1cm}
+\vspace{0.75cm}
 
 To Tom and Jason, who have given me great joy and support throughout my four years of University, helping shape both my life and work.
 
-\vspace{1cm}
+\vspace{0.75cm}
+
+To the developers of the open-source libraries used throughout development. Without their work the created software would not be possible.
+
+\vspace{0.75cm}
 
 Finally to my other family members and friends who have supported me along the way.
 
-\vspace{1cm}
+\vspace{0.75cm}
 
 Thank you.
+
+\vspace{0.5cm}
+\emph{Dominic Hauton}
 
 \end{abstract}
 
@@ -525,7 +532,9 @@ Within Membrane we may benefit from an ontology during negotiation for storage s
 
 \section{Peer-to-Peer Connection} \label{sec:p2pconn}
 
-Network Address Translation (NAT), defined in RFC 2663 by \cite{srisuresh1999ip} is used extensively to solve the IP exhaustion problem, however, it also creates a lot of well documented problems for peer-to-peer communication as the IP address a hosts has set, may be a private and only useful for peers on the same network. Multiple Membrane hosts may be using the same IP address and the TCP listening port used by a node will change between connections. In order to transfer data over NAT a NAT-Traversal Technique must be employed. There are four major techniques described by \cite{ford2005peer} that we shall explore.
+Network Address Translation (NAT), defined in RFC 2663 by \cite{srisuresh1999ip} is used extensively to solve the IP exhaustion problem by mapping an internal network IP address to an external IP. It unfortunately creates a lot of well documented problems for peer-to-peer communication where a host's internal IP is only valid on the same private network. If multiple hosts are behind the same NAT gateway they all have the same external IP address.
+
+In order to contact a peer behind a NAT gateway the gateway needs to know which peer we wish to contact, done by using a specific internal port that the gateway has mapped to that peer. There are four major NAT-Traversal techniques described by \cite{ford2005peer} that allow us to achieve this.
 
 \emph{Relaying} is a method of communicating through a well known server, that has a static IP address and port. This has the advantage of being simple, however, it has the disadvantage of using the server's processing power, network bandwidth and increases latency between peers. It is a good fallback strategy but also requires both clients to initiate the connection, which makes listening for incoming connections difficult. The TURN protocol \citep{rosenberg2005traversal} describes a fairly secure method for relaying.
 
@@ -1355,7 +1364,7 @@ An important part of API design is human-readable documentation, so future devel
 
 \section{Shard Distribution}
 
-Membrane is a distributed backup platform. In the previous three sections we have created a functional local backup application for users wishing to backup and version file to a local storage medium, such as a removable hard drive. The following two sections focus on taking that data, securing it and passing it to peers for remote storage.
+Membrane is a peer-to-peer file backup platform. In the previous three sections we have created a functional local backup application for users wishing to backup and version file to a local storage medium, such as a removable hard drive. The following two sections focus on taking that data, securing it and passing it to peers for remote storage.
 
 There are two important data stores that need to be distributed, the file history containing metadata required to reconstruct files and shard storage containing the data used for file reconstruction.
 
@@ -1363,88 +1372,95 @@ In this section we assume we are subscribed to a feed of peers we can send messa
 
 \subsection{Shard Packaging}
 
-In order to start trading data with peers a standardised container for shards needs to be created. The only limitation imposed is the size of the container. For Membrane we decide through empirical testing, a container size of 25MB is a good size. This number allows the storage of 6 full data shards, leaving 1MB for any any metadata required. It is also small enough that we can store multiple copies in-memory for data manipulation and in the write buffer while sending.
+In order to start trading data with peers a standardised container for shards needs to be created. The only limitation imposed is the size of the container. For Membrane we decide through empirical testing, a container size of 25MB is a good size. This number allows the storage of six full 4MB data shards, leaving 1MB for any any metadata required. It is also small enough that we can store multiple copies in-memory for data manipulation and in the write buffer while sending.
 
-Each container hereinafter refereed to as a `\emph{block}' requires overhead for transfer and proof-of-existence discussed in the following section (\ref{sec:contractMech}), so it is useful to select as large a size as possible.
+Each container, hereinafter refereed to as a \emph{block}, requires overhead for transfer and proof-of-existence discussed in the following section (\ref{sec:contractMech}), so it is useful to select as large a size as possible. We show a typical block diagram in figure \ref{fig:storage-block}.
 
 \subsubsection{Compression}
 
-When crafting a block for a potential peer, shards that the peer has not yet stored are selected. Membrane then attempts to compress these shards, some shards might not be compressible (as the data has no or difficult to detect patterns) and in that case we flag the shard as uncompressed for future retrieval. We implement both Snappy and LZ4\_FAST compression, as discussed in section \ref{sec:compression}. We include the compression algorithm in the shard data, so new and better compression algorithms can be used in the future, in line with the extensiblity requirement.
+When crafting a block for a potential peer, shards that the peer has not yet stored are selected. Membrane then attempts to compress these shards, some shards might not be compressible (as the data has no or difficult to detect patterns) and in that case we flag the shard as uncompressed. We implement both Snappy and LZ4\_FAST compression, as discussed in section \ref{sec:compression}. Adding metadata about the compression algorithm used in the block data, so new and better compression algorithms can be added in the future, in line with the extensiblity requirement.
+
+\begin{figure*}
+ \centering
+ \includegraphics[width=0.5\textwidth]{storage-block}
+ \caption{Storage Block - Shards (Orange), Metadata (Green), Free (Blue), Salt (Pink)}
+ \label{fig:storage-block}
+\end{figure*}
 
 It is imperative the compression is performed before encryption as encrypted shards are made up of pseudorandom data. If the encryption algorithm follows \cite{shannon1945mathematical}'s laws of confusion\footnote{Each bit of the ciphertext should depend on several parts of the key} and diffusion\footnote{If a single bit of the plaintext or ciphertext, is modified then half of the bits in the ciphertext or plaintext should change respectively}.
 
 \subsubsection{Knapsack}
 
-To fit data in the block we are faced with the knapsack problem. This is a packing problem commonly encountered in Computer Science. \citep{skiena1999interested} Given a maximum container size $W$ and a set of $n$ items, shard sizes in our case, each with a value $v_i$, size $s_i$ and size we must find the set 
+To fit data in the block we are faced with the knapsack problem. This is a packing problem commonly encountered in Computer Science. \citep{skiena1999interested}
+
+Given a maximum container size $W$ and a set of $n$ items, shard sizes in our case, each with a value $v_i$, size $s_i$ and size we must find the set 
+
 $$\max \sum_{i=1}^{n} s_{i}x_{i}$$ 
+
 such that 
+
 $$\sum_{i=1}^{n} s_{i}x_{i} \leq W, x_i \in {0, 1}$$
-This is an NP-Hard optimisation problem, \citep{skiena1999interested} meaning it cannot be solved in polynomial time. In Membrane we are faced with the additional issue, that we do not know the size of all the shards without accessing the inode of the shard, an expensive operation. There are pseudo-polynomial\footnote{Running time is polynomial in the numeric value of the input (container size in this case)} time algorithms for solving the problem, however, without all of the sizes available we cannot fully benefit from them.
 
-We attempt to solve the solution by simply looking a subset of 100 random shards from the queue and using the dynamic programming solution with $O(nW)$ computational and space complexity. \citep{martello1999dynamic} We divide all weights by 128kB for this calculation to lower W to a reasonable level, a maximum of: 
-$$(25\mbox{MB} / 128\mbox{KB}) * 100  \mbox{ shards} = 2000 \mbox{ ops}$$ 
-This is far superior to the $n! = 100!$ naive solution. The code for this is available in listing \ref{lst:shard2block}. Although we are able to fill the block optimally, it caused starvation for blocks sized between 1MB and 4MB. Blocks of size 4MB filled the 25MB until there was 1MB left, which was filled by shards of size $\leq1$MB. Any shard between 1 and 4 MB was very rarely selected as blocks of size 4MB and $<1$MB were quickly replenished.
+This is an NP-Hard optimisation problem, \citep{skiena1999interested} meaning it cannot be solved in polynomial time. We are faced with the additional issue, that we do not know the size of all the shards without accessing the inode of the shard, a comparably expensive operation. There are pseudo-polynomial\footnote{Running time is polynomial in the numeric value of the input (container size in this case)} time algorithms that can solve the problem but without all of the sizes available we cannot fully benefit from them.
 
-We therefore opt for the naive approach of filling the blocks in FIFO, skipping a shard and moving to the next one if it no longer fits, checking up to 100 shards. When tested over a standard set of sharded files taken from the document directory of three users with compression disabled, seen in table \ref{tab:storageUsage}, the packing efficiency was $0.90$ with a standard deviation of $0.026$. The maximum inefficiency we can observe is if the block has $4MB - 1B$ remaining with only 4MB available. At that point reaching an efficiency of approximately $21/25 = 0.84$. This leaves the expected average efficiency at $0.92$, is within the result. Another advantage to this naive solution is we can consider the remaining space after compression. Something that would require compression of all the blocks first in the knapsack algorithm.
+We attempt to solve the solution by simply looking a subset of $100$ random shards from the queue and using the dynamic programming solution with $O(nW)$ computational and space complexity. \citep{martello1999dynamic} We lower W to a reasonable level by dividing all weights by 128kB. This gives a maximum of: 
 
-In the future we may attempt to find a better solution to this problem, perhaps by favouring shards that have not been uploaded for a longer time. It is important to also remember that if all users have similar packing efficiencies, then the system remains in balance, although it would still be exploitable if another client was created with more efficient packing.
+$$(25\mbox{MB} / 128\mbox{KB}) * 100  \mbox{ shards} = 2000 \mbox{ loops}$$ 
+
+which is far superior to the $n! = 100!$ naive solution. The code for this is available in listing \ref{lst:shard2block}. Although we are able to fill the block optimally for those 100 shards, it causes starvation for blocks sized between 1MB and 4MB.
+
+Blocks of size 4MB filled the 25MB space until there was 1MB left, which was filled by shards of size $\leq1$MB. Shards between 1MB and 4MB were rarely selected as blocks of size 4MB and $\leq1$MB were quickly replenished.
+
+We therefore opt for the naive approach of filling the blocks in FIFO\footnote{First In First Out}, skipping a shard and moving to the next one if it no longer fits, up to 100 shards.
+
+When tested over a standard set of sharded files taken from the document directory of three users with compression disabled the packing efficiency was $0.90$ with a standard deviation of $0.026$. Raw data is available in table \ref{tab:storageUsage}. The maximum inefficiency we can observe is if the block has $4MB - 1B$ remaining with only 4MB available. At that point reaching an efficiency of approximately $21/25 = 0.84$. This leaves the expected average efficiency at $0.92$, is within margin of error the result. 
+
+An advantage to this naive solution is we can consider the remaining space after compression. Something that would require compression of all the blocks first in the knapsack algorithm.
+
+In the future we may attempt to find a better solution to this problem, perhaps by favouring shards that have not been uploaded for a longer time. It is important to also remember that if all peers create blocks of the same size, then the system remains in balance. This could be exploited by another client with more efficient packing.
 
 \subsubsection{Adding metadata}
 
-Once the block is fully packed with shard data, we request the file history store for every entry involving the packed shards. This ensures, that if data is lost and the block is returned, Membrane can reconstruct files once all of the shards required have arrived.
+Once the block is fully packed with shard data, we place the file history for every shard in the block ensuring, that if data is lost and the block is returned, Membrane can reconstruct files as soon as possible.
 
-We then insert a randomly generated salt into the block. This is small, however, because of the aforementioned law of diffusion \citep{shannon1945mathematical} this should lead to completely different encrypted data. This is done to ensure that the same block is never sent out twice, a requirement for proof of ownership in section \ref{sec:contractMech}.
+We then insert a randomly generated salt into the block. This is small, however, because of the aforementioned law of diffusion \citep{shannon1945mathematical} this should lead to completely different encrypted data. This is done to ensure that the same block is never sent out twice, a requirement for proof of ownership in section \ref{sec:contractMech} that prevents one peer being able to issue proof of ownership on behalf of all peers holding the block.
 
-We finally encrypt the shard using a hash of the private key used by the Membrane networking module. Twofish encryption is used, as decided in section \ref{sec:encryption}. The block is now ready to be sent to the peer by the contract mechanism.
-
+We finally encrypt the shard using a SHA-256 hash of the private key used by the Membrane networking module. Twofish encryption is used, as decided in section \ref{sec:encryption}. The block is now ready to be sent to the peer by the contract mechanism.
 
 \subsection{Peer Contract Manager (PCM)} \label{sec:contractMech}
 
-In the literature review (\ref{sec:neg}) we explored contract negotiation within intelligent agents. Many contract negotiation techniques studied require multiple steps to come to an agreement. We hope to implement a new pragmatic approach to shard allocation that does not require complex negotiation. We now describe an overview of the contract mechanism, followed by an in-depth analysis of why it works.
+In the literature review (\ref{sec:neg}) we explored contract negotiation within intelligent agents. Many contract negotiation techniques studied require multiple steps to come to an agreement. We hope to implement a pragmatic heuristic approach to shard allocation that does not require complex negotiation, relying on peers to offer storage for free in the hope other peers will do the same. We now describe an overview of the contract mechanism, followed by an in-depth analysis of why it works.
 
-As in Game Theory, we assume all Membrane peers are entirely self-interested. The main purpose of the peer is to distribute blocks and the only way to achieve that is by becoming attractive to other peers for block storage, which can be done by correctly storing blocks for them. This system does not depend on altruistic behaviour, instead making good behaviour the only way to benefit from the system.
+As in Game Theory, we assume all Membrane peers are entirely self-interested. The main purpose of the peer is to distribute blocks and the only way to achieve that is by becoming attractive to other peers for block storage. This can be done by correctly storing blocks for them. This system does not depend on altruistic behaviour, instead making good behaviour the only way to benefit from the system.
 
-\subsubsection{New Peers}
+\subsubsection{Contract Update}
 
-The PCM in Membrane is given a target number of peers that it should share blocks with. When a new peer is presented to the PCM when peers are required, it contracts the peer giving it an offset\footnote{The number of blocks it can store more than the PCM can allocate to the peer} of one. This qualifies as a Contract modification so a Contract Update (CU) is sent to the peer.
+A contract update is the only method a PCM can change the state of a contract for a peer. It is a statement of fact indicating two things:
 
-We expect a similar CU, marking the start of the contract. The mechanism can be observed in the initial part of fig \ref{fig:contract-start}.
+\begin{itemize}
+ \item An integer permitted inequality. (The peer can store this many more blocks with you, than you have stored with it.)
+ \item List of Blocks you are holding for the peer.
+\end{itemize}
+
+Updates are sent whenever a peer is contracted, connects, a new block arrives from the peer and every 15 minutes. To be marked down as available during that hour of the week a peer must send a contract update that hour. These marks are then used to calculate appraisal, discussed in section (\ref{sec:peerAppraisal}). To remain contracted a peer needs to maximise their appraisal.
 
 \subsubsection{Contracts}
 
-Contracts are Service Level Agreements (SLAs) within Membrane. Through offering an offset a peer agrees to:
+Contracts are Service Level Agreements (SLAs) within Membrane. When you give a peer an offset, you sign a SLA declaring you will:
 
 \begin{itemize}
- \item Accept and store blocks from the PCM (up to the amount the PCM is holding for it, plus the offset)
- \item Send CUs at least once every hour while the SLA is active.
+ \item Accept and store blocks from the peer (up to the amount the PCM is holding for it, plus the offset)
+ \item Send Contract Updates at least once every hour while the SLA is active.
  \item Complete Block Instructions issued by the PCM - Used for proof of existence and block management.
 \end{itemize}
 
-We apply four sections of \cite{keller2002defining}'s SLA life-cycle to these contracts, the CU allowing for three of the life-cycle stages: Establishment, Reporting and Termination. A peer is only able to provide verifiable facts in the contract update, so it is impossible for peers to be deceitful.
+We apply four sections of \cite{keller2002defining}'s SLA life-cycle to these contracts, the contract update allowing for three of the four life-cycle stages: Establishment, Reporting and Termination. A peer is only able to provide verifiable facts in the contract update, so it is impossible for peers to be deceitful.
 
 The offset can be modified as required throughout the SLA, with 0 terminating the SLA. Upon termination all blocks stored for the peer are removed.
 
-\subsubsection{Contract Update (CU)}
-
-The Contract Update consists of the following fields:
-
-\begin{itemize}
- \item Allowed Inequality
- \item List of Block you are holding for the peer.
-\end{itemize}
-
-Updates are sent whenever a peer connects, whenever a new peer block arrives and also every 15 mins. To receive a good appraisal a peer needs to send a contract update at least once every hour, so it is in the peer's interest to send contract updates, if it wishes to remain contracted.
-
-\begin{figure*}[h]
- \centering
- \includegraphics[width=0.8\textwidth]{contract-start}
- \caption{Example Peer Contract Start}
- \label{fig:contract-start}
-\end{figure*}
-
 \subsubsection{Block Instructions}
 
-Upon receiving a contract update the PCM sends one of the following Block Instructions (BI) to the peer.
+Upon receiving a contract update the PCM sends one of the following block instructions (also referred to as evidence requests) to the peer.
 
 \begin{itemize}
   \item Compute Evidence for the Block
@@ -1458,23 +1474,60 @@ There are six possible scenarios for each block sent in the contract update.
 
 \emph{Unexpected Blocks} are blocks not in peer contract. These are temporarily\footnote{Not influencing how much space the PCM offers the peer.} inserted into the peer contract. The entire block is requested.
 
-If the peer is truthful, the block will be correctly decrypted and lost shards will be recovered. In the next update the block will register as expired. Otherwise this will be noted as a block the peer lost.
+If the peer is truthful, the block will be correctly decrypted and lost shards will be recovered. In the next update the block will register as expired. Otherwise this will be noted as a block loss. It is therefore in the peers interest not to make up fake blocks.
 
 \emph{Required Blocks} contain shards that are not present in local storage. These are requested for recovery.
 
-\emph{Proven Blocks} are blocks that have already been verified this hour and are not required, these blocks are.
+\emph{Proven Blocks} are blocks that have already been verified this hour and are not required, these blocks are ignored with no block instructions sent.
 
-\emph{Provable Blocks} need to be verified for a good peer appraisal score this hour. A salt is sent to the peer to allow proof of ownership verification for the block.
+\emph{Provable Blocks} need to be verified for a good peer appraisal score this hour. There are three ways to prove you own a block to a peer (\ref{sec:pdp}). A block instruction contains the capability of sending a short salt for this purpose.
 
 \emph{Expired Blocks} have no salts available for proof or contain no active shards. These are removed.
 
-If the peer correctly responds to all of these messages it will have verified all of the blocks it claims to own, increasing its appraisal score and making it a more likely choice for the PCM to store blocks with.
+If the peer correctly responds to all of these messages it will have verified all of the blocks it claims to own, increasing its attendance for the hour score and making it a more likely choice for the PCM to store blocks with.
 
-\subsubsection{Provable Data Possession (PDP)}
+If a peer does not verify all the blocks it declares by the end of the hour a severe penalty is applied to the appraisal rating for the peer.
 
-To allow the peer to prove the own a file the PCM calculates a set of salts and resultant HMACs for each block deployed as described in section \ref{sec:poo}.
+\subsubsection{New Peers}
+
+The PCM has a target number of peers that it should share blocks with. When a new peer arrives before that target is reached the PCM offers an offset of one to that peer. This qualifies as a contract modification so a contract update is sent to the peer, giving the peer an all clear to start sending blocks.
+
+\begin{figure*}[h]
+ \centering
+ \includegraphics[width=0.8\textwidth]{contract-start}
+ \caption{Example Peer Contract Start}
+ \label{fig:contract-start}
+\end{figure*}
+
+We expect a similar contract update, marking the start of a contract from the peer. We stop any incoming blocks from peer that have not given us any space to store with them. This would be an unfair deal that we are not interested in. The mechanism can be observed in the initial part of fig \ref{fig:contract-start}.
+
+\subsubsection{Provable Data Possession (PDP)} \label{sec:pdp}
+
+To allow the peer to prove they own a file the PCM calculates a set of salts and resultant HMACs for each block deployed as described in section \ref{sec:poo}. One salt and HMAC pair for each hour for the two week lifetime of the block.
 
 We opt for the Keccak hash function, developed by \cite{bertoni2009keccak}. It used in SHA-3, a cryptographic standard released by NIST in 2015 \citep{paul2015nist}. There are no known exploits for Keccak and we use the 512-bit variant recommended by \cite{bertoni2009keccak} in 2013.
+
+We take advantage of the fact that there is no known way to compute a HMAC without both the data and the key. As the PCM releases the key during the hour the peer is verifying the data, the PCM can be certain the peer held the block at that point in time. \citep{ateniese2011remote}
+
+In order to prevent all the stored blocks being loaded by the client the PCM has a 50\% probability generating an empty key (except for the first and last proof), requiring no calculation by the peer. There is no way to predict this and therefore no way to abuse this feature. This is a pragmatic, very solution specific way of reducing IO required for PDP as the peer pays a huge reputation penalty for losing a block. There are more advanced methods that can be investigated \citep*{ateniese2011remote, shacham2008compact, bowers2009proofs}, however, we opt for this solution in this proof of concept system.
+
+We also need a demonstration that the peer will send us the full block on request. We request that 1\% of the time, instead of sending a salt and KMAC computation request, the whole block is request.
+
+When there are no more salt and KMAC pairs that the block is marked as expired and removed during the next contract update.
+
+We do not use Keccak Message Authentication Codes (KMACs), a newer more efficient keyed hash function that makes use of the sponge construction of Keccak to only hash once \citep{kelsey2016sha} as the standard is new and the cryptography library we use does not support it yet.
+
+\subsubsection{Contract Scaling}
+
+To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actual be available. Growing exponentially would quickly give the peer more space than we have available. 
+
+The maximum amount of blocks transferred to each peer per upload is capped at six. This is due to a buffer limit of 256MB by the networking layer. If we assume all blocks are full and accounting for base64 encoding used for transfers, we find that this gives space for $(256 * \frac{3}{4}) / 25 = 7.68$ blocks. Room is left for potential messages between clients while blocks are transferring.
+
+The contract scaling allows adding friends in future expansions. A user can manually select a peer and increase their inequality, gifting them block space. We do not provide an interface to this in the proof-of-concept implementation of Membrane.
+
+\subsubsection{Complete Data Loss Scenario}
+
+In the case of data loss the PCM is empty containing no contracts. Previously contracted peers locate the new PCM instance using PEX, unaware of the data loss. Contract updates are exchanged informing the peer that the PCM no longer holds any of their blocks, and the PCM treats all of the received blocks as lost.
 
 \begin{figure*}[ht]
  \centering
@@ -1483,41 +1536,29 @@ We opt for the Keccak hash function, developed by \cite{bertoni2009keccak}. It u
  \label{fig:lost-block}
 \end{figure*}
 
-We take advantage of the fact that there is no known way to compute a HMAC without both the data and the key. As the PCM releases the key during the hour the peer is verifying the data, the PCM can be certain the peer held the block at that point in time. \citep{ateniese2011remote}
-
-In order to prevent all the stored blocks being loaded by the client the PCM has a 50\% probability generating an empty key (except for the first and last proof), requiring no calculation by the peer. There is no way to predict this and therefore no way to abuse this feature. This is a pragmatic, very solution specific way of reducing IO required for PDP as the peer pays a huge reputation penalty for losing a block. There are more advanced methods that can be investigated \citep*{ateniese2011remote, shacham2008compact, bowers2009proofs}, however, we opt for this solution in this proof of concept system.
-
-Two weeks worth of HMACs are calculated, the expected lifetime of a block. After that the block is marked as expired and removed.
-
-We do not use Keccak Message Authentication Codes (KMACs), a newer more efficient keyed hash function that makes use of the sponge construction of Keccak to only hash once \citep{kelsey2016sha} as the standard is new and the cryptography library we use does not support it yet.
-
-\subsubsection{Contract Scaling}
-
-To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actual be available. Giving peers too much headroom would be detrimental. 
-
-The maximum amount of blocks transferred to each peer per upload is capped at six. This is due to a buffer limit of 256MB by the networking layer. If we assume all blocks are full and accounting for base64 encoding used for transfers, we find that this gives space for $(256 * \frac{3}{4}) / 25 = 7.68$ blocks. Room is left for potential messages between clients while blocks are transferring.
-
-The contract scaling allows adding friends in future expansions. A user can manually select a peer and increase their inequality, gifting them block space. We do not provide an interface to this in the initial implementation of Membrane.
-
-\subsubsection{Complete Data Loss Scenario}
-
-In the case of data loss the PCM is empty containing no contracts. Previously contracted peers locate the new PCM instance using PEX, unaware of the data loss. CUs are exchanged informing the peer that the PCM no longer holds any of their blocks, and the PCM treats all of the received blocks as lost.
-
-If the PCM's appraisal by the peer was poor, losing all of the peers blocks may trigger contract termination, losing all of those blocks. This is offset by the fact that two other peers also hold copies of the shard. The system correctly punishes peers that constantly lose all peer blocks.
+If the PCM's appraisal by the peer was poor, losing all of the peers blocks may trigger contract termination, losing all of those blocks which would be unfortunate. This possibility is explored in section \ref{sec:peerAppraisal}. This would need to happen at least three times for all copies of shards held by peers to be removed causing data loss. The system correctly punishes peers that constantly lose all peer blocks.
 
 This mechanism can be seen at work in figure \ref{fig:lost-block}.
 
 \subsection{Peer Appraisal} \label{sec:peerAppraisal}
 
-Peer Appraisal is the persistent trust system that allow for peer discrimination, based around 3 core metrics: uptime, PDP checks and chance of data loss. We employ tools from intelligent agents to avoid potential attacks and design a system that uses a social approach \citep{pinyol2013computational} to control the acts of agents.
+Peer Appraisal is the persistent trust system that allows for peer discrimination, based around three core metrics:
 
-We first conduct a survey to see the viability using uptime as a metric by polling users regarding their computer uptime. Within social groups uptime is correlated, as seen in fig \ref{fig:uptime-survey}, confirming the potential for using users to share storage for backup.
+\begin{itemize}
+ \item Common Uptime
+ \item PDP Check Success Rate
+ \item Block Loss Rate
+\end{itemize}
 
-We incorporate contract updates (CU). By sending a CU a peer confirms they are online. Each peer has an array that stores a number for each hour of the week\footnote{A space of time in which we expect to see repeatable usage patterns based on the results of the survey in fig \ref{fig:uptime-survey}}. When the hour is complete we add $n$ to completed hour of the week.
+We employ tools from intelligent agents to avoid potential attacks and design a system that uses a social approach \citep{pinyol2013computational} to control the acts of agents.
+
+We first conduct a survey to see the viability of using uptime as a metric by polling users regarding their computer uptime. We find that within social groups uptime is correlated (fig. \ref{fig:uptime-survey}) confirming the potential for using peers to share storage for backup.
+
+By sending a contract update a peer confirms they are online and we expect a given number of PDPs during the same hour. Each peer is given an array that stores the probability of a successful PDP for all shards during that hour of the week\footnote{A space of time in which we expect to see repeatable usage patterns based on the results of the survey in fig \ref{fig:uptime-survey}}. When the hour is complete we add $n$ to completed hour of the week.
 
 $$n = \frac{\mbox{PDP Checked Shards}}{\mbox{Expected Shards}}$$
 
-We store a ratio of incomplete\footnote{$n$ is $<1.0$} and fully complete reports, heavily penalising peers for incomplete reports as this indicates deceit. In addition we store a count of blocks the peer lost, also generating a ratio of blocks lost to those that lasted their entire expected lifetime (two weeks).
+We also record the ratio of incomplete\footnote{$n$ is $<1.0$} and fully complete reports, heavily penalising peers for incomplete reports as this indicates deceit. In addition we store a ratio of blocks lost vs. those that lasted their entire expected lifetime (two weeks).
 
 We calculate peer appraisal with the following formula:
 
@@ -1536,82 +1577,87 @@ If a peer rating is $<\sigma - \mu$ away from the average we drop the peer as a 
 
 This system was simulated in unit testing, asserting that the peer appraisal correctly punishes peers that fail to deliver PDPs, have incompatible uptime or lose blocks.
 
-We show a visual demonstration of the peer appraisal system in figure \ref{fig:peer-appraisal}. We configure the host generating these ratings to have standard a uptime taken from the uptime survey (\ref{fig:uptime-survey}). The good peer simulates a server with 100\% uptime and with no bad behaviour. The mid peer is online less than the host but during fairly similar times. The bad peer is only online for small parts of the weekend.
+We show a visual demonstration of the peer appraisal system in figure \ref{fig:peer-appraisal}. We configured the host generating these ratings to have standard a uptime taken from the uptime survey (\ref{fig:uptime-survey}). The good peer simulates a server with 100\% uptime and with no bad behaviour. The mid peer is online less than the host but during fairly similar times. The bad peer is only online for small parts of the weekend.
 
-We also display the minimum rating to remain contracted as \code{min-limit} if there were two bad peers, two mid peers and one good peer. The rating mechanism is performing exactly as expected. A myriad of test cases using peers with different characteristics  are tested numerically through automated unit tests ensuring the mechanism works correctly.
+We also display the minimum rating to remain contracted as \code{min-limit} demonstrating that the bad peers would lose their contracts if there were two bad peers, two mid peers and one good peer present.
 
-Using \cite{josang2009challenges}'s nine potential attacks on reputation and trust systems described in section \ref{sec:tar}.
+The rating mechanism is performing exactly as expected. A myriad of test cases using peers with different characteristics are tested numerically through automated unit tests ensuring the mechanism works correctly. We include a test to simulate what would happen if a peer contracted for four weeks suddenly loses all our data and assert that we would still remain contracted, and return the blocks.
+
+Using \cite{josang2009challenges}'s nine potential attacks on reputation and trust systems described in section \ref{sec:tar} we ensure that the system is resilient to attacks.
 
 A lot of attacks are countered by relying solely on image, instead of both image and reputation. Peers cannot use playbook, discrimination, collusion and Sybil attacks techniques. 
 
-Peers are harshly punished for low-quality actions so a playbook attack is ineffective. Trust is instantaneous so it would be difficult to exploit reputation lag. 
-
-A peer can re-enter the swarm with different credentials, but it would take a long time to regain reputation.
-
-Lastly there are no easy actions the peer can perform that let them gain reputation.
+Peers are harshly punished for low-quality actions so a playbook attack is ineffective. Trust is instantaneous so it would be difficult to exploit reputation lag. A peer can re-enter the swarm with different credentials, but it would take a long time to regain reputation. Finally there are no easy actions the peer can perform that let them gain reputation.
 
 As bad peers are shunned they will not have access to public PEX entries in high-performing peers, grouping poorly performing peer groups together, which is ideal.
 
+
+
+
 \section{Networking}
 
-The networking module is responsible for finding peers and providing a way to communicate with them. We first discuss authentication and account creation, followed by how we ensure peers can connect behind a NAT gateway, continuing to how peers communicate and how peers are able to locate each other. We end with the peer management strategy. 
+The networking module is responsible for finding peers and providing a way to communicate with them. We first discuss authentication and account creation, followed by how we ensure peers can connect behind a NAT gateway, peers communication and how peers are able to locate each other. We end with the peer management strategy. 
 
 \subsection{Authentication}
 
-SSL is used for communication in Membrane. As the system is decentralised we cannot rely on a certificate authority for authentication, relying on a SHA-256 hash of the RSA public key, provided with the certificate on connection. If a peer is able to establish a secure connection with the provided certificate, we are certain the peer also holds the private key. \citep{menezes1996handbook} It is computationally infeasible to find the private key using only the public key, so we are guaranteed it is the same peer.
+SSL is used for communication in Membrane. As the system is decentralised we cannot rely on a certificate authority for authentication, relying on a SHA-256 hash of the RSA public key, provided with the certificate on connection. This hash becomes the account for the peer.
 
-The probability that two peers will generate the same RSA key is small enough that it can be ignored. On first application launch we generate the RSA public key, public key and X509 certificate, placing it in the Membrane config folder. Future application launches search this folder and load them into the application.
+If a peer is able to establish a secure connection with the provided certificate, we are certain the peer also holds the private key. \citep{menezes1996handbook} It is computationally infeasible to find the private key using only the public key, so we are guaranteed it is the same peer.
+
+The probability that two peers will generate the same RSA key is small enough that it can be ignored. On first application launch we generate the RSA public key, private key and X.509 certificate, placing it in the Membrane config folder. Future application launches search this folder and load them into the application.
 
 It is important that users store these credentials in a safe place. We prominently display this in the usage instructions, and in the future we plan to implement a utility to encrypt transfer the authentication information to a removable storage medium.
 
 \subsection{Peer Connection}
 
-We can expect Membrane peers to be behind a NAT gateway, which acts as a bijective converter for IP and port combinations, grouping all internal IPs as one external IP. This poses an issue when establishing a connection with peers as NAT will typically block connections to unmapped ports. In section \ref{sec:p2pconn} we discussed four solutions, two of which we attempt. UPnP port forwarding \citep{boucadair2013universal} and TCP Hole Punching \citep{wing2010traversal}.
+We can expect Membrane peers to be behind a NAT gateway, grouping all internal IPs as one external IP. A host needs to use a NAT Traversal technique to map an external port to one of it's internal ports. A NAT gateway will typically block connections to unmapped ports. In section \ref{sec:p2pconn} we discussed four solutions, two of which we attempt. UPnP port forwarding \citep{boucadair2013universal} and TCP Hole Punching \citep{wing2010traversal}.
 
-We use a UPnP communication library in Java for port forwarding. First we broadcast a UPnP request for potential gateways on the network. If a response is received we use UPnP to request a port forward for 5 minutes. If this request fails we try the next port up for a maximum of 20 attempts. In practice this has proven a large enough number to locate an available port. We then ask the gateway what the external IP is. A refresh is performed every 130 seconds to ensure the port forwarding entry never expires. A time of 5 minutes is used to ensure the port forward stops after a reasonable time.
+We use a UPnP communication library in Java for port forwarding. First we broadcast a UPnP request for potential gateways on the network. If a response is received we use UPnP to request a port forward for five minutes. If this request fails we try the next port up for a maximum of 20 attempts. In practice this has proven a large enough number to locate an available port. We then ask the gateway what the external IP is. A refresh is performed every 180 seconds to ensure the port forwarding entry never expires. A lifetime of five minutes is used to ensure the port forward stops after a reasonable time.
 
-We attempt TCP Hole Punching but find that Vert.x, the chosen network communication library does not provide a way to both listen and send messages out of the same port. If users find that UPnP is insufficient we will investigate using the underlying communication (Netty) to regain the required control.
+We attempt TCP Hole Punching but find that Vert.x, the chosen network communication library does not provide a way to both listen and send messages out of the same port. If users find that UPnP is insufficient we will investigate using the underlying communication library Netty to regain the required control.
 
 In testing we discovered that as only one of the peers required port forwarding to generate a connection it is sufficient within the Membrane proof-of-concept.
 
-\begin{figure*}[!ht]
- \centering
- \includegraphics[width=0.8\textwidth]{pex-new-peer}
- \caption{PEX New Peer Discovery Example}
- \label{fig:pex-new-peer}
-\end{figure*}
-
 \subsection{Peer Exchange (PEX)}
 
-In order to allow peers that constantly change IP address and port to find each other require a method of PEX as discussed in the literature review (\ref{sec:pex}). We need to build on the PEX system using in BitTorrent in order to locate previously contracted peers in the swarm.
+In order to allow peers that constantly change IP address and port to find each other require a method of PEX as discussed in the literature review (\ref{sec:pex}). We need to build on the PEX system used in BitTorrent in order to locate previously contracted peers in the swarm.
 
-We introduce the concept of a PEX Advertisement, PEX Request and PEX Response. Using these three messages we allow peers to locate each other within the swarm, without exposing information about peers that do no want their information public.
+We introduce the concept of a \emph{PEX Advertisement}, \emph{PEX Request} and \emph{PEX Response}. Using these three messages we allow peers to locate each other within the swarm, without exposing information about peers that do no want their information public.
 
 \subsubsection{PEX Advertisement}
 
-Each peer periodically sends a PEX Advertisement to all connected peers. This contains:
+Each peer periodically sends a PEX Advertisement with the following fields to all connected peers:
 
 \begin{itemize}
  \item IP Address
  \item Port
  \item Time Stamp
- \item `Is Public?' Flag
+ \item \code{isPublic} Flag
  \item Signature
 \end{itemize}
 
 On receipt the peer verifies the signature and checks for other entries from the same peer within its PEX Ledger, an evicting store of Peer PEX information. If this PEX advertisement was created after the latest entry it has, the update replaces the previous entry. To ensure this system is not broken by time stamps set in the future, these are automatically dropped. By default the ledger stores 300 PEX entries in the ledger, expiring them in FIFO order if full. The Ledger is persisted to disk periodically.
 
+To sign the advertisement an RSA Signature, which can be imagined as a HMAC where the private key is used to generate a hash and the public key (contained in the X.509 certificate) is used to verify the signature against the message. The entire contents of the message (except the signature) is signed.
+
 If a connection to the Peer is required the PEX IP address and port can be dialled to attempt a connection.
 
-\subsubsection{PEX Query}
+\subsubsection{PEX Request}
 
 In the event that connection to a peer is lost, and both peers have changed address, PEX Requests can be used to attempt to find the location of the peer. A PEX request is sent to currently connected peers, asking for the most recent PEX Advertisement in their PEX ledger for the peer. The request must contain the peer id, which as established, is a sha-256 hash of their public RSA key.
 
-The chance of guessing the key for an existing peer is sufficiently infeasible that knowing the peer ID for the peer means the Membrane instance requesting the information has either connected to the peer before or has heard about them.
+The chance of guessing the key for an existing peer is sufficiently infeasible that knowing the peer ID for the peer means the Membrane instance requesting the information has either connected to the peer before or has heard about them at some point in time.
 
-If there exists a PEX Advertisement Entry for the requested peer in the PEX Ledger of the peer sent the request, this is sent back in the PEX response as a PEX Advertisement.
+If there exists a PEX Advertisement Entry for the requested peer in the PEX Ledger of the peer that received the request, this is sent back in the PEX response as a PEX Advertisement.
 
 As PEX Advertisements are signed using the original peers private key, we can be certain that the PEX response originated from the peer and was not forged. \citep{li1993remark} The time stamp in the advertisement prevents the peer sending old PEX Advertisement. The certificate of any contracted peer is persisted by Membrane to check for this signature. Therefore the PEX Advertisement can be reliably treated as if it came from the peer it describes.
+
+\begin{figure*}
+ \centering
+ \includegraphics[width=0.8\textwidth]{pex-new-peer}
+ \caption{PEX New Peer Discovery Example}
+ \label{fig:pex-new-peer}
+\end{figure*}
 
 This mechanism is demonstrated in figure \ref{fig:pex-new-peer}. Two peers (1 and 3) attempt to relocate each other by using Peer 2.
 
@@ -1619,17 +1665,22 @@ This mechanism is demonstrated in figure \ref{fig:pex-new-peer}. Two peers (1 an
 
 This mechanism is further extended to support public PEX entries. A PEX Request can also request fifty\footnote{Decided upon through observing the PEX mechanism in BitTorrent. \citep{vuze2010vuze}} public PEX entries. These are sent back without signature or peer ID information and are meant as an untrusted mechanism for attempting to establish peer connections.
 
-These are stored in a second non-persisted temporary ledger and is a mechanism for discovering new peers. When a peer A requests peer B for public PEX entries, peer B searches all entries in their real PEX Ledger, only selecting those entries less than 15 minutes old with the `Is Public' flag toggled.
+These are stored in a second non-persisted temporary ledger and is a mechanism for discovering new peers. When a peer A requests peer B for public PEX entries, peer B searches all entries in their real PEX Ledger, only selecting those entries less than 15 minutes old with the \code{isPublic} flag toggled.
 
-We attempt prevent accidental DOS attacks by requiring entries spread as public must be signed at least once by a unique Peer, requiring work to be done to generate new credentials. In addition only one entry per IP can exist in the public ledger.
+We prevent amplified denial of service attacks\footnote{In which an attacker could send a IP to multiple peers, causing them all to fire connection requests at the peer} in two ways:
 
-If a peer is looking for new peers to connect, it can allow peers with unknown X509 certificates to connect to it via SSL, and begin sending public PEX updates.
+\begin{itemize}
+ \item For an entry to be sent from a peer it must be in the real PEX ledge. This requires a signature, which requires RSA credentials, which requires work done by the generating peer to create the credentials.
+ \item Only one entry per IP can exist in a public ledger. So at most one request is sent by each peer every few minutes from each IP.
+\end{itemize}
+
+If a peer is looking for new peers to connect, it can allow peers with unknown X.509 certificates to connect to it via SSL, and begin sending public PEX updates.
 
 \subsubsection{Tracker}
 
-A tracker is a peer found at a static IP, only running the networking module of Membrane and unable to form contracts with other peers. Is it a last resort mechanism for membrane peers if they are unable to find other contracted peers or looking for more peers to contract. The PEX mechanism functions in exactly the same way.
+A tracker is a peer found at a static IP, only running the networking module of Membrane and unable to form contracts with other peers. Is it a last resort mechanism for Membrane peers if they are unable to find other contracted peers or looking for more peers to contract. The PEX mechanism functions in exactly the same way.
 
-The domain name of all available trackers and their user IDs is stored in Membrane instances. A user may run a Membrane tracker, however, this will not be added to all Membrane instances and it will simply be useful to those users that have manually added the tracker to their Membrane instances.
+The domain name of all available trackers and their user IDs is hard coded in all Membrane instances. A user may run a Membrane tracker, but as it cannot establish contracts it will quickly lose appraisal and be uncontracted.
 
 \subsubsection{Conclusion}
 
@@ -1637,19 +1688,19 @@ The described system allows for peers to locate each other and discover new pote
 
 \subsection{Communication}
 
-As established in the literature review (\ref{sec:comm}) we design an ontology for communication in Membrane using the FIPA based agent communication language (ACL) as a container for our ontology.
+As established in the literature review (\ref{sec:comm}) we design an ontology for communication using the FIPA based agent communication language (ACL).
 
 \subsubsection{Agent Communication Language}
 
-The FIPA Agent Communication Language (ACL) specification based on the Speech Act theory \citep{labrou1999agent} comprises of:
+The FIPA ACL specification based on the Speech Act theory \citep{labrou1999agent} comprises of:
 
 \begin{itemize}
- \item A Communicative Act CA
+ \item A Communicative Act (or performative)
  \item An ACL Message Structure
- \item An Associated Ontology
+ \item An Associated Ontology or Protocol
 \end{itemize}
 
-We choose to adapt the FIPA specification for use in Membrane replacing the standard performatives (CAs) with an implicit INFORM/REQUEST performative. This is a change from the performative based approach suggested in the literature review (\ref{sec:comm}) as we decide the benefits of creating a stateless protocol with no replies\footnote{As per the recommendation of \citep{google2017api}'s API guide}, saving client memory and decrease in programming complexity far outweighs the benefits of the message having redundant information describing the content.
+We choose to adapt the FIPA specification for use in Membrane replacing the standard performatives (CAs) with an implicit INFORM performative. This is a change from the performative based approach suggested in the literature review (\ref{sec:comm}) as we decide the benefits of creating a stateless protocol with no replies\footnote{As per the recommendation of \citep{google2017api}'s API guide}, saving client memory and decrease in programming complexity far outweighs the benefits of the message having redundant information describing the content.
 
 Because of the extensiblity requirement, we have designed the message API such that performatives are completely compatible with current messages, they would simply be ignored by earlier versions.
 
@@ -1658,17 +1709,19 @@ We opt to use the following fields from the FIPA ACL specification \citep{fipa20
 \begin{enumerate}
  \item sender - Peer id of the sender
  \item receiver - Peer id of the receiver
- \item conversation-id - Unique message id for every message. This rolls around to $0$ when $2^{64}-1$ is reached.
- \item in-reply-to - The message id can be included. $-1$ indicates an empty field
+ \item conversation-id - Unique message id for every message. This rolls around to $0$ when $2^{64}-1$ is reached. (For Debugging Only)
+ \item in-reply-to - The message id can be included. $-1$ indicates an empty field. (For Debugging Only)
  \item content - The content of the message
  \item protocol - Indicates the version number of Membrane for parsing
 \end{enumerate}
 
-We find this layout holds all the information required for handling messages. The `in-reply-to' field is ONLY used for a PING-PONG message exchange, where we wait for the PONG to arrive to test connectivity.
+We find this layout holds all the information required for handling messages. The \code{in-reply-to} field is ONLY used for a PING-PONG message exchange, where we wait for the PONG to arrive to test connectivity.
 
 \subsubsection{Protocol Design}
 
-A protocol for both \emph{Block Storage} and \emph{Peer Exchange} messages is required. We discussed ontologies in section (\ref{sec:ontology}), however, on reflection the chosen contract technique does not require an ontology, as it just relies on values and doesn't rely on domain knowledge to make decisions. We therefore follow the API design guide's suggestions for formatting data to provide content for the described ACL using object oriented techniques to structure data.
+A protocol for both \emph{Block Storage} and \emph{Peer Exchange} messages is required. We discussed ontologies in section (\ref{sec:ontology}), but find the chosen contract technique does not require an ontology as it just relies on values rather than domain knowledge to make decisions.
+
+We therefore follow the API design guide's suggestions for formatting data to provide content for the described ACL using object oriented techniques to structure data.
 
 There are nine messages that need to be sent:
 
@@ -1684,55 +1737,55 @@ There are nine messages that need to be sent:
  \item Data Block
 \end{itemize}
 
-Using the style guide suggests using base64 encoding byte arrays used for transferring blocks and salts described in RFC4648 \citep{josefsson2006base16}. It encodes each six bits of data as a byte, causing a $\frac{4}{3}$ expansion in data size. This allows the data to be transferred a string within the ACL specified, however, the data expansion is a huge downside.
+Using the style guide suggests using base64 encoding byte arrays used for transferring blocks and salts described in RFC4648 \citep{josefsson2006base16}. It encodes each six bits of data as a byte to turn all bits into ASCII, causing a $\frac{4}{3}$ expansion in data size. This allows the data to be transferred a string within the ACL specified with expensive data expansion.
 
-To improve on this we can chose a more efficient encoding such as \emph{basE91} \citep{joachim2015base91} or transfer data without packaging it in the ACL to improve efficiency. While developing the prototype it was useful to have the data in a readable format as it was easy to debug and compare by eye, one of the main reasons it is suggested in \cite{google2017api}'s API style guide.
+To improve on this we can chose a more efficient encoding such as \emph{basE91} \citep{joachim2015base91} or transfer data without packaging it in the ACL. While developing the proof-of-concept it was useful to transfer the data in base64 as it was easy to compare by eye, one of the main reasons it is suggested in \cite{google2017api}'s API style guide.
 
 \subsection{Gatekeeper}
 
-The gatekeeper is the package of the networking module responsible for dialling and receiving connections from peers. It takes the maximum number of allowed connections, and whether it should aim to connect to uncontracted peers, and ensures only desirable peers connect. We include the relevant code in listing \ref{lst:peerPop}.
+The gatekeeper is the section of the networking module responsible for dialling and receiving connections from peers. It takes the maximum number of allowed connections, and whether it should aim to connect to uncontracted peers, and ensures only desirable peers connect. We include the relevant code in listing \ref{lst:peerPop}.
 
-During a periodic sweep the Gatekeeper first checks if more connections are required to fulfil the contract target requested by PCM and there are more connections that can be established without going over the maximum. If so a PEX Request asking about all contracted peers is sent to all connected peers. If the gatekeeper is searching for new public peers, the PEX request asks for public peers in the PEX Request and attempts to dial every new connection in the public PEX Ledger.
+During a periodic sweep the Gatekeeper first checks if more connections are required to fulfil the contract target requested by PCM and there are more connections that can be established without going over the maximum. If so a PEX Request asking for connection info to all contracted peers is sent to all connected peers. If the gatekeeper is searching for new public peers, the PEX request asks for public peers in the PEX Request and attempts to dial every new connection in the public PEX Ledger. We do not wait for a response instead reacting to any PEX responses as they arrive.
 
-A PEX Advertisement is then sent to all peers with the External Address and port collected from the UPnP port forwarding. The PEX Advertisement is public if searching for new peers and more contracted peers are required.
+A PEX Advertisement is then sent to all peers with the external IP address and port collected from the UPnP port forwarding. The PEX Advertisement is public if searching for new peers and more contracted peers are required.
 
-Any redundant peers\footnote{Those not contracted and not a tracker} if the maximum connection count is surpassed.
+Any redundant peers\footnote{Those not contracted and not a tracker} are disconnected if the maximum connection count is surpassed.
 
-Finally the trackers are dialled if the speed at which the Gateway is finding new peers is too slow. It expect to connect to all contracted peers in 200 minutes.
+Finally the trackers are dialled if the speed at which the gateway is finding new peers is too slow. It expects to connect to all contracted peers in 200 minutes.
 
-This maintenance procedure is sufficient to provide the PCM with new peers up to the requested maximum, while refraining to connect to the main trackers if unnecessary, satisfying the requirements for the Network Module
+This maintenance procedure is sufficient to provide the PCM with new peers up to the requested maximum, while refraining to connect to the main trackers if unnecessary, satisfying the requirements for the Network Module.
 
 \subsection{Conclusion}
 
-The components described connect together to form a distributed backup program the can fairly store data with other peers, in exchange for storing their data, resulting in the final architecture of Membrane.
+The components described connect together to form a distributed backup program that can store data with other peers in exchange for storing their data as required.
 
-We discussed the journey of a file from initial detection, to local storage, to packaging into blocks for deployment with peers ending with the module responsible for establishing connections the peers that can Membrane can trade file blocks with. We now discuss the interfaces developed for interacting with Membrane.
+We discussed the journey of a file from initial detection, to local storage, to packaging into blocks for deployment with peers, ending with the module responsible for establishing connections to peers that can Membrane can trade file blocks with. We now discuss the interfaces developed for user interaction.
 
 \chapter{User Interfaces}
 
-In order to select files for backup and recover files users require a user interface. As discussed in during analysis (\ref{sec:commonfeatures}) both a CLI and GUI are required. In the following chapter we delve into the building and design of the interfaces showing examples of usage.
+In order to select folders for backup and recover files users require a user interface. As discussed in during analysis (\ref{sec:commonfeatures}) both a CLI and GUI are required. In the following chapter we delve into the building and design of the interfaces showing examples of usage.
 
 \section{CLI}
 
-A Command Line Interface (CLI) is a means of interacting with a computer program by issuing commands to the program in the form of successive lines of text. The program while handles the interface is commonly called a shell.
+A Command Line Interface (CLI) is a means of interacting with a computer program by issuing commands to the program in the form of successive lines of text. The program which handles the interface is commonly called a shell.
 
 The CLI is less widely used by casual computer users who favour graphical user interfaces, typically being preferred by advanced users as they provide a more concise and powerful means of controlling applications or the operating system and allow for easier scripting.
 
-A CLI typically requires less resources than a GUI, it is more expert friendly, it is easier to develop, making it easier to build alongside the main application. On the other hand it does have a very steep learning curve, and is unsuitable for beginners.
+A CLI typically requires less resources than a GUI, it is more expert friendly, easier to develop and easier to build alongside the main application as a result. On the other hand it does have a very steep learning curve, and is unsuitable for beginners.
 
 As we are targetting more advanced users (\ref{txt:adv-users}) for the earlier versions of Membrane we make the CLI the main method of interaction.
 
 \subsection{Commands}
 
-Within the Bourne again shell (Bash), commonly used for CLI interaction with the Unix based systems targeted for early Membrane versions uses a common pattern for commands \citep{gnu2016man}:
+Within the Unix based systems targeted for early versions of Membrane the following pattern is common for commands in Bash\footnote{Bourne again shell, a commonly used shell on Unix based systems.} \citep{gnu2016man}:
 
 \begin{displayquote}
- \code{prompt cmd par1 ... parN}
+ \code{prompt command param1 param2 ... paramN}
 \end{displayquote}
 
-where the \code{prompt} is provided by the shell to give context to the command, the \code{cmd} targets the script or command to be executed, and \code{par} are optional parameters that tell the script or application what to execute.
+\code{prompt} is provided by the shell to give context to the command, the \code{command} targets the script or command to be executed, and \code{param} are optional parameters that tell the script or application what to execute.
 
-We model the CLI of membrane after git, learning lessons from the years of evolution it has had. We require the following commands for membrane: \code{status}, \code{files}, \code{peers}, \code{history}, \code{recover}, \code{storage}, \code{network}, \code{contracts}, \code{monitored-folders}, \code{monitored-files}, \code{watch-add}, \code{watching}, \code{watch-remove}.
+We model the CLI of membrane after Git, taking inspiration from the years of evolution it has had. We require the following commands for Membrane: \code{status}, \code{files}, \code{peers}, \code{history}, \code{recover}, \code{storage}, \code{network}, \code{contracts}, \code{monitored-folders}, \code{monitored-files}, \code{watch-add}, \code{watching}, \code{watch-remove}.
 
 An example command is shown below.
 
@@ -1749,7 +1802,7 @@ This command structure is easy to learn as it will be familiar to most users and
 
 \subsection{Usability}
 
-It is important to make usage as easy as possible for potential users. We use three methods to assist users while using the interface.
+It is important to make CLI use as easy as possible. Three methods assist CLI users.
 
 During first use users can use the command \code{membrane -h} or \code{membrane --help} for a complete manual on how to use the membrane CLI. If a user uses a command incorrectly or is unsure on a specific command they can use the \code{-h} flag to be given specific command usage instructions. At any point the \code{-v} flag can be used for verbose output, letting the user debug issues if anything does not work.
 
@@ -1759,7 +1812,7 @@ During first use users can use the command \code{membrane -h} or \code{membrane 
  \code{Usage: membrane history <file>}
 \end{displayquote}
 
-Helpful error messages are also provided to help the user debug issues. There is both CLI and daemon-side error checking, with commands being as helpful as possible providing examples and telling the user exactly why the command did not work.
+Helpful error messages are also provided to help the user debug issues. There is both CLI and daemon error checking, with error messages being as helpful as possible, providing examples and telling the user exactly why the command did not work.
 
 \begin{displayquote}
  \scriptsize
@@ -1769,21 +1822,21 @@ Helpful error messages are also provided to help the user debug issues. There is
  \code{You provided: file2.txt}
 \end{displayquote}
 
-Finally we add tab completion to the CLI, a common feature of interpreters that allows user to press a completion key (typically tab) to show all the available options or complete the command if there is only one option remaining. This makes CLI usage both faster and more intuitive.
+Finally we add tab completion to the CLI, a common feature of shells that allows the user to press a completion key (typically tab) to show all the available options or complete the command if there is only one option remaining. This makes CLI usage both faster and more intuitive.
 
 \subsection{Installation}
 
-Although Membrane is available as a jar archive containing the daemon code and an executable CLI, we provide both a \code{.deb} and \code{.rpm} package for ease of use. These contain install and uninstall scripts that place all of the files in sensible locations and setup features such as tab completion.
+Although Membrane is available as a \code{jar} archive containing the daemon code and as a executable CLI, we provide both a \code{.deb} and \code{.rpm} package for ease of use. These contain install and uninstall scripts that place all of the files in sensible locations and setup features such as tab completion.
 
-These also place soft links to the executables and scripts in the user's \code{\$PATH} which allows users to specify the name of the program instead of the full directory where it is integrated.
+These also place soft links to the executables and scripts in the user's \code{\$PATH} which allows users to specify the name of the program instead of the full directory for the executables.
 
-The install scripts also set the daemon up with \code{systemd}, a widely used init system \citep{saunders2015systemd} used to bootstrap the user environment and manage all processes, ensuring they are always in the requested state, running in the case of Membrane.
+The install scripts also set the daemon up with \code{systemd}, a widely used init system \citep{saunders2015systemd} used to bootstrap the user environment and manage all processes, ensuring they are always in the requested state (, running in the case of Membrane).
 
 This allows Membrane users to easily manage the daemon and interact with it immediately after installation using tools they are familiar with.
 
 \subsection{Conclusion}
 
-The Membrane CLI maintains all of the advantages of a CLI. It is lightweight and available in a small 5MB package compared to the 56MB GUI. It requires a lot less resources to run and although only appropriate for advanced users, that is also the target user group for the Membrane proof of concept.
+The Membrane CLI maintains all of the advantages of a CLI. It is lightweight and available in a small 5MB package compared to the 56MB GUI. It requires a lot less resources to run and although only appropriate for advanced users, that is also the target user group for the Membrane proof-of-concept.
 
 We offset the steep CLI learning curve by providing and using tools familiar to frequent CLI users, allowing them to learn commands as easily as possible. An example interaction with Membrane can be seen in listing \ref{lst:cli-status}.
 
@@ -1791,7 +1844,7 @@ We offset the steep CLI learning curve by providing and using tools familiar to 
 
 A Graphical User Interfaces (GUI) allows users to interact with applications through icons and visual indicators. They were first introduced to reduce the learning curve associated with a CLI \citep{linfo2004gui} making it easier for new users to use applications.
 
-The most common combination of elements in a GUI is: windows, icons, menus and pointers referred to as WIMP. \citep{van1997post} The GUI has become the standard in human computer interaction (HCI) and has influenced the workflow of most computer users.
+The most common combination of elements in a GUI is: windows, icons, menus and pointers referred to as WIMP. \citep{van1997post} The GUI has become a standard in human computer interaction (HCI) and has influenced the workflow of most computer users.
 
 We propose a GUI for monitoring in section \ref{sec:gui-req} to compete with other available backup solutions throughout the prototyping stage and plan to expand the GUI for general interaction as Membrane grows in the future. This section will discuss the choice of GUI framework, followed by usability decisions taken that influenced the design, ending with a demonstration of the interface.
 
@@ -1799,7 +1852,7 @@ We propose a GUI for monitoring in section \ref{sec:gui-req} to compete with oth
 
 The choice of GUI technology can drastically effect the feeling of the final product. We compare the three competing frameworks JavaFX, Qt and Electron used in cross platform GUI development.
 
-JavaFX is a platform for GUI development within Java, first included with Java 8. It is made to replace Java Swing, promising a more consistent API and easy MVC pattern support. JavaFX unfortunately lacks traction resulting in less support in the real world seen in fig \ref{fig:gui-trends}, where the predecessor Swing and alternative Qt in the lead.
+JavaFX is a platform for GUI development within Java, first included with Java 8. It is made to replace Java Swing, promising a more consistent API and easy MVC pattern support. JavaFX unfortunately lacks traction resulting in less support in the real world seen in figure \ref{fig:gui-trends}, where the predecessor Swing and alternative Qt remain in the lead.
 
 \begin{figure}[h]
  \centering
@@ -1810,9 +1863,11 @@ JavaFX is a platform for GUI development within Java, first included with Java 8
 
 Qt is a CLI and GUI development framework for native feeling applications. It uses C++ with several extensions for signal handling. Several popular applications such as Autodesk Maya and VirtualBox \citep*{oracle2017logging, autodesk2017qt} make use of Qt. The benefits of Qt include the massive community and good professional documentation. \citep{slant2017qtelectron}
 
-Electron is a much newer framework developed by Github. It uses Node.js for back-end and Chromium, the basis of the Chrome web browser for the front-end and forming the basis of notable software such as Github's Atom and Microsoft Visual Studio Code \citep{james2015vselectron}. It is has a very active community and a solid API, however, can sometimes use up a lot of memory unless developed with extreme care. Unfortunately we cannot find trends for Electron in fig \ref{fig:gui-trends}.
+Electron is a much newer framework developed by Github. It uses Node.js for back-end and Chromium, the basis of the Chrome web browser for the front-end. It forms the basis of notable software such as Github's Atom and Microsoft Visual Studio Code \citep{james2015vselectron}. The community is very enthusiastic and active with hundreds of guides available and a solid API. Electron has the downside of being very heavy, using up a lot of memory unless developed with extreme care. Unfortunately we cannot find usage trends for Electron in figure \ref{fig:gui-trends}.
 
-We opt for Electron for the Membrane GUI. It provides the best combination of ease of development and large community, with most of the support queries also being answered by in-browser web developers. Although one of the requirements is for low-resource usage, this is the GUI rather than the main daemon so we do not have the same resource usage concerns.
+We opt for Electron for the Membrane GUI. It provides the best combination of ease of development and large community, with most of the support queries also being answered by in-browser web developers.
+
+Although one of the requirements is for low-resource usage, this is the GUI rather than the main daemon so we do not have the same resource usage concerns.
 
 \subsection{Usability Research}
 
@@ -1828,13 +1883,13 @@ The information displayed is also split according to category so the user can ea
 
 We keep information access cost low, by ensuring every part of the application can be reached in one click and the user is always aware where they are in the application by clearly highlighted sections.
 
-Finally we ensure application consistency by retaining consistent, static window decoration throughout the application. As the core sections of the application never change the user is always able to get to where they need.
+Finally we ensure application consistency by retaining static window decoration throughout the application. As the core sections of the application never change the user is always able to get to where they need.
 
 Redundancy gain and pictorial realism are out of scope of the GUI. Instead of simply displaying information as text, for example storage space, a bar could be shown, indicating current usage, target usage and maximum usage, becoming more and more red as usage reaches the maximum.
 
 This would help with user interaction, however, it is more important to get user feedback on Membrane as a whole instead of building the GUI to perfection and then finding that users do not like certain aspects of the daemon that would require a GUI redesign. 
 
-We have have however achieved an interface that is difficult to misinterpret and allows for simpler monitoring that the CLI.
+We have have created an interface that is difficult to misinterpret and allows for simpler monitoring that the CLI.
 
 \begin{figure*}
  \centering
@@ -1845,9 +1900,9 @@ We have have however achieved an interface that is difficult to misinterpret and
 
 \subsection{Development}
 
-Within Electron we build a simple web page that can display all of the required information. We make use of the popular front-end framework Bootstrap, developed by Twitter and Angular 2, a TypeScript based front-end web platform created by Google and a community of open source developers.
+Within Electron we built a simple web page that can display all of the required information. We make use of the popular front-end framework Bootstrap, developed by Twitter and Angular 2, a TypeScript based front-end web platform created by Google and a community of open source developers.
 
-The main competitor against Angular, React.js was decided against as both frameworks offer very similar features and the developers creating the GUI were familiar with Angular, which has a much higher learning curve than React \citep{house2016ng2react} and Angular uses TypeScript, which provides type correctness along with all of the other benefits discussed in section \ref{sec:typescript}.
+The main competitor against Angular, React.js was decided against as both frameworks offer very similar features and the developers creating the GUI were familiar with Angular, so we are unaffected by the higher learning curve of Angular \citep{house2016ng2react} and retain the use of TypeScript, which provides type correctness along with all of the other benefits discussed in section \ref{sec:typescript}.
 
 The choice of Angular forces the MVC pattern to be used in the GUI architecture, splitting the application into services which hold the model and components which control the view. Angular connects these in the background controlling their interaction as the controller.
 
@@ -1866,33 +1921,27 @@ We now describe the design of the interface, which is split into four main secti
 
 The design is kept clean and simple with the information being the key focus of the interface. Any information that the user may want to observe, such as number of connected users, is included.
 
-More complex information such as a listing of every file and folder monitored is missing, as the user is expected to use the CLI for more complex interactions.
+More complex information such as a listing of every file and folder monitored is excluded, as the user is expected to use the CLI for more complex interactions.
 
-Navigation is assisted through using animations on elements that can be clicked to enable as intuitive a user experience as possible. We ensure that any information is accessible in one click and only through that one click causing intuitive and predictable navigation.
+Navigation is assisted through using animations on elements that can be clicked, prompting the user to click on them, allowing for a more intuitive user experience.
 
 \subsection{Installation}
 
-The user can either choose to download a \code{tar.gz} archive containing just the GUI. A common Unix packaging technique, or the full Membrane \code{.rpm} or \code{.deb} packages, which will automatically unpack the GUI into a sensible location and place it on the user path for simple access.
+The user can either choose to download a \code{tar.gz} archive containing just the GUI, A common Unix packaging technique, or the full Membrane \code{.rpm} or \code{.deb} packages which will automatically unpack the GUI into a sensible location and place it on the user path for simple access.
 
-One of the downsides of Electron, is the size of the package. At 56MB after compression it is the largest part of Membrane, but this is a great trade-off for the ease of development provided by the Electron framework for the quality of the resulting application.
-
-\subsection{Conclusion}
-
-The Membrane GUI allows users for visual monitoring of Membrane reducing the learning curve required for interaction.
-
-We discussed the choice of GUI framework and internal components, explaining usability decisions the design and the program structure.
+One of the downsides of Electron, is the size of the package. At 56MB after compression it is the largest part of Membrane, but this is a great trade-off for the ease of development provided by the framework and the quality of the resulting application.
 
 \section{Configuration}
 
-It is important to also mention the configuration file Membrane uses, which is also a valid method of interaction. Users can manually add watch folders letting users pragmatically modify watch folders, and behaviour such as the number of connected users.
+It is important to also mention the configuration file Membrane provides for user interaction. Users can manually add watch folders and much more advanced behaviour such as the number of connected users. This is currently only used for diagnosing problems, but is intended to be a way of tuning Membrane for advanced users in the future.
 
-For many this a preferred form of interactions, as users can use tools of their choice to modify this and also transfer configuration files to new systems, transferring their preferences.
+For many this a preferred form of interaction as users can use tools of their choice to modify and version control the configuration files, easily transferring options to new systems.
 
-We ensure any interface manipulations are immediately persisted to the configuration file, although a restart is required to load changes configuration file allowing a user to make mistakes during configuration without affecting any active instances of Membrane.
+We ensure any interface manipulations are immediately persisted to the configuration file but require a restart to load configuration file changes, giving the user a chance to corrects mistakes without affecting any active instances of Membrane.
 
 YAML a human readable serialisation language \citep{evans2009yaml} is used for the configuration file, making it as user friendly as possible. This is inspired by the configuration of Elasticsearch \citep{elastic2017config}, a popular distributed database.
 
-By restricting some changes, such as the target number of contract and shard size to the config, we ensure that users will not accidentally modify key values during runtime. The fact the config can only using root permissions also keeps new users away from dangerous changes that could adversely affect their backups.
+By restricting some changes, such as the target number of contract and shard size to the config, we ensure that users will not accidentally modify key values during runtime. The fact the config can only be modified using root permissions also keeps new users away from dangerous changes that could adversely affect their backups.
 
 \section{Conclusion}
 
@@ -1902,28 +1951,26 @@ With the daemon and interfaces complete Membrane is now complete and functional.
 
 \chapter{Testing \& Evaluation}
 
-It is crucial to test software before deployment, particularly if it is run by users, where it cannot be monitored and and handling user's personal data. We ensure it is impossible for Membrane to delete any files that it has not created or otherwise adversely affect the host system.
+It is crucial to test software before deployment, particularly if it is run by users where it cannot be monitored and handling user's personal data. We ensure it is impossible for Membrane to delete any files that it has not created or otherwise adversely affect the host system.
 
-In this section we discuss three types of testing: unit, integration and validation testing outlining the importance and methodology in all three, trying to discover and address any problems discovered.
-
-We end on a discussion about Membrane and distributed backup outlining lessons learned and proposing what could be done differently during development.
+In this section we discuss three types of testing: unit, integration and usability outlining the importance and methodology in all three, trying to discover and address any problems discovered.
 
 \section{Unit Testing}
 
 Unit testing aims to test individual units of source code, to determine if they are fit for use and have expected inputs and outputs. \citep{huizinga2007automated} A unit is the smallest testable part of the application, ranging from an entire module to individual functions.
 
-In order to isolate components of Membrane we make use of method stubs and mock objects \citep{osherove2015art} using Mockito, a library that uses reflection for this. We also create temporary test objects such as the \code{EvictingContractManager}, in places where more complex functionality is required.
+In order to isolate components of Membrane we make use of method stubs and mock objects \citep{osherove2015art} using Mockito, a library that uses reflection\footnote{A way of accessing encapsulated variables in objects.} for this. We also create temporary test objects such as the \code{EvictingContractManager}, in places where more complex mocking is required.
 
-Test Driven Development (TDD) is used to scope modules and units while testing. We turn requirements into test cases breaking them down into constituent components that can co-exist. This technique uses the following development cycle \citep{beck2003test}:
+Test Driven Development (TDD) is used to scope modules while coding. We turn requirements into test cases breaking them down into constituent components that can co-exist. This technique uses the following development cycle \citep{beck2003test}:
 
 \begin{enumerate}
  \item Create a test
  \item Run all tests and see if the new test fails.
  \item Write or modify code to ensure the test passes
- \item Refactor the code to move new code to where it logically belongs.
+ \item Refactor the code and move new code to where it logically belongs.
 \end{enumerate}
 
-By repeating this procedure the software slowly grows, without unnecessarily exceeding requirements. JUnit Jupiter is used as the testing framework. This integrates with Gradle into part of the project build, so any time code changes are made, tests are run to ensure code correctness.
+By repeating this procedure the software grows without unnecessarily exceeding requirements. JUnit Jupiter is used as the testing framework. This integrates with Gradle into part of the project build, so any time code changes are made, tests are run to ensure code correctness.
 
 \begin{figure*}[!ht]
  \centering
@@ -1932,79 +1979,79 @@ By repeating this procedure the software slowly grows, without unnecessarily exc
  \label{fig:code-coverage}
 \end{figure*}
 
-While designing unit tests it is important to prioritise areas of the program to test. Although it would be ideal to test every line of code sometimes this is impractical. An example of this is testing very niche situations such as, what would happen if the permissions on a config file, changed mid-save. Although important to handle, creating an environment where this happens automatically is both time consuming and ultimately irrelevant compared to more important functionality.
+While designing unit tests it is important to prioritise areas of the program to test. Although it would be ideal to test every line of code sometimes this is impractical. An example of this is testing very niche situations such as, what would happen if the permissions on a config file changed mid-save. Although important to handle, creating an environment where this happens automatically is both time consuming and ultimately irrelevant compared to more important functionality.
 
 Code coverage is a metric through which we can rate the unit test. This is a percentage of code lines that were executed during testing, a higher percentage usually indicating a lower number of unexpected bugs. \citep{miller1963systematic} More complicated coverage criteria such as branch coverage\footnote{Has every possible \code{if} statement been evaluated.} can also be used.
 
-Full coverage is often impractical as it can lead to the aforementioned convoluted test scenarios. In Membrane we aim for 80\% line coverage and 70\% branch coverage. We measure this using VersionEye, a code coverage tool integrated into Github which tests code coverage on every commit and find that we achieve 83.20\% line and 73.74\% complexity coverage, varying slightly between modules as seen in figure \ref{fig:code-coverage} where green, yellow and red is full, partial and not covered line count respectively.
+In Membrane we aim for 80\% line coverage and 70\% branch coverage. We measure this using VersionEye, a code coverage tool integrated into Github which tests code coverage on every commit and find that we achieve 83.20\% line and 73.74\% complexity coverage, varying slightly between modules as seen in figure \ref{fig:code-coverage} where green, yellow and red is full, partial and not covered line count respectively.
 
-We ensure critical elements that ensure no file is ever over-written have 100\% coverage with every possible scenario considered.
+We ensure critical elements that could potentially cause problems for the user have 100\% coverage with every possible scenario considered.
 
 \section{Integration Testing}
 
 Integration testing combines all the software modules and tests them as a group. Its purpose is to verify both functional and non-functional requirements. The test cases focus less on individual object behaviour and more on the system as a whole.
 
-There are a few integration test patterns to select from such a big-bang, bottom-up and top-down testing. \citep{binder2000testing} We opt for top-down testing which looks to approach testing from the main module, the \code{Backup Manager} in Membrane, to all of the other sub-modules. One of the major advantages of this methodology is the ability to produce early skeletal program demonstrations, which was required during the ``demonstration of progress'' section of the project.
+There are a few integration test patterns to select from such a big-bang, bottom-up and top-down testing. \citep{binder2000testing} We opt for top-down testing which looks to approach testing from the main module, the \code{BackupManager} in Membrane, to all of the other sub-modules. One of the major advantages of this methodology is the ability to produce early skeletal program demonstrations, which was required during the ``demonstration of progress'' section of the project.
 
-Throughout development we ensure the software is free of integration problems by using Continuous Integration (CI), a technique first proposed by \cite{booch1991object}. We adopt an evolution of the concept that advocates build servers, that automatically build and test the project after every commit. 
+Throughout development we ensure the software is free of integration problems by using Continuous Integration (CI), a technique first proposed by \cite{booch1991object}. We adopt an evolution of the concept that advocates build servers that automatically build and test the project after every commit. 
 
-Using TravisCI, a Github integration we test the code using both OpenJDK 8 and OpenJDK 9, a future version of Java, ensuring we will have no trouble moving onto the more efficient JDK when it is fully released, in line with the extensiblity requirement. We are also able to automate deployment using TravisCI, assuring potential users who view the source code repository that the software is fully testing.
+Using TravisCI, a Github integration we test the code using both OpenJDK 8 and OpenJDK 9, a future version of Java ensuring we will have no trouble moving onto the more efficient JDK when it is fully released ensuring extensiblity. We are also able to automate deployment using TravisCI, assuring potential users who view the source code repository that the software is fully testing.
 
 We finally ensure that all of the requirements have been met. This is done through a combination of unit and integration testing where appropriate. We find that all of requested functional requirements have been fulfilled and the software is ready for usability testing by the users.
 
 \section{Usability Testing}
 
-Usability Testing is a testing methodology focused on user testing. It provides direct feedback on how real users will use the system \citep{nielsen1994usability} allowing us to verify that the original goals of Membrane have been satisfied.
+Usability Testing focuses on asserting software functionality with real users. It provides direct feedback on how the system will be used \citep{nielsen1994usability} allowing us to verify that the original goals of Membrane have been satisfied.
 
 As we are not focusing on HCI testing, but rather the entirety of Membrane we choose hallway testing for our study. This is a quick and cheap method of testing that relies on asking a random selection of people to try Membrane. The only restriction in this methods is participants should not be too close to project, preventing bias.
 
 \subsection{Methodology}
 
-We use a slightly modified version of hallway testing, relying on remote testing and user feedback, which is far more appropriate. Using \cite{usajobs2014hallway}'s recommendations on successful hallway testing we design the test, slightly adapting their more physical testing scenario.
+We use a slightly modified version of hallway testing, relying on remote testing and user feedback reflecting a true usage scenario. Using \cite{usajobs2014hallway}'s recommendations on successful hallway testing we design the test, slightly adapting their more physical testing scenario.
 
-When deciding on a location we opt for user groups that enjoy technology and tinkering. This should provide us with constructive feedback and is likely to have a higher overlap with people who use Unix-based operating systems compatible with the proof-of-concept version of Membrane.
+When deciding on a location we target user groups that enjoy technology and tinkering. This provides us with constructive feedback and is likely to have a higher overlap with people who use Unix-based operating systems compatible with the proof-of-concept version of Membrane.
 
-We prepare the testing scenario by providing documentation and packaging the software. We provide both \code{.deb} and \code{.rpm} packages, covering a wide range of Linux users, as well as an online chat available at \url{https://gitter.im/mbrnd} for feedback and support. To make the test as authentic as possible we ask testers to simply visit the membrane homepage (\url{http://mbrn.io}) and try to install the software. The markdown documentation the testers were presented with is also available in listing \ref{lst:readme}.
+We prepare the testing scenario by providing documentation and packaging the software. We provide both \code{.deb} and \code{.rpm} packages, covering a wide range of Linux users, as well as an online chat available at \url{https://gitter.im/mbrnd} for feedback and support. To make the test as authentic as possible we ask testers to simply visit the Membrane homepage (\url{http://mbrn.io}) and try to install the software. The markdown documentation the testers were presented with is also available in listing \ref{lst:readme}.
 
-The full test specification that testers had to follow is available in the appendix (\ref{lst:mbrntst}). We run through the test with two friends first to ensure that the test works without issue. The volunteer is rewarded through a charity donation on their behalf and we take care to be mindful of the tester's time, by only requesting testers to perform one task, that validates the project's main goals: a simple installation and the ability to backup files and recover them from the peer swarm after data loss. We hope the users are able to achieve this without external assistance, to simulate normal expected usage.
+The full test specification that testers had to follow is available in the appendix (\ref{lst:mbrntst}). We run through the test in person with two testers first, to ensure the test plan works without issue. The volunteer is rewarded through a charity donation on their behalf and we take care to be mindful of the tester's time, by only requesting testers to perform one task that validates the project's main goals: a simple installation and the ability to backup files and recover them from the peer swarm after data loss. We hope the users are able to achieve this without external assistance.
 
 At the end of the test we simply ask testers for written summary on their thoughts of using Membrane and completing the task, using the given feedback to assess the success of the project.
 
 \subsection{Results}
 
-The usability testing was conducted with five participants and the raw results are available in listing \ref{lst:mbrntestresult}. Overall the test was a success. Membrane was successfully installed on the participant's systems and with the basic instructions provided testers were able to successfully backup the requested files. When simulating a full system loss, Membrane was able to recover and reconstruct requested files.
+The usability testing was conducted with five participants and the raw results are available in listing \ref{lst:mbrntestresult}. Overall the test was a success. Membrane was successfully installed on the participant's systems. With the instructions provided testers were able to successfully backup the requested files. When simulating a full system loss, Membrane was able to recover and reconstruct requested files.
 
 The themes of the feedback are as follows:
 
 \begin{itemize}
  \item Installation was short and simple. It did not cause any problems\footnote{One reported issue was caused because of incorrect RPM packaging, where the target system was unable to interpret \code{\#!/usr/bin/env bash} correctly at the start of scripts}.
  \item The concept of adding a watch folder did not cause issues.
- \item Copying authentication information out of membrane needs some work but was achievable for all testers.
+ \item Copying authentication information out of Membrane needs some work but was achievable for all testers.
  \item Testers were surprised the GUI could only offer monitoring, despite this always being the intention.
  \item Recovery was always successful.
 \end{itemize}
 
 The feedback is very encouraging, demonstrating that the core logic of Membrane works although the interfaces could be improved. It is important to also consider the limitations of this study. 
 
-The test was performed over a very short time span, so the trust mechanism could not be fully tested. As there were limited number of users online during testing\footnote{the maximum reaching four} it is difficult to fully assess the behaviour of the application when in a swarm of hundreds of users. There is no inherent advantage or disadvantage to using a smaller swarm and it is promising that four of our five test testers were able to use the distributed backup portion of Membrane with no issues.
+The test was performed over a very short time span, so the trust mechanism could not be fully tested. As there were limited number of users online during testing\footnote{the maximum reaching four} it is difficult to fully assess the behaviour of the application when in a swarm of hundreds of users. But there is no inherent advantage or disadvantage to using a smaller swarm and it is promising that four of our five testers were able to use the distributed backup portion of Membrane with no issues.
 
-One of our testers was unable to connect to peers. After a thorough investigation we find the subject was installing Membrane on a AWS hosted virtual server. The underlying hyper-visor of the virtual machine was interfering with the SSL handshake between two peers during connection, closing the connection mid-handshake. Debugging using Wireshark, a network protocol analyser that offers deep packet inspection gave details as to the root of the issue.
+One of our testers was unable to connect to peers. After a thorough investigation we find the subject was installing Membrane on a AWS hosted virtual server. The underlying hypervisor\footnote{An operating system with multiple embedded virtual operating systems.} of the virtual machine was interfering with the SSL handshake between two peers during connection, closing the connection mid-handshake. Debugging using Wireshark, a network protocol analyser that offers deep packet inspection gave no details as to the root of the issue.
 
 The usability testing showcases that the components of Membrane work, and tell us where improvements need to be made during further development to increase adoption.
 
 \section{Summary}
 
-Throughout testing we have used well established techniques, with modern tooling to prove with certainty that Membrane works and is capable of achieving all of the original requirements found during analysis (\ref{sec:requirements}).
+Throughout testing we have used well established techniques with modern tooling to prove with certainty that Membrane works and is capable of achieving all of the original requirements found during analysis (\ref{sec:requirements}).
 
 We ensure it is impossible for Membrane to cause damage on a user's system and observe that all of the use-cases have been satisfied through unit, integration and usability testing.
 
-With the Membrane tested we have a system ready for deployment to real users, barring a few patches requested by testers. We continue into a reflection on the project itself.
+With the Membrane tested we have a system ready for deployment to real users, barring a few patches requested by testers.
 
 \chapter{Conclusion}
 
 Throughout the project we studied, designed and built a marriage of distributed storage and backup technology. The problem was decomposed and researched ending in the creation of the distributed backup platform, Membrane.
 
-In the conclusion we ruminate on the project, delving into the process and limitations planning the future development of the platform.
+In the conclusion we ruminate on the project, delving into the process and limitations, and planning the future development of the platform.
 
 \section{Discussion}
 
@@ -2016,35 +2063,37 @@ We began the project by setting out the goal for Membrane:
 
 The project is designed to question the backup industry and explore the viability of a peer-based system that allows for file recovery without the need of a centralised system. We created a proof-of-concept, harnessing the cheap high-speed internet and redundant storage that many computer users have access to.
 
-We structured Membrane into five distinct modules and listing any challenges anticipated in the development process. These guided the literature review, from which we drew inspiration for the design.
+We structured Membrane into five distinct modules and list any challenges anticipated in the development process. These guided the literature review, from which we drew inspiration for the design.
 
 \subsection{Literature Review}
 
-Reflecting on the literature review, we find that because the final form of Membrane was not set in stone we are able to explore both storage systems and agent based technology, finding out what has been achieved so far and what is possible.
+Reflecting on the literature review, we find that although we were able to find solutions to all of the problems expected, in practice some of the ideas in literature are difficult or impractical to use.
 
-Although we studied certain concepts in depth we find that practically, areas like the reasoning system was ultimately developed to function, rather than follow the strict rules discovered during the research stage. This led to some of original research being redacted as we found more practical ways to implement aspects of the system.
+An example of this is the reasoning system, which was made much simpler than the literature suggested it would need to be. This led to some of original research being redacted as we found more practical ways to implement aspects of the system.
 
-An example of this is ontology development which offers great flexibility and is powerful tool for communicating agents, but when agents have a single service and resource they can exchange using simple protocols was easier to build and debug.
+Another example is ontology development which offers great flexibility and is powerful tool for communicating agents, but when agents have a single service and resource they can exchange information using simple protocols was easier to build and debug.
 
-We also find that technologies researched that are presented as superior in literature fall short in practice due to limitations of tools, especially when faced with time constrains and working at a higher level of abstraction.
+We also find that technologies researched that are presented as superior in literature fall short in practice due to limitations of tools, especially when faced with time constraints and working at a higher level of abstraction.
 
-As a result we ended up using seemingly inferior options such as UPnP which requires support from the gateway instead of TCP Hole Punching.
+This manifested in the NAT Translation solution, in which we used the seemingly inferior  UPnP technique which requires support in the NAT gateway, but is much better documented and supported in Java than TCP hole punching. 
 
-On balance despite the modifications required to the review during building, we find that it is an invaluable tool for helping shape the project. It is important to treat it as an iterative tool.
+On balance despite the modifications required to the literature review during building we find that it is an invaluable tool for helping shape the project. It is however more helpful to treat it as an iterative tool that can grow with the project.
 
 \subsection{Analysis}
 
-After the literature review we proceed to the analysis, where we planned the design and structure of Membrane before starting development. We first questioned potential users on desired features which was an insightful way to gather requirements, followed by a look at existing options.
+After the literature review we proceed to the analysis, where we planned the design and structure of Membrane before starting development. We first questioned potential users on desired features. An insightful way to gather requirements, followed by a look at existing options.
 
-Reflecting  on the initial user poll, it would have been useful to discuss the final requirements with the polled users. Although all key requested requirements were fulfilled we find that some aspects of the application, namely the GUI was a far more desirable feature than first shown by polls and expected by almost all testers. In future projects we will go back with the requirements to the users after the initial poll giving them the opportunity to provide feedback at this early stage.
+Reflecting on the initial user poll, it would have been useful to discuss the final requirements with the polled users. Although all key requested requirements were fulfilled we find that the GUI was a far more desirable feature than first shown by polls and expected by almost all testers. In future projects we will go back with the completed requirements to the users after the initial poll giving them the opportunity to provide feedback at this early stage.
 
-Looking at features of existing solutions, specifically looking at how they differ proved an extremely valuable way of scoping Membrane, in fact, many of the desirable features discovered during the user survey were reiterated during the common feature analysis.
+Looking at features of existing solutions, specifically looking at how they differ proved an extremely valuable way of scoping Membrane. Many of the desirable features discovered during the user survey were reiterated during the common feature analysis.
 
-We discussed the concerns about requirements early on aiming to produced brief and concise requirements without formal dependencies and targets. The requirements proved perfect for the task with little misinterpretation. It is important to note in this case that the requirement engineer and development of the application were fulfilled by the same person so small details may have been implicit, however, we postulate that with good communication the same details of requirements could be used within a development team.
+We discussed the concerns about requirements while creating them, aiming to make them brief and concise without formal dependencies. These proved perfect for the task with no misinterpretation. It is important to note in this case that requirement engineering and application development were fulfilled by the same person so small details may have been implicit, however, we postulate that with good communication the same details of requirements could be used within a development team.
 
-The use cases presented proved the least helpful tool during analysis, requiring frequent modification as the software evolved. In retrospect use-cases should have been created after the software architecture was planned and the skeleton of the code was created, during which most of the modifications had to occurred. This would retain the benefits of ensuring all requirements were met and the ability to create integration tests around use-cases, while eliminating the problem of keeping them up-to-date.
+The use cases presented proved the least helpful tool during analysis, requiring frequent modification as the software evolved. In retrospect use-cases should have been created after the software architecture was planned and the skeleton of the code was created, during which most of the modifications had to occurred. This would retain the benefits of ensuring all requirements were met and the ability to create integration tests around use-cases, while eliminating time required to keep them up-to-date.
 
-Designing the architecture and selecting appropriate technology is required for any software project, carefully assessing the technologies available saved time during  saving time during implementation. We found the chosen N-Tier architecture good for testing and development allowing for simultaneous development of multiple sections and the ability to mock whole layers when required. Separating the interfaces from the daemon also proved beneficial. The RESTful communication between components was well documented and easy to debug as suggested by literature.
+Designing the architecture and selecting appropriate technology is required for any software project. Carefully assessing the technologies available saved time during implementation. We found the chosen N-Tier architecture good for testing and development allowing for simultaneous development of multiple sections and the ability to mock whole layers when required.
+
+Separating the interfaces from the daemon also proved beneficial. The RESTful communication between components was well documented and easy to debug as suggested by literature.
 
 \subsection{System Components}
 
@@ -2062,15 +2111,17 @@ It is important to remember that these were not included in order to control the
 
 The local storage system implemented is adapted from those used by distributed databases, resulting in a robust and resilient system as required by the specification. The challenge of this was not initially anticipated and we have identified several improvements that could have been made during implementation.
 
-The local shard storage system is implemented to be later extensible with cloud block storage systems provided by companies like AWS anticipating for access time and encryption layer shims. This was an unnecessary step taken during the development that made the shard storage interface more limited than required and added feature envy to both the file ledger and shard distribution (where a second instance was used for peer block storage). Although this will become useful in future iterations, it diverges from the minimum feature set ideology that guided development.
+The local shard storage system is extensible with cloud block storage systems provided by companies like AWS, anticipating for access time and encryption layer shims\footnote{An addition that would mean all shards can be encrypted for storage and decrypted during reads}.
 
-The file history implementation suffered from distributed storage influences. The original implementation using a write-ahead commit log prioritised writing instead of reading the data, and introducing requirements for indexing, resulting in multiple representations of the data that need to be kept in sync.
+This was an unnecessary step that made the shard storage interface more limited than required and added feature envy\footnote{Logic relating to shard storage being present in other areas.} to both the file ledger and shard distribution (where a second instance was used for peer block storage). Although this will become useful in future iterations, it diverges from the minimum feature set ideology that guided development.
 
-The retroactive fix results in a patchwork of additions. A re-write of the module is easily possible due to detailed unit testing, however, the implementation in the proof-of-concept does work, is stable and satisfies all expected requirements. Due to the modular nature of Membrane, the module could be swapped out with ease not affecting the majority of the code.
+The file history implementation suffered from distributed storage influences. The original implementation using a write-ahead commit log prioritised writing instead of reading the data, and introduced requirements for indexing\footnote{Creating a copy of data optimised for specific searches} to increase read speeds, resulting in multiple representations of the data that need to be kept in sync.
+
+The retroactive fix resulted in a patchwork of additions and a re-write of the module is required, conveniently made easily possible due to detailed unit testing. All-in-all the current implementation in the proof-of-concept does work, is stable and satisfies all expected requirements. Due to the modular nature of Membrane, the module could be swapped out with ease not affecting the majority of the code.
 
 Overall the local shard storage system is a success, albeit with some cleanup required if new open-source developers were brought in to help with development.
 
-The REST API development proved simple and was hugely successful. The ability to debug RESTful calls using tools such as Bash resulted in very fast development. The only downside encountered during development, was the requirement for a fixed listening port means you can only run one instances of the application at a time, however, outside of development testing this would never be required.
+The REST API development proved simple and was hugely successful. The ability to debug RESTful calls using tools such as curl\footnote{A Bash CLI tool to make HTTP requests} resulted in very fast development. The only downside encountered during development, was the requirement for a fixed listening port, meaning only one instance of the application could be run at a time. Outside of development testing this should never be required.
 
 \subsubsection{Shard Distribution}
 
@@ -2078,11 +2129,11 @@ We come to the shard distribution module of Membrane, which focuses mostly on re
 
 The final system was able to correctly match appropriate storage agents and generate contracts with them. When we began development we aimed for a very complex negotiation system, prompted by MAS literature studied. Although the system should have worked in theory it also became very very complex and after some development was dropped in favour of a negotiation free system that offered better flexibility and was more appropriate for the challenge posed.
 
-Negotiation works in literature but, it is a length process requiring two-way communication immediately dramatically increasing complexity and making messages sent stateful. The networking layer does have support for stateful messages that wait for a response but it is easier for both debugging and construction to make the system fully stateless.
+Negotiation works in literature but, it requires two-way communication, which dramatically increases complexity and requires stateful messages. The networking layer does have support for stateful messages that wait for a response but it is easier for both debugging and construction to make the system fully stateless.
 
-The constructed mechanism never requires a response to messages, keeping any state out of communication instead giving permission to peers. Contrary to waiting for a response the it makes a response beneficial to the peer, prompting it. This system does not rely on timeouts or complex search keeping resource usage to a minimum with no downsides.
+The constructed mechanism never requires a response to messages, keeping any state out of communication instead giving permission to peers and expecting permission back. It makes the response beneficial to the peer, prompting it. This system does not rely on timeouts or complex search required for negotiation keeping resource usage to a minimum with no downsides.
 
-Another major benefit of the implemented system, is contracts scale with relationships, naturally making contract violations have less of an impact and better peers more likely to be chosen and able to store more.
+Another major benefit of the implemented system, is contracts scale with relationships, naturally making contract violations have less of an impact on desirable peers with lots of shared blocks and better peers being more likely to be chosen store more of our blocks.
 
 Looking critically at the system it does fall short in two places. We cannot be sure the  offered space is real, meaning we might temporarily store blocks for peers that will never offer anything in return. This is the price for not having to wait until both peers have a block for upload and could be patched if this is abused.
 
@@ -2092,9 +2143,9 @@ A final benefit of the distribution system is that peers are incentivised to rep
 
 \subsubsection{Networking}
 
-The goal of the networking module was to provide secure connections to peer in the swarm and the PEX and authentication system built achieve exactly this.
+The goal of the networking module was to provide secure connections to peer in the swarm. The PEX and authentication system built achieve exactly this.
 
-Using Vert.x for communication means the system is entirely asynchronous. When a peer is dialled the rest of the system does not know if the dial is successful, a connection simply might appear after some time, just as if the peer dialled reducing complexity by allowing for huge amounts of code reuse.
+Using Vert.x for communication means the system is entirely asynchronous. When a peer is dialled the rest of the system does not know if the dial is successful, a connection simply appears downstream after some time if successful, just as if the peer dialled reducing complexity by allowing for huge amounts of code reuse.
 
 The PEX system was created from scratch, only drawing on some inspiration on BitTorrent. Again, the system achieves everything it was designed to do with no issues, allowing the re-location of old peers and discovery of new peers with minimal reliance on a centralised server.
 
@@ -2102,9 +2153,13 @@ Authentication was successfully completed using industry standard X.509 certific
 
 It is important to consider the limitations of the networking module.
 
+We find one flaw of the PEX system. If we request information about another peer, the peer that received the request can now also request information about that peer, meaning the \code{isPublic} flag does not guarantee only contracted peers can find the peer. We could look into better systems, such as requiring the PEX Advertisement to contain a signature of both their own and the peers ID. Proving to anyone that the targeted peer has given the requesting peer permission to request their information.
+
+We also do not know how the PEX system scales with 100 users connected as planned. This would result in fifty PEX advertisements arriving per minute on average, which might need to be slowed down.
+
 As RSA relies on the discrete prime factorisation problem it is not secure in a world with quantum computers which can use Shor's Algorithm to crack the encryption. We use a very long key at 4096-bits, however, this doesn't help against quantum computation. We are reassured by the fact that for the meantime, the most of the world uses RSA for authentication.
 
-There is no implemented protection against DOS attacks from peers sending large amounts of data. This would need to be implemented before Membrane can be fully deployed.
+There is no implemented protection against denial of service attacks from peers sending large amounts of data. This would need to be implemented before Membrane can be fully deployed.
 
 Finally, we use UPnP for listening across a NAT gateway. This does not work in every situation but we accept this as a limitation of the proof-of-concept.
 
@@ -2112,25 +2167,25 @@ Finally, we use UPnP for listening across a NAT gateway. This does not work in e
 
 Three types of testing were used in Membrane to demonstrate requirement satisfaction and prove the concept of distributed backup.
 
-Unit testing was using during development to ensure individual software components worked as expected. We used JUnit and Mockito as the testing framework and used test driven development to ensure components were build correctly and to specification.
+Unit testing was used during development to ensure individual software components worked as expected. We used JUnit and Mockito as the testing framework and used test driven development to ensure components were build correctly and to specification.
 
 A major advantage of unit testing was how easy it was to modify components without concerns about the behaviour changing. This was taken advantage of during component refactoring, particularly while tuning the appraisal module ensuring correct peers were selected and values returned.
 
-It was also useful while debugging issue, allowing very specific parts of the software to be run individually to observe behaviour.
+It was also useful while debugging issues, allowing very specific parts of the software to be run individually to observe behaviour.
 
 Thorough logging also proved vital for debugging the system as a whole. When in \emph{trace} mode everything was logged, allowing developers to find unexpected actions and work backwards to see what caused them.
 
-Integration testing was used to validate general system behaviour, using TDD to create module tests according to the requirements and use-cases and adding units to the module until expected performance was reached.
+Integration testing was used to validate general system behaviour, using TDD to create module tests satisfying the requirements and use-cases.
 
-An issue with TDD integration testing was it was difficult to predict the interfaces that needed to be tested for the module to work. During development it was common to add new methods for interaction and have to modify the integration tests as a results.
+With TDD integration testing it was difficult to predict the interfaces that needed to be tested for the module to work. During development it was common to add new methods for interaction and then have to modify the integration tests as a results.
 
-They did provide the huge benefit of scoping the module so extra work was not done unnecessarily.
+On balance they provided the huge benefit of scoping the module so extra work was not done unnecessarily.
 
-Usability testing was the most complex part of the testing as it required real participants. We used an adapted form of hallway testing to see if users would be able to install Membrane and accomplish a simple backup and recovery task. We gathered a lot of useful feedback both finding bug caused by running the software in new environments and generating feature requests for further improvements.
+Usability testing was the most complex part of the testing as it required real participants. We used an adapted form of hallway testing to see if users would be able to install Membrane and accomplish a simple backup and recovery task. We gathered a lot of useful feedback, both finding bugs caused by running the software in new environments and generating feature requests for further improvements.
 
-This was by far the most time-consuming testing but the feedback generated made the investment worthwhile. The main advantage of this hallway testing was how realistic the tests were, able to simulate how real users could potentially use Membrane on their systems.
+This was by far the most time-consuming testing but the feedback generated made the investment worthwhile. The main advantage of the hallway testing was how realistic the tests were, able to simulate how real users could potentially use Membrane on their systems.
 
-As an improvement to the first round of hallway testing we will look to implement a method of providing feedback directly in test versions of the Membrane interfaces. This could include logs automatically to help seamlessly test with large numbers of users. Although we only use five users for our testing, it took a few days to individually organise and test each run providing the test subjects with help if required. By letting people test the software in their own time and remotely provide feedback testing could be made much easier.
+As an improvement to the first round of hallway testing we will look to implement a method of providing feedback directly in test versions of the Membrane interfaces. This could automatically send logs to help test with large numbers of users. Despite only using five users for our testing, it took a few days to individually organise and test each run providing the test subjects with help if required. By letting people test the software in their own time and remotely provide feedback testing could be made much easier.
 
 Overall the project is deemed a success. The system works is capable of the backup discussed in the introduction and with further development we believe it could potentially replace solutions like OneDrive which has notoriously bad Linux support for some users.
 
@@ -2140,29 +2195,31 @@ The final software and project both have several limitations which need to be ad
 
 \subsection{Limitations of the System}
 
-Distributed backup inherently has issues compared to using the cloud. The first is backup guarantee. Although Membrane does it's best to stop every losing data, it can never guarantee that your data will be recoverable.
+Distributed backup inherently has issues compared to using the cloud. The first is backup guarantee. Although Membrane does it's best to stop data loss, it can never guarantee that your data will be recoverable.
 
-There is always a chance, even if very small that all of the people holding your data will fail at the same as you. Cloud services have the same limitations as they need to store data on physical mediums too after all, but professional data centres will keep several backups on very stable platforms, with redundancy at every step.
+There is always a chance that all of the people holding your data will fail at the same as you. Cloud services have the same limitations as they need to store data on physical mediums too after all, but professional data centres will keep several backups on very stable platforms, with redundancy at every step.
 
-With Membrane we can, at best keep replicating data onto users who may unpredictable disappear without warning and do not have a mean time before failure (MTBF) like the hard drives at data centres do.
+With Membrane we can at best keep replicating data onto users who may unpredictably disappear without warning and do not have a mean time before failure (MTBF) metric like the hard drives which could be used to predict when peers will be lost.
 
-Backup Size is also limited in distributed backup. The more secure the data should be the more redundant space we need with the requirement simply being a multiplier of the data we have sent out. With the system we have implemented there is no useful way to reduce this using peer block compression (as they are encrypted) or using erasure coding as blocks are not returned at the same time.
+Backup Size is also limited in distributed backup. The more secure the data should be the more redundant space we need with the requirement simply being a multiplier of the data we have sent out. With the system we have implemented there is no useful way to reduce this using peer block compression (as the blocks are encrypted) or using erasure coding as blocks are not guaranteed to be returned at the same time.
 
-This limits Membrane's usefulness for full system backups, however, many cloud users only use the free storage provided with their account on sign up, typically around 10GB which is easily achievable for Membrane which would quadruple the size to 40GB in order to securely back the files up in the swarm.
+This limits Membrane's usefulness for full system backups, however, many cloud users only use the free storage provided with their account on sign up, typically around 10GB which is easily achievable for Membrane, only requiring 40GB of redundant space 40GB.
 
-As show during the initial survey users are concerned, and rightly so, about the resource usage of backup software. If we wish to provide PDP, a requirement within Membrane then users will be required to read and perform calculations on at least some of the data they have stored for others periodically. This will use bandwidth, CPU and disk and we can at most limit this.
+As shown during the initial survey users are concerned, and rightly so, about the resource usage of backup software. If we wish to provide PDP, a requirement within Membrane then users will be required to read and perform calculations on at least some of the data they have stored for others periodically. This will use bandwidth, CPU and disk and we can at most limit this.
 
 An interesting idea would be to allow the addition of trusted friends who do not need to perform PDP for data, providing much more predictable uptime and reducing the requirement for as many copies.
 
-The final limitation is the size of the swarm required for Membrane to become viable. We aim for each user to establish 100 contracts to able able to spread their data over a wide range of peers, reducing the impact of a peer disappear. This will certainly not be the case during early Membrane development so we require significant interest before peek usability is reached.
+The final limitation is the size of the swarm required for Membrane to become viable. We aim for each user to establish 100 contracts to be able to spread their data over a wide range of peers, reducing the impact of a peer disappearing. This will certainly not be the case during early Membrane development so we require significant interest before peek usability is reached and we can assess the efficiency of the system.
 
-We will look at providing an option to backup to cloud block storage, eliminating most of the concerns described above, giving users the option to pay a small amount to use Membrane for both secure cloud backup and distributed backup as an extra redundancy feature.
+We will look at providing an option to backup to cloud block storage, eliminating most of the concerns described above, giving users the option to pay a small amount to use Membrane for both secure cloud backup and distributed backup as an extra redundancy and recovery feature.
 
 \subsection{Limitations of the Study}
 
-During user testing the swarm was small, so we are unable to predict the effect of large numbers of peers online at the same time. The study was also small covering only five users. In order to full test the software the issues brought up during the initial study need to be addressed and a public beta would need to be started.
+As discussed previously, during user testing the Membrane swarm was small. Our testing gives us no indication of the effects of large numbers of users using Membrane.
 
-Although we can simulate a large number of users it is difficult to say how the full software will perform and behave in the same situation. Effects like peers losing contracts and immediately being recontacted would need to be observed.
+To fully test the implementation the bugs uncovered up during the initial study need to be addressed and a public beta would need to be started, hopefully bringing in large numbers of users for more comprehensive testing.
+
+We can attempt to simulate a large number of peers but to get the desired feedback we require real users. We could then observe the effects of limited network bandwidth and latency on the solution.
 
 In short, Membrane works in the lab, but the distributed nature means real-world performance could be much different.
 
@@ -2172,27 +2229,27 @@ The software in it's current state is a proof-of-concept, demonstrating that dis
 
 \subsection{USB Credential Store}
 
-Throughout hallway testing users reported that the method of extracting credentials from Membrane was clunky and very easy to do incorrectly. We propose a system that encrypts the credentials and launcher, placing them onto a USB stick along side a script for easy, single command installation and restoration.
+Throughout hallway testing, users reported that the method of extracting credentials from Membrane was clunky and very easy to do incorrectly. We propose a system that encrypts the credentials and launcher, placing them onto a USB stick along side a script for easy single command installation and restoration.
 
-By automating the process we stop users every needing to visit the root-owned folder that holds Membrane's backup, making the process much safer and simpler.
+By automating the process we stop users ever needing to visit the root-owned folder that holds Membrane's backups, making the process much safer and simpler.
 
 \subsection{GUI Improvements}
 
-The GUI was another concern raised by testers. We plan to completely overhaul the GUI, converting it into the only mechanism required to interact with Membrane. This would yet again help improve interaction with Membrane making it accessible to those that do not like interacting with applications over a CLI.
+The GUI was another concern raised by testers. We plan to completely overhaul the GUI, converting it into the only mechanism required to interact with Membrane. This would help improve interaction with Membrane making it accessible to those that do not like interacting with applications over a CLI.
 
-This would also eliminate usability problems discovered with the CLI, as that will be aimed solely for expert users who do not have access to the GUI, for example on a headless server.
+This would also alleviate usability problems discovered with the CLI, as it would become aimed solely for expert users who do not have access to the GUI, for example on a headless server.
 
 \subsection{Cloud Integration}
 
-As discussed in the limitations, cloud integration with commercial cloud services would offer a cheap way for users to backup and recover data without any of the downsides of distributed storage. We designed the shard storage to be hot-swappable with cloud block storage APIs, so users would simply need to provide their credentials to start backing up at \$0.005/GB/Month \citep{backblaze2017pricing}. Much cheaper than any plan offered by solutions like Dropbox or Google Drive.
+As discussed in the limitations, cloud integration with commercial cloud services would offer a cheap way for users to backup and recover data without any of the downsides of distributed storage. We designed the shard storage to be replaceable with cloud block storage APIs, so users would simply need to provide their credentials to start backing up at \$0.005/GB/Month \citep{backblaze2017pricing}. Much cheaper than any plan offered by solutions like Dropbox or Google Drive.
 
-Membrane would benefit from the cheap storage on services such as B2, without the downside of download charges unless it's a last resort and Membrane cannot recover blocks that it backed up with peers, offering the best of both worlds.
+Membrane users would benefit from the cheap storage on services such as Backblaze, without having to pay for download unless it's a last resort and Membrane cannot recover blocks that it backed up with peers, offering the best of both worlds.
 
 \subsection{FUSE Mount}
 
-The current method of accessing files requires a command per file version the user wishes to recover, which is only useful if the user want's a very specific file. Although we could allow for full folder recover in one command FUSE offers a much better solution by allowing us to mount a virtual file system on the user's file system.
+The current method of accessing files requires a command per file version the user wishes to recover, which is only useful if the user want's a very specific file. Although we could allow for full folder recover in one command, FUSE offers a much better solution by allowing us to mount a virtual file system on the user's file system.
 
-The user could select the time slice they wish to recover from using a slider on the GUI, the FUSE mount would reflect the state of the system at that point in time and users could copy files out using familiar tools. Membrane would reconstruct files on the fly as the file system requested them.
+The user could select the time slice they wish to recover from using a slider on the GUI, and the FUSE mount would reflect the state of the system at that point in time, allowing the user could copy files out using familiar tools. Membrane would reconstruct files on the fly as the file system requested them.
 
 \section{Summary}
 
@@ -2202,8 +2259,7 @@ We find that Membrane can provide all of the requirements set out during the spe
 
 We also find the limitations of the concept: constraints on storage space dictated by the redundant space on the host machine, the possibility that all the peers holding a portion of data disappear when it's needed for recovery, periodic system resource usage for proving to peers you still hold their data and finally the need for a large group of users also using the service.
 
-
-\onecolumn
+Overall the original goals of the project are satisfied. We successfully created a program that allows users to backup files and recover them from peers after data loss, with simple installation that doesn't require any expert knowledge.
 
 \bibliography{dissertation}
 

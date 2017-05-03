@@ -76,7 +76,8 @@
 \fancyhead[RO,LE]{Membrane: Peer-To-Peer File Backup}
 \fancyfoot{}
 \fancyfoot[LE,RO]{\thepage}
-\fancyfoot[LO,CE]{Chapter \thechapter}
+
+\fancyfoot[LO,CE]{\ifnum\value{chapter}>0\chaptername \hspace{1pt} \thechapter\fi}
 \fancyfoot[CO,RE]{Dominic Hauton}
 
 \graphicspath{ {img/} }
@@ -106,7 +107,7 @@
 	{\scshape\Large BSc (hons) Computer Science\par}
 	\vfill
 	Supervised by\par
-	Dr.~Russell \textsc{Bradford}
+	Dr.~Russell Bradford
 
 	\vspace{1cm}
 
@@ -166,9 +167,9 @@ Library and may be photocopied or lent to other libraries for the purposes of co
 \begin{abstract}
 Membrane is an amalgam of distributed storage and backup software, designed to operate on a very large scale: terabytes of data backed up across thousands of users across the world. A Membrane user is able to trade storage space with peers across the network, allowing them to securely store their backups world wide providing the user with data resilience with high availability at no monetary cost to the peer.
 
-The applications vary from users who require a secure backup tool with file versioning for their important documents, to corporations that need to provide data resilience to their employees without investing in infrastructure, instead making use of redundant storage space on employee terminals. Membrane seeks to offer an alternative to existing paid cloud services, guaranteeing data privacy through encryption and offering a comparable feature set by harnessing the storage potential of its users.
+The applications vary from users who require a secure backup tool with file versioning for their important documents, to corporations that need to provide data resilience to their employees without investing in infrastructure, instead making use of redundant storage space on employee terminals.
 
-In this report we explore the current distributed storage landscape and follow the design and construction of Membrane, drawing on knowledge from distributed storage software, intelligent agent technology and existing backup tools, finishing by providing a sound analysis of the completed solution, delving into the advantages and compromises of using Membrane.
+In this report we follow the design and construction of Membrane, drawing on knowledge from distributed storage, intelligent agent technology and existing backup tools, finishing by providing a sound analysis of the completed solution. The software created succeeds in all test scenarios providing an easy install that requires no domain knowledge, capable of reconstructing backed up files directly from the peer swarm. 
 \end{abstract}
 
 \tableofcontents
@@ -206,13 +207,13 @@ Thank you.
 \listoffigures
 
 \chapter{Introduction}
-Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In this project we analyse, design and build a meld of distributed storage and backup technology. We must first decompose the problem into several parts and explore advances made in fields such as cryptography, file backup and intelligent agents as well as looking at advantages of existing technologies.
+Distributed storage is a well studied and explored domain with clear advantages over storage on a single machine. In this project we analyse, design and build a amalgam of distributed storage and backup technology. We must first decompose the problem into several parts and explore advances made in fields such as cryptography, file backup and intelligent agents as well as looking at advantages of existing technologies.
 
 Throughout the remainder of the introduction we discuss the goals of the project and justify the creation of Membrane, analysing existing solutions and describing challenges we may face.
 
 \section{Project Goals}
 
-Membrane allows users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service. Looking at breadth of products available it quickly becomes evident that there is a huge desire for external backup, and many people now take popular cloud storage services such as Dropbox and Google Drive for granted. \citep{dropbox2015popularity}
+Membrane allows users to easily backup and recover the contents of folders on their computer without needing to pay for a subscription-based service. Looking at a breadth of products available it quickly becomes evident that there is a huge desire for external backup, and cloud storage services such as Dropbox and Google Drive have become a household name. \citep{dropbox2015popularity}
 
 To compete with existing solutions we aim for two important features: 
 
@@ -221,30 +222,30 @@ To compete with existing solutions we aim for two important features:
  \item The ability to backup files and recover them from peers after data loss.
 \end{itemize}
 
-On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge.
+On a centralised backup system this a trivial task, however, with a distributed system the concept of creating an account, logging in, finding peers and discovering which users hold your files is a much greater challenge requiring users to create unique credentials that will be recognised throughout the swarm locally and technology from distributed systems like BitTorrent to track down files.
 
-In this project we are working towards a proof-of-concept, creating the fundamentals of the Membrane and focusing on the key aspects of distributed storage. We exclude convenience features out for later development if the project proves successful remembering to leave space for this expansion.
+In this project we are working towards a proof-of-concept, creating the fundamentals of the Membrane and focusing on the key aspects of distributed backup. We exclude features that are simply a convenience to users, leaving them for later development if the project proves successful.
 
-This is consistent with the Minimum Feature Set methodology described by \cite{blank2010mfs}, a practise which is now used heavily amongst technology startups. The technique aims to reduce engineering hours and get the hands in the product of early visionary users early to encourage feedback.
+We follow the minimum feature set methodology described by \cite{blank2010mfs}, a practise which is now used heavily amongst technology startups. The technique aims to focus on defining features of applications, reducing engineering time to receive feedback from users as early as possible, shaping further development.
 
-The first step of the project will involve looking at existing products, seeing what design lessons from them we can apply to Membrane. We will then approach potential users and inquire what features they think are important the system. A technology survey will be performed to assess what technologies we can use to ease development and create a set of requirements. The solution will be built, and tested taking back user feed and using this in our final verdict.
+The first step of the project will involve looking at existing products, seeing what design lessons from them we can apply to Membrane. We will then approach potential users and inquire what features they think are important in the system. A technology survey will be performed to assess what technologies we can use to ease development and create a set of requirements. The solution will be built and tested taking back user feedback and using this in our final verdict.
 
 \section{Need for Membrane}
 
-With the advent of cheap high-speed internet people are able to use monolithic cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. \citep{batters2010dbsecurity} Especially if their data leaves the users country where data protection laws may be different.
+With the advent of cheap high-speed internet people are able to use cloud services to backup data. These tend to be expensive for anything but small amounts of storage and many people have expressed security concerns over holding their data in a data centre owned by another company. \citep{batters2010dbsecurity} Especially if their data leaves the users country where data protection laws may be different.
 
 Over time personal storage capacities for users have also increased. It is now common for computers to come with large amounts of hard drive space which is often not filled to capacity. The project proposed promises to swap this free hard drive space to back up other users’ data in exchange for their surplus space to backup your data.
 
-To simplify the process, the system will be able to negotiate contracts of varying complexity for space allocation on another machine, in exchange for space on itself. Unlike most distributed databases and cloud storage solutions frequent down-time will be expected across devices and contracts will have to account for this.
+To simplify the process, the system will be able to negotiate contracts of varying complexity for space allocation on another machine, in exchange for space on itself. Unlike most distributed databases and cloud storage solutions, frequent down-time will be expected across devices and contracts will have to account for this.
 
-There is an open gap in the market for a distributed storage solution which focuses entirely on backup and trading data, rather than charging a fee for storing data. The users of Membrane would be able to benefit from the advantages of commercial services, without any of the previous highlighted downsides.
+There is an open gap in the market for a distributed storage solution which focuses entirely on backup and trading data, rather than charging a fee for storing data. The users of Membrane would be able to benefit from the advantages of commercial services, without the associated cost and security concerns.
 
 \section{Challenges}
 There are multiple challenges associated with creating both decentralised systems and backup solutions.
 
-It is important to keep resource usage down to not impact the day to day usage computer usage of the user, requiring care to reducing bandwidth, memory and processor usage.
+Distributed storage systems rely on sending data back and forth between users, typically using large amounts of bandwidth in the process. In addition, to prove to peers that their data is still being held, calculations need to be performed on the data using both the disk and processor. It is important that the user's work is not interrupted by Membrane, so steps will need to be taken to keep resource usage down to a minimum.
 
-A method for minimising backed up data is required, an effective way of managing where file chunks are stored, a way to encrypt the files on the remote peer and a way to periodically verify that the peer still holds the file.
+A method for minimising backed up data is required to be able to store as much data as possible. An effective method of managing where file chunks are stored, a mechanism to encrypt the files on the remote peer and a way to periodically verify that the peer still holds the file.
 
 Part of the required research also includes exploring trust metrics, a field closely related to Intelligent Agents. We look towards the advances there to make storage decisions based on the trust and reputation of other peers in the network using known previous behaviour.
 
@@ -252,17 +253,19 @@ Part of the required research also includes exploring trust metrics, a field clo
 
 Membrane will be built up of several predetermined modules performing distinct roles. These have been broadly identified at this stage as a guide for our literature review and for technology decisions.
 
-The core of any backup system is the file system watcher that determines whether a file has been modified, added or removed. This must be able to cheaply assess if a file or folder has changed and determine whether the altered file needs to to be refreshed in the storage system.
+The core of any backup system is the file system watcher that determines whether a file has been modified, added or removed. This must be able to cheaply assess if a file or folder has changed and determine whether the altered file needs to to be updated in the storage system.
 
 Once a modified file has been detected that change needs to be catalogued and the bits required to restore the file must be stored locally for further processing. This causes temporary duplication, however this must be performed so modification to the real files can continue while a peer willing to store the file is located. This system must also be able to recreate the file from the bits stored.
 
-Next a system needs to be put in place to package bits from various files into a block of data that a peer can store. This system needs to be able to determine which peer certain bits should be stored with and how many peers the file should be stored with, based on trust, availability and other useful metrics that will be explored.
+Next a system needs to be put in place to package bits from various files into a block of data that a peer can store. This system needs to be able to determine which peer certain bits should be stored with and how many should store the file, based on trust, availability and other useful metrics that will be explored.
 
 Finally a module responsible for networking and authentication must be created. This must be able to authenticate the user, find peers, establish connections to new peers and deal with the challenges to creating a secure communication link to the peers.
 
 \section{Conclusion}
 
-We have established the need for Membrane and briefly covered the advantages compared to existing solutions. We have also discussed the basic structure of Membrane and what challenges we expect to face during development. We will explore these further in our literature review.
+Cloud backup solutions are expensive and do not offer much security when storing user's data. Membrane aims to challenge this limitation by providing a free and secure backup service that uses a network of peers to store data.
+
+We expect challenges with resource utilisation, account creation and a method to select peers for backup and verifying they are still holding the data. We have also discussed the basic structure of Membrane describing the overall planned functionality for individual modules. We will explore these further in our literature review.
 
 \chapter{Literature Review}
 
@@ -272,34 +275,30 @@ We will first explore the history of file backup, proceeding into the challenge 
 
 \section{History of Problem}
 
-A file backup can be trivialised to simply copying a file to another location. In order to keep the backup up-to-date the current file and the backup be compared. The program \code{diff} solves this through finding the longest common sub-sequence of bytes between files. In order to improve performance: hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
+A file backup can be trivialised to simply copying a file to another location. In order to keep the backup up-to-date the current file and the backup must be compared. The program \code{diff} solves this through finding the longest common sub-sequence of bytes between files. In order to improve performance: hashing, presorting into equivalence classes, merging by binary search, and dynamic storage allocation are used. \citep{hunt1976algorithm}. This allows the user to view changes and copy the file over again if required.
 
 \subsection{Rsync}
-In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution through copying changed file chunks (deltas). \citep{tridgell1996rsync}. It splits the file into shards and calculates a weak rolling checksum and strong MD4 checksum for each shard which allows quick comparisons of shards along the file. When a discrepancy is found, we assume an extra byte or bytes have been added to the file. The weak checksum can be efficiency recalculated for the next offset and once there is a match, it is confirmed with the strong checksum. The new added chunk can now be transmitted. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong check-sums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
+In a networked scenario, bandwidth from source to destination is at a premium. Rsync, introduced in 1996 presents a much better solution through copying changed file chunks (deltas). \citep{tridgell1996rsync} It splits the file into shards\footnote{Sections of the data.} and calculates a weak rolling checksum and strong MD4 checksum for each shard which allows quick comparisons of shards along the file. When a discrepancy is found, we assume an extra byte or bytes have been added to the file. The weak checksum can be efficiency recalculated for the next offset and once there is a match, it is confirmed with the strong checksum. The new added chunk can now be transmitted. This results in a lot less data being copied than there would be with a diff file. \citep{tridgell1996rsync} This combination of weak and strong check-sums has been used across multiple distributed systems including low-bandwidth file systems \citep{muthitacharoen2001low} and high performance transactional object stores. \citep{stephen2000platypus}.
 
 Multiround Rsync improves on the rsync algorithm by allowing for more communication to lower bandwidth. Shards of smaller and smaller sizes are used to find holes in the old file, each round looking at more and more specific bits in the files until the minimum shard size is reached and a copy occurs. \citep{multiroundrsync} This works better than standard rsync in situations where the source file has been changed in many places distributed around the file.
 
-Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques used in delta compression and Lempel-Ziv compression to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \citep{rasch2003place}
+Rsync requires both old and new copies of a file to exist on the host system during an update. This issue has been addressed by creating an in-place rsync (ip-rsync) that uses techniques compression techniques to move the areas of the file around. In ip-rsync file sender sends add and move commands to the destination in an order that guarantees no files will be overwritten. \citep{rasch2003place}
 
 \subsection{Git}
 
-Git is an improvement on Rsync in terms of file backup as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast. This is also an important distinction from other version control systems and one of the reasons why Git was chosen as an example versioning system compared to other versioning systems like SVN. The systems can continue to operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it. \citep{torvalds2010git}
+Git is an improvement on Rsync in terms of file backup as it provides both version history and minimises data transfer. To keep storage simple, a copy of the whole file is stored and a reference is put into the version history. By storing old files locally operations are fast and the system can operate without a centralised server. To reduce file duplication all files are referenced using their SHA-1 hash. This means you can be sure the contents of the file hasn’t changed since you last read it. \citep{torvalds2010git}
 
-Git also uses a 3 stage workflow. A working directory, where the current files are stored, a staging area and a .git directory. The staging area prepares your next commit and then it is finally committed. When the staging is complete the change is irreversibly stored. This is a good approach that will be adopted in the final software solution. It will allow incrementally finding changed files, and assessing the need for a new version number to be saved.
+Git also uses a 3 stage workflow. A working directory, where the current files are stored, a staging area and a .git directory. The staging area prepares your next commit\footnote{A snapshot of current state of the files.} and then it is finally committed. When the staging is complete the change is irreversibly stored. This is a good approach that will be adopted in the final software solution. It will allow incrementally finding changed files, and assessing the need for a new version number to be saved.
 
 \subsection{Bittorrent}
 
 The BitTorrent protocol is a mechanism for sharing files between swarms of hosts. BitTorrent splits files into parts and can transfer them out of order, so peers start sharing data even before they have received the full file. Each file has a SHA-1 identifier, similar to Git. \citep{qiu2004modeling}
 
-If a user wishes to download a file from the swarm, the user downloads a metadata file from the web and locates users sharing the data using a Tracker Server, Distributed Hash Table (DHT) or Peer Exchange (PEX). \citep{cohen2008bittorrent}
+If a user wishes to download a file from the swarm, the user downloads a metadata file from the web and locates users sharing the data using a Tracker Server, Distributed Hash Table (DHT) described in section \ref{sec:shard-discovery} or Peer Exchange (PEX). \citep{cohen2008bittorrent}
 
-A Tracker server is a centralised store of all current connected users along with how much of the file they hold. This approach is vulnerable to exploitation by authorities as all of the data about a swarm is stored on a single server. Ideally we want to be able to avoid this in the final implementation of Membrane.
+A Tracker server is a centralised store of all current connected users along with how much of the file they hold. This approach is vulnerable to exploitation by authorities as all of the data about a swarm is stored on a single server. Ideally we want to be able to avoid this in the final implementation of Membrane to prevent any one server holding a large part of the information about the swarm.
 
-A DHT contacts other known users for information instead of a centralised server. The Mainline DHT as outlined in BEP No.5 is based on the Kademlia protocol that allows for decentralised peer discovery for a particular piece of content.
-
-PEX is a method for two clients to share a subset of their peer lists. Coupled with DHT, PEX removes a vulnerability from the Bittorrent network by allowing fully distributed bootstrapping, tracking and peer discovery.
-
-A DHT with a form of PEX a tried and tested way of successfully mapping and finding files on a network and could be used within Membrane if required.
+PEX described in section \ref{sec:pex} is a method for two clients to share a subset of their peer lists. Coupled with DHT, PEX removes a vulnerability from the BitTorrent network by allowing fully distributed bootstrapping, tracking and peer discovery.
 
 \subsection{Resilio}
 
@@ -309,13 +308,13 @@ As Resilio Sync uses DHT to transfer data, there is no central authority to mana
 
 \subsection{Storj}
 
-Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof-of-storage it uses Merkle Audits and pregenerated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
+Storj is a peer-to-peer cloud storage network which aims to allow users to store files on a decentralised platform. The platform takes special care to provide protection against Sybil\footnote{Identity forging.} attacks and other forms of fraud. \citep{Wilkinson14storja}. To store files it stores encrypted hashed shards on the network. In order to provide proof-of-storage it uses Merkle Audits and pregenerated audits with hash-challenges to determine whether the client still holds the required data. By adding a seed to the hash-calculation the client can enforce the workers are still in possession of the data. It prevents the client cheating a farmer through using blockchain proof-of-existence to keep both parties honest.
 
-The most efficient form for proof of storage found in Storj is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. This is less I/O intensive than a full heartbeat, but still allows an attacker to complete heartbeats with only a data integrity of $\frac{1}{n}$, where n is the number of nodes holding the data.
+The most efficient form for proof of storage found in Storj is through using a deterministic heartbeat. Using Feistel permutations data can be verified with $n + 2 \sqrt{n}$ challenges. This is less I/O intensive than a full heartbeat which checks all of the file, but still allows an attacker to complete heartbeats with only a data integrity of $\frac{1}{n}$, where n is the number of nodes holding the data.
 
-In order to add extra protection to files, we could use erasure encoding to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as shards are expected to change on a regular basis because of versioning, this may not be possible.
+In order to add extra protection to files, we could use erasure coding\footnote{A method of redundancy in which a file is split into shards, and the shards are expanded with redundant data pieces to allow for the loss of one or more shards without encountering data loss.} to allow file recovery if one of our shard types is lost. This can be investigated in our software, however, as shards are expected to change on a regular basis because of versioning, this may not be possible.
 
-To prevent Sybil based attacks, Storj encrypts each shard segment with a different salt. This stops workers completing proof-of-storage on behalf of another node.
+To prevent Sybil based attacks, Storj encrypts each shard segment with a different salt\footnote{A random bit of data.}. This stops workers completing proof-of-storage on behalf of another node.
 
 \section{Peer Admission}
 
@@ -346,13 +345,13 @@ Users could potentially also be allowed to provide a host name if they have set 
 
 When bootstrapping is complete peers can increase their knowledge of the network through Peer Exchange. This is used by BitTorrent to help share swarm information with other nodes. As soon as a client connects to the swarm, peer information is collected using DHT or PEX.
 
-There are two common extension protocols called AZMP and LTEP, which send at most one message a minute when a client leaves or exits the swarm. To reduce congestion at most 50 peers can be added or removed in one PEX message. \citep{vuze2010vuze}
+There are two common extension protocols which send at most one message a minute when a client leaves or exits the swarm. To reduce congestion at most 50 peers can be added or removed in one PEX message. \citep{vuze2010vuze}
 
 We look into this as our primary way for discovering new peers.
 
-\subsection{Shard Discovery}
+\subsection{Shard Discovery} \label{sec:shard-discovery}
 
-BitTorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which now according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once shard location is stored on the appropriate host in the DHT, the shard can be rediscovered by any node on the network.
+BitTorrent also uses the Mainline DHT to find other hosts in the network. This is a Kademlia DHT which according to \cite{jones2015mainlinedht}, now supports 25M users. It works through assigning each node and file a 160-bit string as an ID. We can work out which node is meant to store a file metadata and crawl in the direction of the node using a hill climb algorithm. Once shard location is stored on the appropriate host in the DHT, the shard can be rediscovered by any node on the network.
 
 Hosts in Membrane could potentially store an encrypted metadata file with all local mappings for which host owns which shard and which IP belongs to each host. A DHT could serve as a mechanism for recovering from total data loss.
 
@@ -360,7 +359,7 @@ Hosts in Membrane could potentially store an encrypted metadata file with all lo
 
 Dynamic IP addresses have proven to be problematic in distributed computing. Internet Service Providers (ISPs) typically charge more for users to have a static, unchanging IP which few users opt for.
 
-BitTorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a shard. This approach is robust, however, it is a complex solution to IP address resolution.
+BitTorrent tackles this issue through using a DHT to dynamically find the IP address of the user that owns a shard. This approach is robust, however, it is a complex solution to IP address resolution to which simpler and easier to implement methods may be available.
 
 Another widely used approach is using Dynamic DNS (DynDNS) as described by \cite{bound1997dynamic} in RFC 2136. This allows a client to automatically update a nameserver with new IP information, allowing clients to have a persistent addressing method for devices that change their IP frequently. This approach requires initial configuration by the user, however, it provides a reliable way to connect with a user when their IP is lost.
 
@@ -374,7 +373,7 @@ We take inspiration from ARP \citep{plummer1982ethernet}, and send broadcasts to
 
 If we choose to forward these broadcasts we need to be weary of broadcast storms, runaway broadcast events common in networks that used broadcasting for communication. \citep{Tseng:2002:BSP:506900.506905} These can be mitigated by reducing broadcast traffic. The first step to limiting these potential broadcasts, is implementing a hop count on broadcasts. This is commonly seen in routing protocols such as IPv6 \citep{deering1998internet}. The Spanning Tree Protocol (STP) as seen in IEEE 802.1d \citep*{ieee802ieee, sharma2004viking} provides loop-free routing in LANs by pruning redundant links. Topology changes are dealt with by rebuilding the tree.
 
-Within Membrane rebuilding a Spanning Tree would be an expensive operation. If broadcasts become a problem a 'block request' system can be used, similar to that of ICMP redirects. \citep{postel1981rfc} If a node receives a duplicate broadcast message it sends a request back one hop, asking the peer to not send broadcasts from that source toward it for  some time. The time limit would allow allow for corrections if the network topology changes. This preventative approach and could be improved by using the full Spanning Tree implementation and further enhanced by using a DHT closest jump approach if required.
+Within Membrane rebuilding a Spanning Tree would be an expensive operation. If broadcasts become a problem a 'block request' system can be used, similar to that of ICMP redirects. \citep{postel1981rfc} If a node receives a duplicate broadcast message it sends a request back one hop, asking the peer to not send broadcasts from that source toward it for  some time. The time limit would allow for corrections if the network topology changes. This preventative approach and could be improved by using the full Spanning Tree implementation and further enhanced by using a DHT closest jump approach if required.
 
 \section{Data Allocation on External Nodes}
 
@@ -392,7 +391,7 @@ A simple negotiation protocol issues a call for proposals to a number of nodes a
 
 \subsection{Negotiation Logic}
 
-The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and MAS. In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world.
+The form of negotiation within Membrane also needs to be decided. We must first decide on a reasoning mechanism to use within the agent. The distinction between monotonic and non-monotonic logic is important in the study of AI and multi-agent systems (MAS). In non-monotonic logic new axioms (or knowledge) can invalidate old theorems. \citep*{mcdermott1980non, antonelli2008non} This is important in the real world as we need to be able to make assumptions on facts and retain flexibility in our understanding of the world.
 
 Within a MAS a non-monotonic logic can be more difficult to implement as theorems need to be constantly asserted, and as a result they often resort to first-order (or monotonic) logic. Within Membrane we need to implement a monotonic logic to calculate trust in our contracts and negotiations. In the context of a negotiated contract, throughout its duration, we cannot afford to re-evaluate our trust of the agent.
 
@@ -408,7 +407,7 @@ A \emph{heuristic} approach produces 'good enough' negotiations. Instead of expl
 
 A \emph{argumentation} approach is beneficial when a flexible negotiation is required and the agents have limited knowledge of the world. It is commonly used in the human world by advertisers to convince consumers to try products. \citep{slade2002reasons}. Instead of simply rejecting an offer a agent can say why or offer a counter-proposal, which can result in more successful negotiations.
 
-Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane.
+Although this approach offers far better negotiation, it is much more complex to implement and is not required within initial implementations of Membrane. In the future when we look towards more complex contracts with different requirements, we may require this to help find a peer offering a service we desire.
 
 \subsection{Practical Negotiation}
 
@@ -447,6 +446,7 @@ They describes 3 key areas that must be present in an SLA.
 Within Membrane the parties involved will always be the two nodes exchanging information. The service description will be a promise to store a block of data on another host. The obligation will include various parts such as proof-of-storage and the ability to update and retrieve the data a set number of times. These will be explored when the SLAs for membrane is designed.
 
 Another key area \cite{keller2002defining} discusses is the 5 stages of an SLA life-cycle.
+
 \begin{enumerate}
  \item SLA Negotiation and Establishment
  \item SLA Deployment
@@ -463,11 +463,11 @@ Agents in a distributed system need to be able to protect themselves from `bad' 
 
 Trust can be used to predict the behaviour of an agent. \citep{wooldridge2009introduction} A classification presented by \cite{balke2009using} defines 5 stages that exist in reputation and trust models. Co-operative behaviour is first stored and then rated using a utility function.
 
-Within Membrane it is easy to see the utility being rated as shared uptime. This cooperative behaviour could then stored in an image of the peer at a predetermined level of detail and recalled to infer trust. Finally the agent can use this trust to learn and adapt its strategy.
+Within Membrane it is easy to see the utility being rated as shared uptime. This cooperative behaviour could then be stored in an image of the peer at a predetermined level of detail and recalled to infer trust. Finally the agent can use this trust to learn and adapt its strategy.
 
 The ReGreT model \citep{sabater2001regret} is ``one of the most complete reputation and trust models'' \citep{pinyol2013computational} so we use it to see what a good trust system includes.
 
-It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent a will trust b while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider periodically simulating a situation in which complete data loss was experienced to ensure the backup system will work when required.
+It uses direct experience, third party information and social structures to calculate trust, reputation and credibility of another agent. An important note for this model is that trust is contextual. Agent A will trust B while certain conditions are met. In the context of Membrane, perhaps another agent will refuse to return our data, if we cannot prove that we still have their data, which would mean that they would be useless if the client experienced completed data loss. We must therefore consider periodically simulating a situation in which complete data loss was experienced to ensure the backup system will work when required.
 
 \subsection{Trust and Reputation Attacks} \label{sec:tar}
 
@@ -489,9 +489,9 @@ When implementing a trust system in Membrane these attacks should be considered 
 
 \section{Communication} \label{sec:comm}
 
-As Membrane is a distributed system communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion.
+As Membrane is a distributed system, communication is key for nodes on the network to interact. It is traditional to form a protocol that agents can use to share information with each other. These protocols are often very rigid and do not allow for expansion.
 
-We look to ACLs which provide a formal but more flexible approach that aims to let agent share a common understanding of the domain, and allows hosts to reason about communication themselves.
+We look to ACLs which provide a formal but more flexible approach that aims to let agents share a common understanding of the domain, and allows hosts to reason about communication themselves.
 
 \subsection{Agent Communication Language}
 
@@ -544,7 +544,7 @@ In order to contact a peer behind a NAT gateway the gateway needs to know which 
 
 When clients are both behind the same NAT, packets between them do not need to go through NAT. If Hairpin NAT is correctly configured they will be bounced back within the internal network, however, it could result in overheads otherwise. If this problem is detected during the implementation of Membrane private IP address could also be sent to the RV server. It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host. The initial outbound packet from a host to a the RV server is key in `punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
 
-\emph{TCP Hole Punching} is more complex than with UDP as clients need to establish sessions across the NAT. For hole punching to work the same port needs to be used for listening and establishing a connection. This can be done using \emph{SO\_REUSEPORT} option, which allows an application to claim multiple sockets from the same endpoint. Within the application an new port needs to used for handling the connection.
+\emph{TCP Hole Punching} is more complex than with UDP as clients need to establish sessions across the NAT. For hole punching to work the same port needs to be used for listening and establishing a connection and a new port needs to used for handling the connection.
 
 There are two practical solutions that I shall explore for implementation within Membrane. TURN \citep{wing2010traversal} provides a set of methods for NAT hole punching. UPnP \citep{boucadair2013universal} is a method through which a host can request a NAT gateways to open a port for the application. There have been security concerns with UPnP which has resulted in UPnP being disabled on many routers. This will need to be explored during implementation of Membrane.
 
@@ -552,25 +552,25 @@ There are two practical solutions that I shall explore for implementation within
 
 Membrane shards files and stores copies on multiple nodes for redundancy. This is a technique that is commonly found in distributed file systems (DFS) such as Hadoop File System (HDFS) \citep{hdfsAnalysis}, Google File System (GFS) \citep{TheGFS} and Parallel Virtual File System (PVFS) \citep{ross2000pvfs}. This section aims to explore the reasoning and decisions taken with these file systems.
 
-HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. It stores file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. This is a similar approach to GFS \citep{mckusick2010gfs}. Membrane takes this approach by storing file metadata on the client. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph} This allows for larger, more distributed system, this could be investigated if meta-data proves too large to store on the client.
+HDFS has proved to be highly successful in storing large quantities of data over thousands of nodes and is used by over 100 organisations world wide. Both HDFS and GFS \citep{mckusick2010gfs} store file system metadata on a central dedicated server called a NameNode \citep{hdfsAnalysis}. Ceph takes this approach further, storing file meta on a distributed cluster of NameNodes, using hash function to spread metadata over the name nodes. \citep{weil2006ceph}
 
-Files and directories are represented by inodes, these record attributes such as permissions and location. Membrane will need to store information such as checksums, encryption keys and SLA for each file, to allow each file to be verified on a regular basis. When writing data to the cluster the NameNode chooses the targets for shards. The client in Membrane will be able to negotiate shard targets on the network using mechanisms described previously.
+The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint and a new snapshot is created during a node restart.
 
-The NameNode stores the metadata as a combination of a checkpoint and journal (a write-ahead commit log). If there is a fault on the NameNode, such as a power outage, the journal can be replayed over the latest checkpoint. In HDFS a new snapshot is created during a node restart, however, in Membrane the journal is kept to be able to restore the metadata during any point in the journal. By not removing any shard that is still in the journal we are able to rollback to any previous state in ahead of the oldest checkpoint.
+In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifying the NameNode that it still holds the data. Not the other way around. 
 
-In HDFS, during startup a DataNode connects to a NameNode, and performs a handshake with a unique storage ID that can identify it. In addition a DataNode will also send heartbeats and reports on a regular basis. \cite{hdfsAnalysis} This is a great approach as it makes the DataNode responsible for notifying the NameNode that it still holds the data. Not the other way around. A similar approach will be used in Membrane, however, the NameNode will also request some proof that the DataNode still holds the file, as in Storj, possibly eliminating the need for a DHT.
+In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle.
 
-In both GFS and HDFS data is streamed directly from the client to the DataNode in 64k chunks and a checksum is sent with the original file to assert the transfer was successful. Both systems also have a default of 3 replicas per shard, which Membrane shall adopt. TCP is used for communication as it provides reliability and a session for transfers. Chunks are given a 64bit chunk handle. Membrane will use a hash to compute this identifier. This should help nodes prevent attackers predicting a chunk handle.
+Membrane takes the approach of a NameNode storing file metadata on the user's system and then redistributing it with the data. The metadata will include checksums for shards, modification dates, encryption type and compression type for each shard, as well of the list of files the shard is related to.
+
+We also chose to use a write-ahead commit log to store file modification. We choose to only play the journal forward when we need to remove data, retaining the capability of reaching any previous state covered in the log.
+
+Within Membrane we will also ask that peers contact the NameNode (us). In addition we will request proof that the DataNode still holds the data as in Storj, possibly eliminating the need for a DHT. We opt for the same 3 replica redundancy system as the systems above.
 
 \section{Authentication and Encryption} \label{sec:encryption}
 
 In order to maintain a relationship a host needs to be able to verify it's identity when it connects to a host a second time. When visiting a website there is often a need to map a virtual identity to a real identity of a service user \citep{hericourt2001method} a bank for example, this is typically done using a certificate authority.
 
-Membrane requires authentication in two situations:
-\begin{itemize}
- \item Is this the same node I was talking to before?
- \item Have I found the correct node when adding a friend? (A possible future feature)
-\end{itemize}
+Membrane requires authentication to determine if it has established a connection to a node it has shared data with.
 
 Session authentication is a common occurrence while using the web and it typically happens with every HTTPS site visit. A session cookie is stored on both clients to allow for authorisation and authentication without the use of a password in further interaction. \citep{mayo2008security}
 
@@ -608,7 +608,7 @@ Three algorithms were considered: gzip (DEFLATE), LZ4 and Snappy.
 
 \emph{Snappy} is a compression algorithm used by Google for data compression. It was developed to improve on the speed of DEFLATE and offers excellent compression and decompression speeds. \citep{google2017snappy}
 
-When benchmarked against LZ4, Snappy is marginally slower \citep{vorontsov2015compression}, however, it provides a native Java implementation. We therefore give users the option between Snappy and LZ4 compression, although we default to LZ4 due to it's superior speed and compression ratio. \citep{lz42017lz4}
+When benchmarked against LZ4, Snappy is marginally slower \citep{vorontsov2015compression}, however, it provides a native Java implementation. We choose to first use Snappy because of the ease of implementation, retaining the capability to upgrade to LZ4 if there is more time due to it's superior speed and compression ratio. \citep{lz42017lz4}
 
 \section{Provable Data Possession (PDP)} \label{sec:poo}
 
@@ -624,9 +624,7 @@ Storj uses a variety of has verification for PDP:
  \item Deterministic - Audits shards in a deterministic order known only to the client. This stops the storage agent being able to predict the next shard.
 \end{itemize}
 
-To stop the client pregenerating hashes the shard or shard chunk is seeded before hashing.
-
-\cite{filecoin2014filecoin} is another cryptocurrency operated file storage network. Transactions are stored in a ledger to assist with trust. At any point a client can issues a challenge to the server to clients who must the calculate the corresponding proof. These challenges are then confirmed by another node on the network who takes the file and recomputes the challenge itself.
+\cite{filecoin2014filecoin} is a cryptocurrency operated file storage network that takes a different approach to PDP. Transactions are stored in a ledger. At any point a client can issues a challenge to peers that must then calculate the corresponding proof. These challenges are then confirmed by another node on the network who takes the file and recomputes the challenge itself.
 
 \subsection{Keyed-Hash Message Authentication Code (HMAC)}
 
@@ -634,9 +632,9 @@ Using HMACs is a valid way of PDP \citep{ateniese2011remote}.
 
 HMACs combine data with a key and generate a unique hash, using of a cryptographic function. \citep{krawczyk1997hmac} The following formula is used for computing this:
 
-$$\mbox{HMAC}(K, m) = H((L \oplus \mbox{o}) \parallel H((L \oplus \mbox{i)} \parallel m))$$
+$$\mbox{HMAC}(K, m) = H((L \oplus \mbox{opad}) \parallel H((L \oplus \mbox{ipad)} \parallel m))$$
 
-where H is the cryptographic function, $K$ is the secret key, $m$ is the message to be authenticated and $L$ is a secret key padded to the correct length, $o$ is outer padding and $i$ is inner padding.
+where H is the cryptographic function, $K$ is the secret key, $m$ is the message to be authenticated and $L$ is a secret key padded to the correct length, $opad$ is outer padding and $ipad$ is inner padding. The $\oplus$ indicates an exclusive or operation and $\parallel$ denotes concatenation (placing both arrays next to each other).
 
 These are typically used to verify data integrity and authenticate messages. The strength of the cryptographic hash function depends on the underlying hash function used.
 
@@ -2265,7 +2263,7 @@ Overall the original goals of the project are satisfied. We successfully created
 
 \newpage
 
-\chapter*{Appendix}
+\chapter{Appendix}
 
 \section{Code}
 

@@ -18,3 +18,5 @@ Code
 ----
 
 [Daemon](https://github.com/domhauton/membraned) | [GUI](https://github.com/domhauton/membrane-gui) | [CLI](https://github.com/domhauton/membrane-cli)
+
+<p align="center"><img src="https://github.com/domhauton/dissertation/blob/master/dissertation/img/membrane-logo.png" alt="Membrane Logo" width="250"/></p>

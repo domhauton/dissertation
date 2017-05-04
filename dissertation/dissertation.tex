@@ -199,9 +199,6 @@ Finally to my other family members and friends who have supported me along the w
 
 Thank you.
 
-\vspace{0.5cm}
-\emph{Dominic Hauton}
-
 \end{abstract}
 
 \listoffigures
@@ -240,6 +237,8 @@ To simplify the process, the system will be able to negotiate contracts of varyi
 
 There is an open gap in the market for a distributed storage solution which focuses entirely on backup and trading data, rather than charging a fee for storing data. The users of Membrane would be able to benefit from the advantages of commercial services, without the associated cost and security concerns.
 
+The applications of distributed backup vary. Three examples include home users who require a secure backup tool for their important documents, that ensures their data will never be analysed by the person storing them. Groups of friends that want to store family photos with each other, thereby spreading their data across multiple locations and protecting them from tragic events like house fires. Corporations that need to provide data resilience to their employees without investing in infrastructure, instead making use of redundant storage space on employee terminals.
+
 \section{Challenges}
 There are multiple challenges associated with creating both decentralised systems and backup solutions.
 
@@ -261,7 +260,28 @@ Next a system needs to be put in place to package bits from various files into a
 
 Finally a module responsible for networking and authentication must be created. This must be able to authenticate the user, find peers, establish connections to new peers and deal with the challenges to creating a secure communication link to the peers.
 
-\section{Conclusion}
+\section{Planning}
+
+We use four techniques to ensure the project stays on track from start to completion.
+
+\begin{itemize}
+ \item Scrum Board
+ \item Gantt Chart
+ \item Weekly Supervisor Meetings
+ \item Weekly Goals
+\end{itemize}
+
+A scrum board is a planning technique taken from software development. Tasks are split into three categories: to-do, in-progress and complete. The system revolves around adding tasks to the to-do section of the board clearly displaying everything that needs to be done, giving us the ability to easily determine what the next task should be.
+
+A Gantt chart is used for long term planning. We divide the project up into its constituent parts: proposal, literature review, development and dissertation. From there we can easily decide what parts of the project impact what other parts to develop an overarching strategy for completion. It also provides a convenient way to see when progress is ahead of, or behind projections.
+
+Weekly supervisor meetings keep the project on track throughout and help decide what steps need to be taken next, particularly if unexpected events occur and the project needs to be altered to compensate.
+
+Finally we used weekly goals to ensure a good amount of work was done consistently throughout the project. An example of a weekly goal might be ``Two peers are able to connect''. This goal can then be dissected into tasks and placed on the Scrum board.
+
+We have included an example of the Gantt chart from February, five months into development in figure \ref{fig:gantt}.
+
+\section{Summary}
 
 Cloud backup solutions are expensive and do not offer much security when storing user's data. Membrane aims to challenge this limitation by providing a free and secure backup service that uses a network of peers to store data.
 
@@ -500,7 +520,7 @@ FIPA is an ACL based on Speech Act Theory \citep{labrou1999agent}. It splits com
 \begin{itemize}
   \item The sender believes the proposition.
   \item The recipient does not already believe the proposition.
-  \item The recipient will believe the proposition after the proposition.
+  \item The recipient will begin to believe the proposition after it is made.
 \end{itemize}
 
 In the case of Membrane this could be put into the context of asking another node to store data, it would only be reasonable to send another node data to be stored, if the two nodes had negotiated storage of that block between them previously.
@@ -542,11 +562,17 @@ In order to contact a peer behind a NAT gateway the gateway needs to know which 
 
 \emph{UDP Hole Punching} is a technique defined in RFC 3027 5.1 \citep{holdrege2001rfc} that allows two clients behind NAT to connect with the use of a rendezvous (RV) server. Hosts contact the RV and leave their UDP port and address. We need to be weary of poor NAT implementations translating IP addresses within data when packets are coming in and out. \citep{ford2005peer}
 
-When clients are both behind the same NAT, packets between them do not need to go through NAT. If Hairpin NAT is correctly configured they will be bounced back within the internal network, however, it could result in overheads otherwise. If this problem is detected during the implementation of Membrane private IP address could also be sent to the RV server. It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host. The initial outbound packet from a host to a the RV server is key in `punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
+The initial outbound packet from a host to a the RV server is key in `punching a hole' through the NAT. The timeout of a hole punched port can be as low as 20 seconds, so the host must maintain the hole by sending single packets to the RV on a regular basis.
 
 \emph{TCP Hole Punching} is more complex than with UDP as clients need to establish sessions across the NAT. For hole punching to work the same port needs to be used for listening and establishing a connection and a new port needs to used for handling the connection.
 
-There are two practical solutions that I shall explore for implementation within Membrane. TURN \citep{wing2010traversal} provides a set of methods for NAT hole punching. UPnP \citep{boucadair2013universal} is a method through which a host can request a NAT gateways to open a port for the application. There have been security concerns with UPnP which has resulted in UPnP being disabled on many routers. This will need to be explored during implementation of Membrane.
+Hairpin NAT allows for two clients behind the same NAT gateway to connect to each other without any address translation avoiding overheads. We must consider the possibility that the gateway has this incorrectly configured if performance issues arise.
+
+UPnP \citep{boucadair2013universal} is a method through which a host can request a NAT gateways to open a port for the application. There have been security concerns with UPnP which has resulted in UPnP being disabled on many routers.
+
+It's important to consider that the ports behind a NAT are dynamically allocated, so connections must be authenticated between connections, to ensure the IP address and port still direct towards the same host.
+
+There are two practical solutions that I shall explore for implementation within Membrane. TURN \citep{wing2010traversal} which provides a set of methods for TCP hole punching and a combination of UPnP and relaying. Membrane can ask the router to open up a port and then send the information of that port to the RV server.
 
 \section{Distributed File Systems}
 
@@ -654,14 +680,25 @@ offers better protection but there have been several papers claiming this can be
 
 Within Membrane we build HMAC challenges when deploying a block to allow for PDP
 
-\section{Conclusion}
+\section{Summary}
 In this literature review we discussed the key important areas of creating a distributed storage system.
 
-We first explored the history of the problem by looking at solutions like Git. We saw how to exchange file and swarm information in distributed systems including BitTorrent and studied file storage systems such as Resilio and Storj that achieved distributed file storage.
+We first explored the history of the problem by looking at solutions like Git. We saw how to exchange file and swarm information using PEX and DHTs and studied file storage systems from which we discovered methods of PDP and practical ways on how to minimise overhead while performing it.
 
-Then we moved onto different challenges in creating the system, namely Peer Admission, Data Allocation, Communication and the challenges of connecting to other peers. We looked at the lessons learnt from distributed files systems and the challenges of authentication and proving ownership of a file.
+Then we moved onto different challenges in creating the system: how to establish peer connections over NAT, how to assign data to peers on the network using negotiation and SLAs and trust metrics, finally looking into methods of transferring the required SLA and contract information.
 
-Drawing on techniques explored in the literature review we will proceed to design Membrane, avoiding the pitfalls discovered by predecessors.
+From distributed files systems we take the ideas of using, a write-ahead commit log and asking peers to proactively contact the host they are holding information for. We also looked into authentication and proving ownership of a file in which we applied cryptographic constructs to both secure connections and prove files are held by a peer.
+
+Drawing the techniques explored in the literature review we will proceed to design Membrane, avoiding the pitfalls discovered by predecessors.
+
+
+
+
+
+
+
+
+
 
 \chapter{Analysis}
 
@@ -721,7 +758,7 @@ Users searching for backup solutions were also interested in the software's \emp
 
 The comparisons also covered platforms supported by the backup solutions. An interesting observation is that although multi-platform support has clear benefits, many of the backup solutions covered only supported one or two of the available platforms. This will be taken into consideration while creating the formal specification for Membrane.
 
-Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is. We aim to licence our code under the MIT licence to be as open as possible.
+Finally users were also interested in the \emph{software licence}, with an emphasis on how open-source the code for the backup solution is. We aim to licence our code under the MIT license\footnote{A permissive free software license from the Massachusetts Institute of Technology (MIT)} to be as open as possible.
 
 We can see there is an overlap between the features requested by users during the initial survey and what users in need of a backup solutions use to determine which software is best for them. The next section looks to blend these into a single harmonious specification.
 
@@ -750,7 +787,7 @@ This strategy limits resource usage and allows for deduplication of the backups,
 \subsubsection{3. File History}
 Must be able to keep a log of file system modifications, with the ability to remove entries from the log to meet storage size requirements by selectively removing elements of the history. File system modifications must be persisted to non-volatile storage immediately so an application crash does not affect the log.
 
-This needs to be done to match the request in the user survey to store file history and allow for delta transfers\footnote{Partial transfers. As files differences can be compared between versions}.
+This is crucial meet the request in the user survey to store file history and allow for delta transfers\footnote{Partial transfers. As files differences can be compared between versions}.
 
 \subsubsection{4. Shard Storage}
 Must be able to persist and fetch requested shards to a given folder. It must perform consistency checks on retrieval, support hard limits on total storage size and return a complete listing of all shards inside the storage unit.
@@ -815,23 +852,23 @@ This is required for selecting which peer is most appropriate for upload.
 
 A system that can determine whether a peer is holding a block is required. The suggested method is a mixture of HMACs and asking for the entire block to be returned. 
 
-This needs to be done to determine whether the given peer is holding a block without having to request all of the data every time.
+This is done to determine whether the given peer is holding a block without having to request all of the data every time.
 
 \subsubsection{12. Tracker}
 
-Membrane needs to be able to run in tracker mode, in which the backup backup is disabled but PEX is active for other hosts to share PEX information through the tracker.
+Membrane needs to be able to run in tracker mode, in which the backup module is disabled but PEX is active for other hosts to share PEX information through the tracker.
 
 This is required for new peers, or peers that have expired PEX information.
 
 \subsubsection{13. Command Line Interface}
 
-A fully featured CLI needs to be present. It must allow users to monitor network activity and their backups, as well as adding other folders to backup and recovering files.
+A fully featured CLI needs to be present to provide advanced users a familiar method of interaction with Membrane. It must allow users to monitor network activity and their backups, as well as adding other folders to backup and recovering files.
 
 This feature is required to allow users to interact with Membrane.
 
 \subsubsection{14. Graphical User Interface} \label{sec:gui-req}
 
-A GUI needs to be present to give users the ability to monitor membrane activity.
+A GUI needs to be present to give users the ability to monitor membrane activity without having to use the CLI for simply checking the state of backups and network connectivity.
 
 This feature is common in existing solutions and is required for Membrane to be competitive.
 
@@ -846,17 +883,17 @@ Non-functional requirements, also aptly named quality requirements help support 
 \subsubsection{14. Maintenance Free}
 The software must be able to run without external monitoring or reconfiguration. The user cannot be asked to solve any non-configuration related issues. For example, if a peer loses all of our blocks, the software should be able to recover without any user intervention.
 
-This was requested by users during the analysis survey.
+This was requested by users during the analysis survey and it is paramount to remain competitive with other backup solutions.
 
 \subsubsection{15. Fast Recovery}
-The software must be able to recover files quickly after data loss.
+The software must be able to recover files quickly after data loss. The system designed for file distribution and recovery needs to provide the user with backed up files as fast as possible while bearing in mind resource usage (16).
 
-This was requested by users during the analysis survey.
+Users requested this during the backup survey.
 
 \subsubsection{16. Resource Usage}
 Membrane's resource usage must be as low as possible to minimise impact on other software running on the system.
 
-This was requested by users during the analysis survey.
+This was requested by users during the analysis survey and is vital to ensure users continue to use Membrane.
 
 \subsubsection{17. Open Source}
 
@@ -872,9 +909,9 @@ This will help with community engagement in the product. More technical users wi
 
 \subsubsection{19. Testability}
 
-The project should be built with extensive tests asserting the behaviour. Tests should be automated to assist with requirement 17, allowing for easy verification of the behaviour of any modifications.
+The software should be easily testable with complete and automated testing that can assist with requirement 17.
 
-This will help to gain the trust of potential users.
+This will help to gain the trust of potential users and allow for easy verification of  modifications by open source developers.
 
 \clearpage
 
@@ -936,7 +973,7 @@ The software needs to ensure that any user interacting with the API is authentic
 
 The software itself also becomes more complex with a separate client as functionality needs to be built for handling network in both the UI and core application.
 
-On balance, it makes sense for Membrane to operate use a client interface. It will need to be run constantly, as a software daemon. In order to keep this lightweight and maintenance free we cannot also run the interface at the same time as the daemon.
+On balance, we opt for a separate interface. Membrane is a software daemon run constantly. In order to keep it lightweight and maintenance free we cannot run an interface that my use up a lot resources and get in the way for the user at the same time as the daemon.
 
 The freedom of building additional interfaces to Membrane also helps extensiblity. Developers can easily tap into the API for additional interfaces making the requirement for both a GUI and CLI easy to fulfil.
 
@@ -1010,7 +1047,7 @@ Objects offer encapsulation, an desirable feature that means they can only manip
 
 \subsubsection{C\#}
 
-The final language we consider is C\#, which is another general-purpose programming language that offers strong typing, is imperative, declarative, functional and object-oriented. This makes it very similar to Java \citep{kreft2017afterjava}, and in fact has been criticised as a ``imitation'' of Java, although this has been disputed. C\# is a younger language than Java, so it was playing catch-up to Java's feature set for a long time, however, it has at this point surpassed Java.
+The final language we consider is C\#, which is another general-purpose programming language that offers strong typing, is imperative, declarative, functional and object-oriented. This makes it very similar to Java, and in fact has been criticised as a ``imitation'' of Java, although this has been disputed. C\# is a younger language than Java, so it was playing catch-up to Java's feature set for a long time, however, it has at this point surpassed Java. \citep{kreft2017afterjava}
 
 On balance Java's popularity, larger community of users and open source nature means it is more suited to Membrane, although C\# has some clear advantages. Unfortunately C\# is not as well supported on Linux, requiring the Mono software platform to be run.
 
@@ -1066,7 +1103,7 @@ In addition, although TypeScript's type system is more flexible than mainstream 
 
 This is in addition to all of the considerations of CoffeeScript. On balance, we chose to use TypeScript for the Membrane GUI. The extra type safety provided outweighs the downsides of making it slightly more tricky to write the code. In addition if any quick coding is required, it is fully compatible with JavaScript so any sections of code unsuitable for TypeScript can be written using JavaScript seamlessly.
 
-\subsubsection{Conclusion}
+\subsubsection{Summary}
 
 We have decided on three programming languages to use to create Membrane. Java, Go and TypeScript. These are three well-supported, popular languages best suited the developers coding the Membrane proof-of-concept to produce a stable and complete product.
 
@@ -1088,9 +1125,9 @@ Ant uses XML based configurations, to created build scripts, which is not ideal 
 
 One of the major advantages of Maven is the ability to download libraries and other dependencies over the network. Since this is the main purpose of Maven, custom build scripts are actually more difficult, however, these are not required by most users. \citep{viktor2014buildtools}
 
-\emph{Gradle}, developed in 2012, is the most modern build tool and attempts to combine the power of both Maven and Ant. It uses Groovy (a JVM based language) for build scripts which results in shorter and clearer scripts, reducing the boilerplate required for creating basic configurations. \citep{gradle2017comparison} Gradle's flexibility is one of it's major advantages. \citep{casperson2014comparison}
+\emph{Gradle}, developed in 2012, is the most modern build tool and attempts to combine the power of both Maven and Ant. It uses Groovy (a JVM based language) for build scripts which results in shorter and clearer scripts, reducing the boilerplate required for creating basic configurations. \citep{gradle2017comparison} Gradle's flexibility is one of its major advantages. \citep{casperson2014comparison}
 
-The two contenders for the build system become Gradle and Ant. Ant is preferred for developers new to build tools because of it's low learning curve, however, as the developers creating Membrane have experience using all three build systems, we opt to use Gradle because of it's clearer configurations.
+The two contenders for the build system become Gradle and Ant. Ant is preferred for developers new to build tools because of its low learning curve, however, as the developers creating Membrane have experience using all three build systems, we opt to use Gradle because of its clearer configurations.
 
 \subsubsection{Java Networking}
 
@@ -1164,73 +1201,87 @@ For marshalling\footnote{Converting objects to text and back.} data we opt to us
 
 The components that make up Membrane are all designed individually and connected using Java interfaces. In this section we discuss the goals and functionality of each, explaining decisions taken in the final architecture of Membrane.
 
-We begin with file ingestion and file system monitoring, following into file storage and the inspirations behind storage. Continuing on through peer appraisal, how we determine which peers are most appropriate to hold which files finishing on networking, covering the details of authentication and security.
+We begin with file ingestion and file system monitoring, file storage and peer appraisal. Then we determine which peers are most appropriate to hold which files and finish on networking, covering the details of authentication and security.
 
 \section{File System Monitoring}
 
-Monitoring the file system for local changes is key to any backup system. In this section we design a method to watch specified folders for these changes. First we explore methods of walking the file tree, used when the user specifies folders with wildcard or asks to include inner folders.
+Monitoring the file system for local changes is key to any backup system to be able find new files to preserve. In this section we design a method to watch specified folders for these changes. First we explore methods of walking the file tree, used when the user specifies folders using wildcards\footnote{Which can be used to signify arbitrary folders} or asks to include inner folders.
 
-We take two approaches to watching folders and discuss augmentations made to the chosen technique ending the section by discussing methods of deduplication for repeated files and future enhancements that could be made to the implemented monitor.
+We take two approaches to watching folders and discuss augmentations made to the chosen technique, ending the section by discussing methods of deduplication for repeated files and future enhancements that could be made to the implemented monitor.
 
 \subsection{File Tree Walking}
 
-We allow users to select folders for backup explicitly, using wild-cards and recursively. When allowing users to specify folders recursively we must inspect the contents of the folder and visit each inner folder, determining if it is suitable for monitoring. This can be achieved using the Visitor pattern in Java, lets us visit each inner folder in succession choosing to either mark or discard the folder. \citep{sugrue2010visitor}
+We allow users to select folders for backup in three ways: explicitly, using wildcards\footnote{Added using a \code{*}.}, and recursively. When allowing users to specify folders recursively we must inspect the contents of the folder and visit each inner folder, determining if it is suitable for monitoring as shown below. This can be achieved using the visitor pattern in Java which lets us recursively visit each folder in base folder given to either mark or discard the folder. \citep{sugrue2010visitor}
 
-Once all of the relevant folders are found we begin watching them for changes. We need to remain aware of folder additions or deletions and keep the list of marked folders up-to-date accordingly. Wildcard directories might not necessarily be created in watched folders so these folders must be manually scanned for on a regular basis.
+\begin{displayquote}
+ User entry (recursive): \code{/tmp/AA/BB/*/CC} \\ \\
+ Matches: \code{/tmp/AA/BB/any-folder/CC} , \code{/tmp/AA/BB/any-folder/CC/FF}\\
+ Does not match: \code{/tmp/AA/CC/any-folder/CC}
+\end{displayquote}
+
+Once all of the relevant folders are found we begin watching them for changes. We need to remain aware of folder additions or deletions and keep the list of watched folders up-to-date accordingly. Folders specified using wildcards might not necessarily be created in already watched folders so these folders must be manually scanned on a regular basis.
 
 When finding folders it is important to note the difference between a file, folder, hard link and soft link (also known as a symlink or symbolic link). To understand these we must first observe how files are stored in a Unix-style file system, which supports ordinary files, folders and special files.
 
-Index Nodes (commonly refereed to as inodes) are items in the file system stored by a unique number. Directories provide a way to structure and name these inodes by containing a list of files (references to inodes). Each file is mapped to exactly one inode, and each inode can have more than one file mapped to it. \citep{bar2001linux}
+Index Nodes (commonly refereed to as inodes) are items\footnote{Data or metadata} in the file system stored by a unique number. Directories provide a way to structure and name these inodes by containing a list of files (references to inodes). Each file is mapped to exactly one inode, and each inode can have more than one file mapped to it. \citep{bar2001linux}
 
 A hard link is an inode that has multiple names in the file system. These need to be deduplicated with Membrane, however, this is encompassed within the general deduplication mechanism implemented.
 
-A symlink is formally any file that contains a reference to another file or directory which will affect path name resolution. The symlink is an inode that exists independent of the target inode and simply forwards any requests to the target. If the target is deleted or moved it continues pointing to the same (now invalid) location. \citep{yue2011unix}
+A symlink is formally any file that contains a reference to another file or directory which will affect path name resolution\footnote{The act of finding a file given a file path.}. The symlink is an inode that exists independent of the target inode and simply forwards any requests to the target. If the target is deleted or moved it continues pointing to the same (now invalid) location. \citep{yue2011unix}
 
-Symlinks are a useful tool typically used to link different file systems, but they complicate file tree walking by changing the file system from a tree into a directed graph as files can loop and repeat.
+Symlinks are a useful tool typically used to link different file systems, but they complicate file tree walking by changing the file system from a tree into a directed graph with loops.
 
 Within Membrane we opt to ignore symlinks while walking the file tree. Users are able to specify the target directory of the symlink separately if required. Symlink deduplication is handled by a higher level mechanism, just as with hard links.
 
 \subsection{Polling}
 
-A naive method used to check folders for file changes simply periodically scans the folder, finding differences between consecutive scans. The modification time stamp of the file (provided by most modern file systems) can be used to determine if existing files have changed in the time.
+A naive method used to check folders for file changes is simply periodically scanning the folder, finding differences between consecutive scans. The modification time stamp of the file (provided by most modern file systems) can be used to determine if existing files have changed in the time.
 
 This simple method is very expensive, consuming a lot of memory as it needs to retain a copy of the last modification date and all of the files in the watched folders.
 
-This method is also IO intensive. The file listing in the directory on the file system contains no metadata, so every single inode in the folder needs to be accessed to gather it's metadata. This primarily affects users using storage media with poor IOPS (Input Output Operations per Second), common in hard disk drives. As the impact may not be observed on more modern computers it is important to consider this before deployment. \citep{mansurov2017storage}
+This method is also IO intensive. The file listing in the directory on the file system contains no metadata, so every single inode in the folder needs to be accessed to gather its metadata. This primarily affects users using storage media with poor IOPS\footnote{Input-output Operations Per Second} common in hard disk drives. As the impact may not be observed on more modern computers it is important to consider this before deployment. \citep{mansurov2017storage}
 
-Polling is a poor solution for Membrane. During user surveys low resource usage was requested so periodic spikes in IOPS that could adversely impact other user applications are undesirable.
+Polling is a poor solution for Membrane. During user surveys low resource usage was requested so periodic spikes in IOPS that may adversely impact other applications are undesirable.
 
 \subsection{Native Watching}
 
-File Change Notifications (FCNs) are a more advanced method of watching files built into some file systems. FCNs are sent out to subscribed services when an inode changes and are used in three common scenarios. When creating a model of the file system, logging file system activity and in gatekeeper services that ensure only permitted operations happen on the file system (such as an anti-virus). \citep{kerrisk2014fcn}
+File Change Notifications (FCNs) are a more advanced method of watching files built into some file systems. FCNs are sent out to subscribed services when an inode changes and are used in three common scenarios \citep{kerrisk2014fcn}:
+
+\begin{itemize}
+ \item When creating a model of the file system.
+ \item When logging file system activity.
+ \item In gatekeeper services that ensure only permitted operations happen on the file system such as an anti-virus.
+\end{itemize}
+
+We want to use FCNs to both model the file systems internally within Membrane and to log activity in order to reproduce historical versions of the file system.
 
 The first implementation of FCNs, \emph{dnotify}, appeared in Linux in 2001. It suffered from a cumbersome API and most notably, it kept file descriptors open causing problems when trying to unmount file systems. \citep{kerrisk2014fcn}
 
 The inotify API was released in 2005 and aimed to address all of the issues in dnotify. It consists of three dedicated system calls \code{inotify\_init()} which maintains a list of file system objects that should be watched and a list of events generated for those objects and the commands \code{inotify\_add\_watch()} and \code{inotify\_rm\_watch()} are used to alter the list of monitored file system objects. inotify provides more information than dnotify, allows programs to deal with notifications synchronously and includes the file name modified. \citep{kerrisk2014fcn}
 
-Java implements the WatchService API that provides low level access to the underlying inotify API of the file system. \citep{oracle2017dir} We opt to use this when the API is available, but fall back to polling when inotify or similar services are unavailable.
+Java implements the \code{WatchService} API which provides low level access to the underlying inotify API of the file system. \citep{oracle2017dir} We opt to use this when the API is available, but fall back to polling when inotify or similar services are unavailable.
 
 \subsection{Watching Enhancements}
 
-Despite the comprehensive feature set of inotify, we still require some enhancements to prevent FCNs missed during application down time and buffer overflows. 
+Despite the comprehensive feature set of inotify, we still require some enhancements to prevent FCNs missed during application down time and FCN buffer overflows\footnote{inotify can only store a limited number of transactions between scans}. 
 
 Between application runs we need to load all known and expected files into memory and scan the file system on first load. This means resorting back to maintaining a list of all monitored files in local memory, an unfortunate but necessary step.
 
-We now match any reported modified or deleted files against the internal state, using the modification date and hash of the file to determine if the file has been changed. In order to lower resource usage we read any modified files in sections, never loading more than 4MBs into local memory. These chunks become shards within the backup system.
+We now match any reported modified or deleted files against the internal state, using the modification date and hash of the file to determine if the file has been changed. In order to lower resource usage we read any modified files in sections, never loading more than 4MB into local memory. These chunks become shards within the backup system.
 
 \subsection{Deduplication}
 
-There are two viable approaches to file deduplication for Membrane. We can choose to split the file into shards and check if shard hashes match, or use a rolling checksum, similar to Rsync to find the section of the data changed. \citep{tridgell1996rsync}
+There are two viable approaches to file deduplication for Membrane. We can choose to split the file into shards and check if shard hashes match, or use a rolling checksum, similar to Rsync to find which section of the data has changed. \citep{tridgell1996rsync}
 
 Simply splitting the file into chunks has the disadvantage of being unable to detect overlapping data, which can lead to large amounts of accidental duplication. When data is inserted into the middle of a file any blocks after and including the change will be marked as modified and need to be restored.
 
-The approach of simply sharding the data is simple and much less prone to bugs, so we take this approach with the initial implementation of Membrane, although we will maintain support for variable size chunks for future implementations. This is a compromise taken to lower time-to-market for Membrane.
+The approach of simply sharding the data is simple and much less prone to bugs, so we take this approach with the initial implementation of Membrane, although we will maintain support for variable size chunks for future implementations. This is a compromise taken to lower development time for proof-of-concept.
 
-A method of generating a unique hashs for file shards is also required. Git and Subversion opt to use SHA1 \citep{torvalds2010git} to generate unique keys for files, however, we also consider MD5 for this purpose.
+A method of generating a unique hashes for file shards is also required. Git and Subversion opt to use SHA1 \citep{torvalds2010git} to generate unique keys for files, however, we also consider MD5 for this purpose.
 
-Both SHA1 \citep{wang2005collision} and MD5 \citep{stevens2006fast} are cryptographically broken, meaning that it is possible to generate a collision\footnote{Two files matching a given hash} without having to try every possible input into the hashing function. It is also possible to launch a first preimage attack on these hashes, something that would make them unusable for security as an attacker would be able to generate an input matching any given hash. As Membrane only uses this hash as an internal shard identifier, we do not have to be concerned about an external attacker.
+Both SHA1 \citep{wang2005collision} and MD5 \citep{stevens2006fast} are cryptographically broken, meaning that it is possible to generate a collision\footnote{Two different inputs producing the same hash} without having to try every possible input into the hashing function. It is also possible to launch a first preimage attack on these hashes, something that would make them unusable for security as an attacker would be able to generate an input matching any given hash. As Membrane only uses this hash as an internal shard identifier, we do not have to be concerned about an external attacker.
 
-The only situation in which this may cause issues in the future is if the user stores two shards with the same hash accidentally, however, the chances of that are small enough that it is not worth worrying about. This was discussed in detail by \cite{torvalds2006gitcollisions} and other git developers. An inadvertent collision was deemed so unlikely that it was reasonable to use SHA1 for Git.
+The only situation in which this may cause issues in the future is if the user stores two shards with the same hash accidentally, however, the chances of that are small enough that it is not worth worrying about. In this unlikely scenario Membrane would simply reject the newer shard causing the new file to be corrupted when a reconstruction is attempted. This was discussed in detail by \cite{torvalds2006gitcollisions} and other git developers. An inadvertent collision was deemed so unlikely that it was reasonable to use SHA1 for Git.
 
 MD5 only has a 128 bit output vs. the 160 bit output of SHA1, meaning collisions are slightly more likely, however we mostly concerned about hashing speed, seeing as this hash will be run very frequently on any files that have been altered, and studies have shown that MD5 is on average about 1.75 times faster than SHA1. \citep{saphir2007securite}
 
@@ -1238,7 +1289,7 @@ We calculate the probability of a collision by using a solution to the generalis
 
 $$p(n, d) = 1 - \frac{d!}{d^{n}(d - n)!}$$
 
-As we are working with very large number we need to approximate this using an approximation provided by \cite{brink2012probably} that is proven to hold for all $d$ up to $10^{18}$:
+As we are working with very large numbers we use an approximation provided by \cite{brink2012probably} that is proven to hold within 1\% for all $d$ up to $10^{18}$, which would be four yottabytes\footnote{A yottabyte is $2^{80} bytes.$}, an incomprehensibly large amount of data:
 
 $$p(n, d) \approx 1 - \bigg(\frac{d-1}{d}\bigg)^{n(n-1)/2}$$
 
@@ -1250,31 +1301,44 @@ In the future we can always convert to SHA1 which would provide a collision prob
 
 \section{Local Storage System}
 
-As Membrane is a backup system it needs to store a log of file activity containing file meta-data and contents of each version of that file. In this section we discuss the shard storage mechanism followed by the file history persistence finishing on the file expiry policy used in Membrane.
+As Membrane is a backup system it needs to store a log of file activity containing file meta-data and contents of each version of that file. In this section we discuss the shard storage mechanism, file history persistence and finish on the file history expiration policy used in Membrane.
 
 \subsection{Shard Storage}
 
-When a file change is detected the watcher shards the file into 4MB chunks and sends them directly to shard storage. The shard store manages a folder of the file system and provides functions for shard storage and retrieval similar to those found in cloud block storage services to allow for future integration.
+When a file change is detected the watcher shards the file into 4MB chunks and sends them directly to shard storage. The shard store manages a folder of the file system and provides functions for shard storage and retrieval, similar to those found in block storage services offered by cloud companies to allow for future integration.
 
-When a shard is inserted into storage the file system first checks if the shard is already stored. If so the shard is ignored altogether and the write is avoided, saving disk IO. Otherwise the hash of the data is confirmed and the shard is written to a file on the disk.
+When a shard is inserted into storage the file system first checks if the shard is already stored. If so the shard is ignored altogether and the write is avoided, saving disk IO\footnote{Input or Output operations, a limited resource on computers.}. Otherwise the hash of the data is confirmed and the shard is written to a file on the disk.
 
-Because of file system limitations we use a hierarchical directory structure for storing shards. A new directory is created every five characters of the shard overcoming any restrictions on the maximum number of files per directory older file systems may have, such as ext2 and ext3 which reportedly have performance issues with anything above $10^5$ files. \citep{johnson2014files}
+Because of file system limitations we use a hierarchical directory structure for storing shards. A new directory is created every five characters of the shard as shown below overcoming any restrictions on the maximum number of files per directory older file systems may have, such as ext2 and ext3 which reportedly have performance issues with anything above $10^5$ files. \citep{johnson2014files}
 
-The shard storage runs scrubbing on a regular basis, a concept taken from the ZFS file system \citep{oracle2012zfs}, periodically checking that every shard stored is consistent with it's hash and accessible. This is a technique commonly used to prevent errors before they result in failure, complimenting shard integrity verification during reads by proactively removing damaged shards.
+\begin{displayquote}
+ \code{Shard [kt903hbt7h24p7h32] -> directory/kt903/hbt7h/24p7h/32.mem}
+\end{displayquote}
+
+The shard storage runs scrubbing on a regular basis, a concept taken from the ZFS file system \citep{oracle2012zfs}, periodically checking that every shard stored is consistent with its hash and is actually accessible. This is a technique commonly used to prevent errors before they result in failure, complimenting shard integrity verification during reads by proactively removing damaged shards.
 
 \subsection{File History Storage}
 
-The file history is the central store of the backup system. It contains a log of every file addition, modification and removal providing all of the information required to retrieve it. It is important that the store is immediately persisted to the file system upon backup so nothing is lost during an unexpected shutdowns.
+The file history is the central store of the backup system. It contains a log of every file addition, modification and removal providing all of the information required to retrieve it. It is important that the store is immediately persisted to the file system upon backup so nothing is lost during unexpected shutdowns.
 
 The naive approach uses a log implemented in the form of a linked list to record events flushing new entries immediately to a log file. Although this approach satisfies all of the requirements it is very expensive to search and quickly becomes very large.
 
 Taking inspiration from distributed file systems such as HDFS \citep{hdfsAnalysis} and GFS \citep{mckusick2010gfs} which use NameNodes to store file system modification in a checkpoint and journal. The journal is a write-ahead commit log that takes the place of the aforementioned event log. The checkpoint is a known file system state. In the event of system failure these file systems can replay the log, starting from a persisted checkpoint to recreate the state during power loss.
 
-Within Membrane we use checkpoints as a method of memoization\footnote{caching results} to speed future searches through the journal. The start and end of the journal are queried so often they are given special permanent checkpoints that are always kept up to date. When the user queries for a specific point in time, the journal can be replayed from the closest memoized checkpoint to the requested time, quickly generating the state in the required time slice.
+Within Membrane we use checkpoints as a method of memoization\footnote{Caching results.} to speed future searches through the journal. The start and end of the journal are queried so often they are given special permanent checkpoints that are always kept up to date.
+
+\begin{figure*}
+ \centering
+ \includegraphics[width=0.35\textwidth]{journal}
+ \caption{Storage Journal - Journal (line) with start, end and requested time slice}
+ \label{fig:journal}
+\end{figure*}
+
+When the user queries for a specific point in time, the journal can be replayed from the closest memoized checkpoint to the requested time, quickly generating the state of the required time slice. A visualisation of this is shown in figure \ref{fig:journal}.
 
 This proved to be an effective way of storing file history, providing quick responses to the GUI, CLI and other system components, even when full of data. If this proves insufficient for future demands. In order to help speed queries the journal can also be indexed to see every file that uses a shard.
 
-It is important to address the distinct lack of a transactional database in a situation where the use of one seems like a natural fit. Traditional databases such as MySQL have very high memory and CPU usage \citep{james2017sql} and although this usage can be tuned running a full database on a users computer would go against the resource usage requirement.
+It is important to address the distinct lack of a transactional database in a situation where the use of one seems like a natural fit. Traditional databases such as MySQL have very high memory and CPU usage, \citep{james2017sql} and although this usage can be tuned running a full database on a users computer would go against the resource usage requirement.
 
 \subsection{Backup Management}
 
@@ -1284,7 +1348,7 @@ This is a step towards the maintenance free experience requested by survey parti
 
 In order to implement this we take the concepts used in garbage collection (GC) within programming languages and apply them to the file history. In addition to a maximum shard storage size, a target size is set.
 
-The monitor adds shards until the maximum limit, ignoring the target size, if the storage reaches a maximum size the GC is called compacting the file history and removing dereferenced shards. The GC is also called periodically to avoid the watcher having to retry writes.
+The monitor adds shards until the maximum limit, ignoring the target size. If the storage reaches the maximum limit GC is called, compacting the file history and removing dereferenced shards. The GC is also called periodically to avoid the watcher having to retry writes due to hitting the maximum limit.
 
 GC is a three step process that attempts to reach the target storage size in the least destructive way by:
 
@@ -1297,16 +1361,16 @@ GC is a three step process that attempts to reach the target storage size in the
 Garbage collection is implemented using an adapted version of \cite{dijkstra1978fly}'s mark and sweep algorithm. This works in three passes. 
 
 \begin{enumerate}
- \item Certain shards have are protected from garbage collection as they have just been added into shard storage and might not have their reference inserted into the journal yet, generating set $P$.
+ \item Certain shards are protected from garbage collection as they have just been added into shard storage and might not have their reference inserted into the journal yet, generating set $P$.
  \item The second pass walks the journal and collects shards mentioned in the journal creating set $R$
  \item The final pass finds $S \setminus (P \cup R)$ where $S$ is the set of all stored shards, and removes them.
 \end{enumerate}
 
-This step is intended to remove any shards that were inserted into shard storage but never followed up with a file entry, possible in the case of error during shard storage or file history storage. The code for garbage collection can be found in listing \ref{lst:fileGC}.
+This step is intended to remove any shards that were inserted into shard storage but never followed up with a file entry, possible in the case of error during shard storage or file history storage. The implementation for garbage collection can be found in listing \ref{lst:fileGC}.
 
 The next step is intended to remove any entries the user is not interested in any more. These could have been inserted after recovery from peers or may have been files that were temporarily backed up. If any files were deleted garbage collection is re-run to remove the relevant shards.
 
-Finally the journal is trimmed, removing any history necessary. The algorithm creates a shard count dictionary to see if removing the last file in the log will affect the storage. If it does it is removed, otherwise the algorithm moves along to the next entry. This is repeated until the target storage size is reached. The method used means no file entries are unnecessarily removed and can be found in listing \ref{lst:storageClamping}.
+Finally the journal is trimmed, removing any history necessary. The algorithm creates a shard count dictionary to see if removing the last file in the log will affect the storage. If it does it is removed, otherwise the algorithm moves along to the next entry. This is repeated until the target storage size is reached. The method used means no file entries are unnecessarily removed. The implementation can be found in listing \ref{lst:storageClamping}.
 
 \subsection{Local Backup}
 
@@ -1328,7 +1392,7 @@ There are there main types of APIs considered in API design. \citep{boyd2017api}
  \item Private - Only used internally to facilitate communication.
 \end{itemize}
 
-The Membrane API is a private API as only the user will be permitted access. We opt to authenticate the user by using an source IP filter. Only interactions from the loopback address\footnote{An IP address that connects from the host itself. \citep{hinden2006ip} It is infeasible to send a request from this address unless it originates from the user.} $127.0.0.1$ will be permitted. This decision makes development easier, but it can always be expanded if the need arises.
+The Membrane API is a private API as only the user will be permitted access. We opt to authenticate the user by using a source IP filter. Only interactions from the loopback address\footnote{An IP address that connects from the host itself. \citep{hinden2006ip} It is infeasible to send a request from this address unless it originates from the user.} $127.0.0.1$ will be permitted. This decision makes development easier and fulfils all of the proof-of-concept requirements, but it can always be expanded if the need to access the Membrane API remotely arises.
 
 As discussed previously, we opt to use a Representation State Transfer (REST) API. In web development, an API is typically a set of Hypertext Transfer Protocol (HTTP) request messages, with defined responses in either Extensible Markup Language (XML) or JavaScript Object Notation (JSON). We opt for JSON within Membrane because XML is more difficult to parse and JSON is shorter, quicker to read and write and can use arrays.
 
@@ -1337,14 +1401,14 @@ In the past Web APIs were typically Simple Object Access Protocol (SOAP), which 
 There are five main guiding constraints to building a RESTful API \citep{fielding2000architectural}: 
 
 \begin{itemize}
- \item Client-server - By separating the user interface concerns from data storage concerns portability across platforms is improved. The components can also be allowed to evolve independently.
+ \item Client-server - By separating the user interface concerns from data storage concerns, portability across platforms is improved. In addition components can evolve independently and be in differing states of completion.
  \item Stateless - All the information required for a request is contained in one request. This reduces the need for persistence on the server side.
  \item Cacheable - Any intermediaries can cache a response to improve responsiveness, and responses must be marked as cacheable or not.
  \item Layered System - A client should be unable to tell if an intermediary is passing it's data. This improves potential scalability.
  \item Uniform Interface - This decouples the underlying architecture from the interface allowing both to evolve independently.
 \end{itemize}
 
-All of these properties are desirable within Membrane for limiting resource usage and allowing future expansion. This in addition to the vast amounts of tooling created to assist with RESTful API development such as \cite{postman2017api}, a tool for manually making REST calls means that we opted for a RESTful API within Membrane.
+All of these properties are desirable within Membrane for limiting resource usage and allowing future expansion. This in addition to the vast amounts of tooling created to assist with RESTful API development such as \cite{postman2017api}\footnote{A tool for manually making REST calls}, means that we opted for a RESTful API within Membrane.
 
 \subsection{API Design}
 
@@ -1352,7 +1416,7 @@ We now need to structure the API. There are five available HTTP methods emph{POS
 
 We opt to split our requests into three categories `\emph{status}', `\emph{configure}' and `\emph{request}' to keep the API simple, intuitive and consistent, as recommended by \cite{google2017api}.
 
-Simple status updates are available under `\emph{/status}'. The status is split into four modules of membrane: `\emph{network}', `\emph{storage}', `\emph{watcher}' and `\emph{contract}' such that a GET request to `\emph{localhost:13200/status/watcher}' would return JSON information regarding the file watcher. In the future we plan to further subdivide the API in case specific information is required to reduce the amount of calculations required on the server side per request.
+Simple status updates are available under `\emph{/status}'. The status is split into four modules of membrane: `\emph{network}', `\emph{storage}', `\emph{watcher}' and `\emph{contract}', such that a GET request to `\emph{localhost:13200/status/watcher}' would return JSON information regarding the file watcher. In the future we plan to further subdivide the API in case specific information is required, to reduce the amount of calculations required on the server side per request.
 
 Calls to Membrane regarding configuration are grouped under `\emph{/configuration}'. Here the client needs to provide request information using the URL or accompanying data. Although using URLs is useful, this may cause issues in the future when inputting folders that use the same file separator as URLs. We opt for \cite{heroku2017api}'s suggestion to request JSON data structures. We return HTTP status codes to indicate the result of the request, compliant with RFC7231 \citep{fielding2014hypertext} as per \cite{google2017api}'s recommendation.
 
@@ -1376,7 +1440,9 @@ Each container, hereinafter refereed to as a \emph{block}, requires overhead for
 
 \subsubsection{Compression}
 
-When crafting a block for a potential peer, shards that the peer has not yet stored are selected. Membrane then attempts to compress these shards, some shards might not be compressible (as the data has no or difficult to detect patterns) and in that case we flag the shard as uncompressed. We implement both Snappy and LZ4\_FAST compression, as discussed in section \ref{sec:compression}. Adding metadata about the compression algorithm used in the block data, so new and better compression algorithms can be added in the future, in line with the extensiblity requirement.
+When crafting a block for a potential peer, shards that the peer has not yet stored are selected. Membrane then attempts to compress these shards, some shards might not be compressible\footnote{As the data may have difficult to detect patterns.} and in that case we flag the shard as uncompressed.
+
+We first implement Snappy due to very small amount of development time required, as discussed in section \ref{sec:compression}, and later added LZ4\_FAST compression as we had time to improve the feature. We add metadata about the compression algorithm used in the block data, so new and better compression algorithms can be added in the future, in line with the extensiblity requirement.
 
 \begin{figure*}
  \centering
@@ -1401,7 +1467,7 @@ $$\sum_{i=1}^{n} s_{i}x_{i} \leq W, x_i \in {0, 1}$$
 
 This is an NP-Hard optimisation problem, \citep{skiena1999interested} meaning it cannot be solved in polynomial time. We are faced with the additional issue, that we do not know the size of all the shards without accessing the inode of the shard, a comparably expensive operation. There are pseudo-polynomial\footnote{Running time is polynomial in the numeric value of the input (container size in this case)} time algorithms that can solve the problem but without all of the sizes available we cannot fully benefit from them.
 
-We attempt to solve the solution by simply looking a subset of $100$ random shards from the queue and using the dynamic programming solution with $O(nW)$ computational and space complexity. \citep{martello1999dynamic} We lower W to a reasonable level by dividing all weights by 128kB. This gives a maximum of: 
+We attempt to solve the solution by simply looking at a subset of $100$ random shards from the queue and using the dynamic programming solution with $O(nW)$ computational and space complexity. \citep{martello1999dynamic} We lower W to a reasonable level by dividing all weights by 128kB. This gives a maximum of: 
 
 $$(25\mbox{MB} / 128\mbox{KB}) * 100  \mbox{ shards} = 2000 \mbox{ loops}$$ 
 
@@ -1411,7 +1477,9 @@ Blocks of size 4MB filled the 25MB space until there was 1MB left, which was fil
 
 We therefore opt for the naive approach of filling the blocks in FIFO\footnote{First In First Out}, skipping a shard and moving to the next one if it no longer fits, up to 100 shards.
 
-When tested over a standard set of sharded files taken from the document directory of three users with compression disabled the packing efficiency was $0.90$ with a standard deviation of $0.026$. Raw data is available in table \ref{tab:storageUsage}. The maximum inefficiency we can observe is if the block has $4MB - 1B$ remaining with only 4MB available. At that point reaching an efficiency of approximately $21/25 = 0.84$. This leaves the expected average efficiency at $0.92$, is within margin of error the result. 
+When tested over a standard set of sharded files taken from the document directory of three users with compression disabled, the packing efficiency was $0.90$ with a standard deviation of $0.026$. Raw data is available in table \ref{tab:storageUsage}.
+
+The maximum inefficiency we can observe is if the block has just under $4MB$ remaining with only $4MB$ available. This results point reaching an efficiency of approximately $21/25 = 0.84$. This leaves the expected average efficiency at $0.92$, is within margin of error the result. 
 
 An advantage to this naive solution is we can consider the remaining space after compression. Something that would require compression of all the blocks first in the knapsack algorithm.
 
@@ -1493,7 +1561,7 @@ The PCM has a target number of peers that it should share blocks with. When a ne
 \begin{figure*}[h]
  \centering
  \includegraphics[width=0.8\textwidth]{contract-start}
- \caption{Example Peer Contract Start}
+ \caption{Peer Contract Start Example}
  \label{fig:contract-start}
 \end{figure*}
 
@@ -1513,11 +1581,11 @@ We also need a demonstration that the peer will send us the full block on reques
 
 When there are no more salt and KMAC pairs that the block is marked as expired and removed during the next contract update.
 
-We do not use Keccak Message Authentication Codes (KMACs), a newer more efficient keyed hash function that makes use of the sponge construction of Keccak to only hash once \citep{kelsey2016sha} as the standard is new and the cryptography library we use does not support it yet.
+We do not use Keccak Message Authentication Codes (KMACs), a newer more efficient keyed hash function that makes use of the sponge construction of Keccak to only hash once \citep{kelsey2016sha}, as the standard is new and the cryptography library we use does not support it yet.
 
 \subsubsection{Contract Scaling}
 
-To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actual be available. Growing exponentially would quickly give the peer more space than we have available. 
+To accelerate block trading with favoured peers for every 10 blocks traded, the PCM increases inequality by one, allowing for more flexibility and faster growth. We choose a linear scaling system as the space made available to the peer must actually be available. Growing exponentially would quickly give the peer more space than we have available. 
 
 The maximum amount of blocks transferred to each peer per upload is capped at six. This is due to a buffer limit of 256MB by the networking layer. If we assume all blocks are full and accounting for base64 encoding used for transfers, we find that this gives space for $(256 * \frac{3}{4}) / 25 = 7.68$ blocks. Room is left for potential messages between clients while blocks are transferring.
 
@@ -1556,7 +1624,7 @@ By sending a contract update a peer confirms they are online and we expect a giv
 
 $$n = \frac{\mbox{PDP Checked Shards}}{\mbox{Expected Shards}}$$
 
-We also record the ratio of incomplete\footnote{$n$ is $<1.0$} and fully complete reports, heavily penalising peers for incomplete reports as this indicates deceit. In addition we store a ratio of blocks lost vs. those that lasted their entire expected lifetime (two weeks).
+We also record the ratio of incomplete\footnote{$n$ is less than $1.0$} and fully complete reports, heavily penalising peers for incomplete reports as this indicates deceit. In addition we store a ratio of blocks lost vs. those that lasted their entire expected lifetime (two weeks).
 
 We calculate peer appraisal with the following formula:
 
@@ -1571,11 +1639,11 @@ where $H$ is the percentage of the time the peer was online at the same time the
  \label{fig:peer-appraisal}
 \end{figure}
 
-If a peer rating is $<\sigma - \mu$ away from the average we drop the peer as a contract, where $\sigma$ and $\mu$ indicates the standard deviation and mean respectively.
+If a peer rating is less than $\mu - \sigma$ we drop the peer as a contract, where $\sigma$ and $\mu$ indicates the standard deviation and mean respectively.
 
 This system was simulated in unit testing, asserting that the peer appraisal correctly punishes peers that fail to deliver PDPs, have incompatible uptime or lose blocks.
 
-We show a visual demonstration of the peer appraisal system in figure \ref{fig:peer-appraisal}. We configured the host generating these ratings to have standard a uptime taken from the uptime survey (\ref{fig:uptime-survey}). The good peer simulates a server with 100\% uptime and with no bad behaviour. The mid peer is online less than the host but during fairly similar times. The bad peer is only online for small parts of the weekend.
+We show a visual demonstration of the peer appraisal system in figure \ref{fig:peer-appraisal}. We configured the host generating these ratings to have a standard uptime taken from the uptime survey (\ref{fig:uptime-survey}). The good peer simulates a server with 100\% uptime and with no bad behaviour. The mid peer is online less than the host but during fairly similar times. The bad peer is only online for small parts of the weekend.
 
 We also display the minimum rating to remain contracted as \code{min-limit} demonstrating that the bad peers would lose their contracts if there were two bad peers, two mid peers and one good peer present.
 
@@ -1644,7 +1712,7 @@ If a connection to the Peer is required the PEX IP address and port can be diall
 
 In the event that connection to a peer is lost, and both peers have changed address, PEX Requests can be used to attempt to find the location of the peer. A PEX request is sent to currently connected peers, asking for the most recent PEX Advertisement in their PEX ledger for the peer. The request must contain the peer id, which as established, is a sha-256 hash of their public RSA key.
 
-The chance of guessing the key for an existing peer is sufficiently infeasible that knowing the peer ID for the peer means the Membrane instance requesting the information has either connected to the peer before or has heard about them at some point in time.
+The chance of guessing the key for an existing peer is sufficiently infeasible, that knowing the peer ID for the peer means the Membrane instance requesting the information has either connected to the peer before, or has heard about them at some point in time.
 
 If there exists a PEX Advertisement Entry for the requested peer in the PEX Ledger of the peer that received the request, this is sent back in the PEX response as a PEX Advertisement.
 
@@ -1663,7 +1731,7 @@ This mechanism is demonstrated in figure \ref{fig:pex-new-peer}. Two peers (1 an
 
 This mechanism is further extended to support public PEX entries. A PEX Request can also request fifty\footnote{Decided upon through observing the PEX mechanism in BitTorrent. \citep{vuze2010vuze}} public PEX entries. These are sent back without signature or peer ID information and are meant as an untrusted mechanism for attempting to establish peer connections.
 
-These are stored in a second non-persisted temporary ledger and is a mechanism for discovering new peers. When a peer A requests peer B for public PEX entries, peer B searches all entries in their real PEX Ledger, only selecting those entries less than 15 minutes old with the \code{isPublic} flag toggled.
+These are stored in a second non-persisted temporary ledger and is a mechanism for discovering new peers. When peer A requests peer B for public PEX entries, peer B searches all entries in their real PEX Ledger, only selecting those entries less than 15 minutes old with the \code{isPublic} flag toggled.
 
 We prevent amplified denial of service attacks\footnote{In which an attacker could send a IP to multiple peers, causing them all to fire connection requests at the peer} in two ways:
 
@@ -1680,7 +1748,9 @@ A tracker is a peer found at a static IP, only running the networking module of 
 
 The domain name of all available trackers and their user IDs is hard coded in all Membrane instances. A user may run a Membrane tracker, but as it cannot establish contracts it will quickly lose appraisal and be uncontracted.
 
-\subsubsection{Conclusion}
+Using a tracker has the disadvantage of giving Membrane a centralised target for attackers to take down. We mitigate this by introducing a collection of trackers the peer can connect to, all using domain names so they can be replaced if required.
+
+\subsubsection{Summary}
 
 The described system allows for peers to locate each other and discover new potential peers, fulfilling the requirements for PEX within Membrane. The ability for peer discovery demonstrated in figure \ref{fig:pex-new-peer} is unit tested and proven to work.
 
@@ -1713,7 +1783,7 @@ We opt to use the following fields from the FIPA ACL specification \citep{fipa20
  \item protocol - Indicates the version number of Membrane for parsing
 \end{enumerate}
 
-We find this layout holds all the information required for handling messages. The \code{in-reply-to} field is ONLY used for a PING-PONG message exchange, where we wait for the PONG to arrive to test connectivity.
+We find this layout holds all the information required for handling messages. The \code{in-reply-to} field is \emph{only} used for a PING-PONG message exchange, where we send a PING and wait for the PONG to arrive to test connectivity.
 
 \subsubsection{Protocol Design}
 
@@ -1741,23 +1811,31 @@ To improve on this we can chose a more efficient encoding such as \emph{basE91} 
 
 \subsection{Gatekeeper}
 
-The gatekeeper is the section of the networking module responsible for dialling and receiving connections from peers. It takes the maximum number of allowed connections, and whether it should aim to connect to uncontracted peers, and ensures only desirable peers connect. We include the relevant code in listing \ref{lst:peerPop}.
+The gatekeeper is the section of the networking module is responsible for dialling and receiving connections from peers. It takes the maximum number of allowed connections, and whether it should aim to connect to uncontracted peers, and ensures only desirable peers connect. We include the relevant code in listing \ref{lst:peerPop}.
 
-During a periodic sweep the Gatekeeper first checks if more connections are required to fulfil the contract target requested by PCM and there are more connections that can be established without going over the maximum. If so a PEX Request asking for connection info to all contracted peers is sent to all connected peers. If the gatekeeper is searching for new public peers, the PEX request asks for public peers in the PEX Request and attempts to dial every new connection in the public PEX Ledger. We do not wait for a response instead reacting to any PEX responses as they arrive.
+During a periodic sweep the Gatekeeper performs peer population maintenance, first sending PEX Requests, using the following rules:
+
+\begin{itemize}
+ \item Only send if more connections are required to fulfil the contract target requested.
+ \item Only send if there are also more connections that can be established without going over the maximum connection count.
+ \item If the gatekeeper is searching for new public peers modify the above PEX Request to also request public peers.
+ \item Send a PEX Request asking for connection info to all contracted peers is sent to all connected peers.
+ \item Do not wait for a response. The gatekeeper will react to PEX information if it arrives separately.
+\end{itemize}
 
 A PEX Advertisement is then sent to all peers with the external IP address and port collected from the UPnP port forwarding. The PEX Advertisement is public if searching for new peers and more contracted peers are required.
 
 Any redundant peers\footnote{Those not contracted and not a tracker} are disconnected if the maximum connection count is surpassed.
 
-Finally the trackers are dialled if the speed at which the gateway is finding new peers is too slow. It expects to connect to all contracted peers in 200 minutes.
+Finally the trackers are dialled if the speed at which the gateway is finding new peers is too slow. It expects to connect to all contracted peers in 200 minutes. This is an estimated number that can later be tuned during testing with a full active Membrane network.
 
 This maintenance procedure is sufficient to provide the PCM with new peers up to the requested maximum, while refraining to connect to the main trackers if unnecessary, satisfying the requirements for the Network Module.
 
-\subsection{Conclusion}
+\subsection{Summary}
 
 The components described connect together to form a distributed backup program that can store data with other peers in exchange for storing their data as required.
 
-We discussed the journey of a file from initial detection, to local storage, to packaging into blocks for deployment with peers, ending with the module responsible for establishing connections to peers that can Membrane can trade file blocks with. We now discuss the interfaces developed for user interaction.
+We discussed the journey of a file from initial detection using file change notifications. Local storage using a hierarchical structure to store shards. Packaging into blocks using FIFO and knapsack for deployment with peers and ended with the module responsible for establishing connections to peers using a custom peer exchange and authentication system. We now discuss the interfaces developed for user interaction.
 
 \chapter{User Interfaces}
 
@@ -1806,7 +1884,7 @@ During first use users can use the command \code{membrane -h} or \code{membrane 
 
 \begin{displayquote}
  \scriptsize
- \code{dom@expiravit:\~\$ membrane history -h} \\
+ \code{dominic@expiravit:\~\$ membrane history -h} \\
  \code{Usage: membrane history <file>}
 \end{displayquote}
 
@@ -1814,13 +1892,13 @@ Helpful error messages are also provided to help the user debug issues. There is
 
 \begin{displayquote}
  \scriptsize
- \code{membrane recover /tmp/f1.txt file2.txt} \\ \\
+ \code{dominic@expiravit:\~\$ membrane recover /tmp/f1.txt file2.txt} \\ \\
  \code{You must specify the full filePath.} \\
  \code{Example: /tmp/dir1/file.txt} \\
  \code{You provided: file2.txt}
 \end{displayquote}
 
-Finally we add tab completion to the CLI, a common feature of shells that allows the user to press a completion key (typically tab) to show all the available options or complete the command if there is only one option remaining. This makes CLI usage both faster and more intuitive.
+Finally we add tab completion to the CLI, a common feature of shells that allows the user to press a completion key\footnote{Typically Tab.} to show all the available options or complete the command if there is only one option remaining. This makes CLI usage both faster and more intuitive.
 
 \subsection{Installation}
 
@@ -1828,11 +1906,11 @@ Although Membrane is available as a \code{jar} archive containing the daemon cod
 
 These also place soft links to the executables and scripts in the user's \code{\$PATH} which allows users to specify the name of the program instead of the full directory for the executables.
 
-The install scripts also set the daemon up with \code{systemd}, a widely used init system \citep{saunders2015systemd} used to bootstrap the user environment and manage all processes, ensuring they are always in the requested state (, running in the case of Membrane).
+The install scripts also set the daemon up with \code{systemd}, a widely used init system \citep{saunders2015systemd} used to bootstrap the user environment and manage all processes, ensuring they are always in the requested state\footnote{Running in the case of Membrane}.
 
 This allows Membrane users to easily manage the daemon and interact with it immediately after installation using tools they are familiar with.
 
-\subsection{Conclusion}
+\subsection{Summary}
 
 The Membrane CLI maintains all of the advantages of a CLI. It is lightweight and available in a small 5MB package compared to the 56MB GUI. It requires a lot less resources to run and although only appropriate for advanced users, that is also the target user group for the Membrane proof-of-concept.
 
@@ -2125,7 +2203,7 @@ The REST API development proved simple and was hugely successful. The ability to
 
 We come to the shard distribution module of Membrane, which focuses mostly on resource allocation and trust from multi-agent systems. This module required the most testing and was the most experimental section of the project, implementing a new heuristic based trust system and requiring meticulous testing to ensure the system works as expected.
 
-The final system was able to correctly match appropriate storage agents and generate contracts with them. When we began development we aimed for a very complex negotiation system, prompted by MAS literature studied. Although the system should have worked in theory it also became very very complex and after some development was dropped in favour of a negotiation free system that offered better flexibility and was more appropriate for the challenge posed.
+The final system was able to correctly match appropriate storage agents and generate contracts with them. When we began development we aimed for a very complex negotiation system, prompted by MAS literature studied. Although the system should have worked in theory it also became very complex and after some development was dropped in favour of a negotiation free system that offered better flexibility and was more appropriate for the challenge posed.
 
 Negotiation works in literature but, it requires two-way communication, which dramatically increases complexity and requires stateful messages. The networking layer does have support for stateful messages that wait for a response but it is easier for both debugging and construction to make the system fully stateless.
 
@@ -2151,7 +2229,7 @@ Authentication was successfully completed using industry standard X.509 certific
 
 It is important to consider the limitations of the networking module.
 
-We find one flaw of the PEX system. If we request information about another peer, the peer that received the request can now also request information about that peer, meaning the \code{isPublic} flag does not guarantee only contracted peers can find the peer. We could look into better systems, such as requiring the PEX Advertisement to contain a signature of both their own and the peers ID. Proving to anyone that the targeted peer has given the requesting peer permission to request their information.
+We find one flaw of the PEX system. If we request information about another peer, the peer that received the request can now also request information about that peer, meaning the \code{isPublic} flag does not guarantee only contracted peers can find the peer. If this ever causes issues we could look into better systems, such as requiring the PEX Request to contain a signature of both their own and the peers ID signed by the peer being searched for. This would proving to anyone that the targeted peer has given the requesting peer permission to request their PEX information.
 
 We also do not know how the PEX system scales with 100 users connected as planned. This would result in fifty PEX advertisements arriving per minute on average, which might need to be slowed down.
 
@@ -2239,13 +2317,17 @@ This would also alleviate usability problems discovered with the CLI, as it woul
 
 \subsection{Cloud Integration}
 
-As discussed in the limitations, cloud integration with commercial cloud services would offer a cheap way for users to backup and recover data without any of the downsides of distributed storage. We designed the shard storage to be replaceable with cloud block storage APIs, so users would simply need to provide their credentials to start backing up at \$0.005/GB/Month \citep{backblaze2017pricing}. Much cheaper than any plan offered by solutions like Dropbox or Google Drive.
+As discussed in the limitations, cloud integration with commercial cloud services would offer a cheap way for users to backup and recover data eliminating most of the downsides of distributed storage.
 
-Membrane users would benefit from the cheap storage on services such as Backblaze, without having to pay for download unless it's a last resort and Membrane cannot recover blocks that it backed up with peers, offering the best of both worlds.
+We designed the shard storage to be replaceable with cloud block storage APIs, so users would simply need to provide their credentials to start backing up at \$0.005/GB/Month \citep{backblaze2017pricing} or other services. This is much cheaper than any plan offered by solutions like Dropbox or Google Drive.
+
+It is important to note that block storage services offer free upload, extremely cheap storage but make money on download fees when users need to access data\footnote{\citep{backblaze2017pricing} charges \$0.02/GB for download, compared to \$0.005/GB/Month for storage.}.  
+
+Membrane users would benefit from the cheap storage on block storage services such as Backblaze, without having to pay for download unless it is a last resort and Membrane cannot recover blocks that it backed up with peers, offering the best of both worlds.
 
 \subsection{FUSE Mount}
 
-The current method of accessing files requires a command per file version the user wishes to recover, which is only useful if the user want's a very specific file. Although we could allow for full folder recover in one command, FUSE offers a much better solution by allowing us to mount a virtual file system on the user's file system.
+The current method of accessing files requires a command per file version the user wishes to recover, which is only useful if the user wants a very specific file. Although we could allow for full folder recover in one command, FUSE offers a much better solution by allowing us to mount a virtual file system on the user's file system.
 
 The user could select the time slice they wish to recover from using a slider on the GUI, and the FUSE mount would reflect the state of the system at that point in time, allowing the user could copy files out using familiar tools. Membrane would reconstruct files on the fly as the file system requested them.
 
@@ -2253,11 +2335,15 @@ The user could select the time slice they wish to recover from using a slider on
 
 Throughout the project we analysed, design and built the proof-of-concept for an amalgam of distributed storage and backup technology, demonstrating that it is indeed possible to create a system that fairly exchanges your data with peers, to provide backup, file versioning and recovery.
 
+The four planning techniques used: scrum boards, Gantt charts, weekly supervisor meetings and weekly goals proved a highly effective way of ensuring the project stayed on track through the process. Problems were identified early and corrected immediately causing no issues.
+
 We find that Membrane can provide all of the requirements set out during the specification, successfully testing the validity of the software using unit, integration and usability testing. Feedback gathered from system was mainly positive with concerns mostly revolving around the interface which can easily be improved now the concept is proven.
 
-We also find the limitations of the concept: constraints on storage space dictated by the redundant space on the host machine, the possibility that all the peers holding a portion of data disappear when it's needed for recovery, periodic system resource usage for proving to peers you still hold their data and finally the need for a large group of users also using the service.
+We also find the limitations of the concept: constraints on storage space dictated by the redundant space on the host machine, the possibility that all the peers holding a portion of data disappear when it is needed for recovery, periodic system resource usage for proving to peers you still hold their data and finally the need for a large group of users also using the service.
 
-Overall the original goals of the project are satisfied. We successfully created a program that allows users to backup files and recover them from peers after data loss, with simple installation that doesn't require any expert knowledge.
+Overall the original goals of the project are satisfied. We successfully created a program that allows users to backup files and recover them from peers after data loss, with simple installation that does not require any expert knowledge.
+
+With the four suggested extensions: a USB credential store, improvements to the GUI, integration with cloud block storage for emergency access and FUSE mount file retrieval Membrane becomes an excellent cheap backup tool.
 
 \bibliography{dissertation}
 
@@ -3165,7 +3251,7 @@ Deploy shard to peers.
  \item Shard is placed into local shard storage.
  \item Distributor performs periodic local shard storage scan and finds shard.
  \item Connected peers are ranked from best to worst.
- \item Any peers with a rating $<1.5 \sigma$ are ignored and the contracts are cancelled.
+ \item Any peers with a rating less than $\mu - \sigma$ are ignored and the contracts are cancelled.
  \item Shards not yet sent to each peer are collected.
  \item Shards are compressed and placed into a block until the block reaches a predetermined size.
  \item The history of any files associated with the shards is placed into the block.
@@ -3220,6 +3306,13 @@ Deploy shard to peers.
 \pagebreak
 
 \section{Images}
+
+\begin{figure*}[!htb]
+ \centering
+ \includegraphics[width=\textwidth]{gantt}
+ \caption{Gantt Chart (February 2017)}
+ \label{fig:gantt}
+\end{figure*}
 
 \begin{figure*}[!htb]
  \centering

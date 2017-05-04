@@ -9,10 +9,10 @@ The applications vary from users who require a secure backup tool with file vers
 
 In this report we follow the design and construction of Membrane, drawing on knowledge from distributed storage, intelligent agent technology and existing backup tools, finishing by providing a sound analysis of the completed solution. The software created succeeds in all test scenarios providing an easy install that requires no domain knowledge, capable of reconstructing backed up files directly from the peer swarm.
 
-Disseration
+Dissertation
 -----------
 
-Available [here](https://github.com/domhauton/dissertation/blob/master/dissertation/dissertation.pdf).
+PDF available [here](https://github.com/domhauton/dissertation/blob/master/dissertation/dissertation.pdf).
 
 Code
 ----

@@ -2351,7 +2351,129 @@ With the four suggested extensions: a USB credential store, improvements to the 
 
 \chapter{Appendix}
 
-\section{Code}
+\section{Software}
+
+The source code is provided in three parts all located in different folders within the provided tar archive.
+
+The use of an IDE is highly recommended while perusing code due to the size of the project, which contains roughly 22,000 lines of production and test code spread over roughly 300 files.
+
+IDE config files for IntelliJ Idea 2017.1 (Daemon), Webstorm 2017.1 (GUI) and Gogland PREVIEW (CLI) are included with the source code.
+
+The code is also available on Github. We recommend visiting \url{http://mbrn.io} to browse, checkout and install Membrane, however, all of the code is also available in the following states in the provided multi-part zip\footnote{The multi-part zip houses the aforementioned tar.}:
+
+\begin{itemize}
+ \item Source code - Copies of the code repositories hosted on Github
+ \item Compiled code - Compiled versions of the source code that can be run immediately
+ \item Packages - Software packages that can be installed using the README in the Appendix 
+\end{itemize}
+
+\subsection{Source Code}
+
+Available in three folders containing different software parts. The instructions pull the freshest code available from the git repository. If you want to use the submitted code simply copy the folder from \code{membrane-code/source}.
+
+\subsubsection{Daemon}
+
+\begin{itemize}
+ \item To run this code you must install Java 8 and Gradle.
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands with a Network Connection
+ \begin{enumerate}
+  \item \code{git clone git@github.com:domhauton/membraned.git}
+  \item \code{cd membraned}
+  \item \code{./gradlew --refresh-dependencies clean check shadowJar -Dscan}
+  \item \code{java -jar build/libs/membraned-1.0.0-alpha.7-all.jar -v}
+ \end{enumerate}
+ \item Gradle script will run unit tests and ensure membrane works on your system
+ \item The final command runs the daemon in verbose mode.
+\end{itemize}
+
+\subsubsection{CLI}
+
+\begin{itemize}
+ \item To run this code you must install golang 1.8.
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands
+ \begin{enumerate}
+  \item \code{git clone git@github.com:domhauton/membrane-cli.git}
+  \item \code{cd membrane-cli/}
+  \item \code{export GOPATH="\$(pwd)"}
+  \item \code{go build -o bin/membrane src/domhauton.com/membranecli/membrane.go}
+  \item \code{bin/membrane status}
+ \end{enumerate}
+ \item Run commands using \code{bin/membrane param1 param2}
+ \item Instructions are found in the README (Listing \ref{lst:readme})
+ \item Use \code{bin/membrane -h} for help
+\end{itemize}
+
+\subsubsection{GUI}
+
+\begin{itemize}
+ \item To run this code you must install nodejs.
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands with a Network Connection
+ \begin{enumerate}
+  \item \code{sudo npm install typescript -g}
+  \item \code{sudo npm install tslint -g}
+  \item \code{sudo npm install electron -g}
+  \item \code{sudo npm install electron-packager -g}
+  
+  \item \code{git clone git@github.com:domhauton/membrane-gui.git}
+  \item \code{cd membrane-gui/src}
+  \item \code{npm install}
+  \item \code{node\_modules/electron/dist/electron main.js}
+ \end{enumerate}
+ \item The GUI should appear.
+\end{itemize}
+
+\subsection{Compiled Code}
+
+Available in three folders containing different software parts. Instructions assume you are in \code{membrane-code/compiled}.
+
+\subsubsection{Daemon}
+
+\begin{itemize}
+ \item To run this code you must install Java 8
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands
+ \begin{enumerate}
+  \item \code{java -jar membraned/membraned-1.0.0-alpha.7-all.jar -v}
+ \end{enumerate}
+ \item The final command runs the daemon in verbose mode.
+\end{itemize}
+
+\subsubsection{CLI}
+
+\begin{itemize}
+ \item This code has no requirements.
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands
+ \begin{enumerate}
+  \item \code{membrane-cli/membrane status}
+ \end{enumerate}
+ \item Run commands using \code{membrane-cli/membrane param1 param2}
+ \item Instructions are found in the README (Listing \ref{lst:readme})
+ \item Use \code{membrane-cli/membrane -h} for help
+\end{itemize}
+
+\subsubsection{GUI}
+
+\begin{itemize}
+ \item To run this code you must install nodejs.
+ \item The software has been tested on Ubuntu 16.10 but should work on any Unix system.
+ \item Run the following commands
+ \begin{enumerate}
+  \item \code{membrane-gui/membrane-gui/membrane-gui}
+ \end{enumerate}
+ \item The GUI should appear.
+\end{itemize}
+
+\subsection{Packaged Code}
+
+Packages can be found in: \code{membrane-code/packages}.
+
+Use the instructions found in the README (Listing \ref{lst:readme})
+
+\section{Code Snippets}
 
 \begin{lstlisting}[language=Java, caption=Garbage Collection Implementation, label=lst:fileGC]
   /**
